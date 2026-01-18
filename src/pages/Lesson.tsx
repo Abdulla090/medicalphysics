@@ -1,9 +1,10 @@
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Clock, Calendar, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
-import { getLessonById, getRelatedLessons, getCategoryById } from '@/data/lessons';
+import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/lib/api';
 
 const categoryStyles: Record<string, string> = {
   xray: 'category-xray',
@@ -21,9 +22,29 @@ const difficultyStyles: Record<string, string> = {
 
 const Lesson = () => {
   const { id } = useParams<{ id: string }>();
-  const lesson = getLessonById(id || '');
-  const category = lesson ? getCategoryById(lesson.category) : undefined;
-  const relatedLessons = lesson ? getRelatedLessons(lesson.id, lesson.category) : [];
+
+  const { data: lesson, isLoading } = useQuery({
+    queryKey: ['lesson', id],
+    queryFn: () => fetchLessonBySlug(id || ''),
+    enabled: !!id,
+  });
+
+  const { data: relatedLessons } = useQuery({
+    queryKey: ['related-lessons', lesson?.category],
+    queryFn: () => fetchLessonsByCategory(lesson!.category),
+    enabled: !!lesson?.category,
+  });
+
+  const filteredRelatedLessons = relatedLessons?.filter(l => l.id !== lesson?.id).slice(0, 3) || [];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-16 text-center">بارکردن...</div>
+      </div>
+    );
+  }
 
   if (!lesson) {
     return (
@@ -52,7 +73,7 @@ const Lesson = () => {
             <Link to="/categories" className="hover:text-primary">بەشەکان</Link>
             <ChevronLeft className="h-4 w-4" />
             <Link to={`/category/${lesson.category}`} className="hover:text-primary">
-              {lesson.categoryName}
+              {lesson.categories?.name}
             </Link>
             <ChevronLeft className="h-4 w-4" />
             <span className="text-foreground line-clamp-1">{lesson.title}</span>
@@ -65,10 +86,10 @@ const Lesson = () => {
               <div className="mb-6">
                 <div className="flex flex-wrap gap-2 mb-4">
                   <Badge className={categoryStyles[lesson.category]}>
-                    {lesson.categoryName}
+                    {lesson.categories?.name}
                   </Badge>
                   <Badge className={difficultyStyles[lesson.difficulty]}>
-                    {lesson.difficultyName}
+                    {getDifficultyName(lesson.difficulty)}
                   </Badge>
                 </div>
                 <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
@@ -85,7 +106,7 @@ const Lesson = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {lesson.date}
+                    {lesson.publish_date}
                   </div>
                 </div>
               </div>
@@ -95,7 +116,7 @@ const Lesson = () => {
                 <iframe
                   width="100%"
                   height="100%"
-                  src={`https://www.youtube.com/embed/${lesson.videoId}`}
+                  src={`https://www.youtube.com/embed/${lesson.video_id}`}
                   title={lesson.title}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -123,7 +144,7 @@ const Lesson = () => {
                         );
                       }
                       if (line.startsWith('| ')) {
-                        return null; // Skip table lines for simplicity
+                        return null;
                       }
                       if (line.startsWith('- ')) {
                         return <li key={index} className="mr-4">{line.replace('- ', '')}</li>;
@@ -144,20 +165,20 @@ const Lesson = () => {
               <div className="mb-8">
                 <h3 className="font-semibold mb-3">تاگەکان:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {lesson.tags.map((tag) => (
+                  {lesson.tags?.map((tag) => (
                     <Badge key={tag} variant="secondary">{tag}</Badge>
                   ))}
                 </div>
               </div>
 
               {/* Next Lesson */}
-              {relatedLessons.length > 0 && (
-                <Link to={`/lesson/${relatedLessons[0].id}`}>
+              {filteredRelatedLessons.length > 0 && (
+                <Link to={`/lesson/${filteredRelatedLessons[0].slug}`}>
                   <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">وانەی دواتر</p>
-                        <p className="font-semibold">{relatedLessons[0].title}</p>
+                        <p className="font-semibold">{filteredRelatedLessons[0].title}</p>
                       </div>
                       <ChevronLeft className="h-5 w-5" />
                     </CardContent>
@@ -171,8 +192,8 @@ const Lesson = () => {
               <div className="sticky top-24">
                 <h3 className="font-bold text-lg mb-4">وانەکانی تر لە ئەم بەشە</h3>
                 <div className="space-y-3">
-                  {relatedLessons.map((related) => (
-                    <Link key={related.id} to={`/lesson/${related.id}`}>
+                  {filteredRelatedLessons.map((related) => (
+                    <Link key={related.id} to={`/lesson/${related.slug}`}>
                       <Card className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <p className="font-medium line-clamp-2">{related.title}</p>

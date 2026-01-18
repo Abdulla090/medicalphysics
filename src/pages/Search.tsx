@@ -1,23 +1,34 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
-import { lessons, categories, type Category, type Difficulty } from '@/data/lessons';
+import { fetchLessons, fetchCategories, CategoryType, DifficultyLevel } from '@/lib/api';
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
-  const [selectedDifficulties, setSelectedDifficulties] = useState<Difficulty[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryType[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<DifficultyLevel[]>([]);
 
-  const difficulties: { id: Difficulty; name: string }[] = [
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
+
+  const { data: lessons, isLoading } = useQuery({
+    queryKey: ['lessons'],
+    queryFn: () => fetchLessons(true),
+  });
+
+  const difficulties: { id: DifficultyLevel; name: string }[] = [
     { id: 'beginner', name: 'سەرەتایی' },
     { id: 'intermediate', name: 'ناوەندی' },
     { id: 'advanced', name: 'پێشکەوتوو' },
   ];
 
-  const toggleCategory = (categoryId: Category) => {
+  const toggleCategory = (categoryId: CategoryType) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
         ? prev.filter((c) => c !== categoryId)
@@ -25,7 +36,7 @@ const Search = () => {
     );
   };
 
-  const toggleDifficulty = (difficultyId: Difficulty) => {
+  const toggleDifficulty = (difficultyId: DifficultyLevel) => {
     setSelectedDifficulties((prev) =>
       prev.includes(difficultyId)
         ? prev.filter((d) => d !== difficultyId)
@@ -34,12 +45,14 @@ const Search = () => {
   };
 
   const filteredLessons = useMemo(() => {
+    if (!lessons) return [];
+    
     return lessons.filter((lesson) => {
       const matchesSearch =
         searchQuery === '' ||
         lesson.title.includes(searchQuery) ||
         lesson.description.includes(searchQuery) ||
-        lesson.tags.some((tag) => tag.includes(searchQuery));
+        lesson.tags?.some((tag) => tag.includes(searchQuery));
 
       const matchesCategory =
         selectedCategories.length === 0 || selectedCategories.includes(lesson.category);
@@ -49,7 +62,7 @@ const Search = () => {
 
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
-  }, [searchQuery, selectedCategories, selectedDifficulties]);
+  }, [lessons, searchQuery, selectedCategories, selectedDifficulties]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +95,7 @@ const Search = () => {
             
             {/* Category Filters */}
             <div className="flex flex-wrap gap-2 mb-4">
-              {categories.map((category) => (
+              {categories?.map((category) => (
                 <Button
                   key={category.id}
                   variant={selectedCategories.includes(category.id) ? 'default' : 'outline'}
@@ -116,13 +129,17 @@ const Search = () => {
             {filteredLessons.length} وانە دۆزرایەوە
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredLessons.map((lesson) => (
-              <LessonCard key={lesson.id} lesson={lesson} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center py-8">بارکردن...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredLessons.map((lesson) => (
+                <LessonCard key={lesson.id} lesson={lesson} />
+              ))}
+            </div>
+          )}
 
-          {filteredLessons.length === 0 && (
+          {!isLoading && filteredLessons.length === 0 && (
             <p className="text-center text-muted-foreground py-12">
               هیچ وانەیەک نەدۆزرایەوە
             </p>
