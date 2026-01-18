@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import ProgressButton from '@/components/ProgressButton';
 import QuizCard from '@/components/QuizCard';
+import PDFDownloadButton from '@/components/PDFDownloadButton';
 import { MarkdownPreview } from '@/components/admin/editor/MarkdownPreview';
 import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,10 +124,16 @@ const Lesson = () => {
                   </div>
                 </div>
 
-                {/* Progress Button */}
+                {/* Progress Button & PDF Download */}
                 {user && (
-                  <div className="mt-6">
+                  <div className="mt-6 flex flex-wrap gap-3">
                     <ProgressButton lessonId={lesson.id} />
+                    <PDFDownloadButton
+                      title={lesson.title}
+                      content={lesson.content}
+                      instructor={lesson.instructor}
+                      category={lesson.categories?.name}
+                    />
                   </div>
                 )}
               </div>
