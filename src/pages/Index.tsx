@@ -1,13 +1,34 @@
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
 import CategoryCard from '@/components/CategoryCard';
 import StatCard from '@/components/StatCard';
-import { categories, lessons } from '@/data/lessons';
+import { fetchCategories, fetchLessons, fetchStats, fetchCategoryLessonCounts } from '@/lib/api';
 
 const Index = () => {
-  const recentLessons = lessons.slice(0, 4);
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
+
+  const { data: lessons } = useQuery({
+    queryKey: ['lessons'],
+    queryFn: () => fetchLessons(true),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ['stats'],
+    queryFn: fetchStats,
+  });
+
+  const { data: lessonCounts } = useQuery({
+    queryKey: ['lesson-counts'],
+    queryFn: fetchCategoryLessonCounts,
+  });
+
+  const recentLessons = lessons?.slice(0, 4) || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,21 +45,16 @@ const Index = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/categories">
-              <Button size="lg" className="text-lg px-8">
-                دەستپێکردن
-              </Button>
+              <Button size="lg" className="text-lg px-8">دەستپێکردن</Button>
             </Link>
             <Link to="/search">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                گەڕان لە وانەکان
-              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8">گەڕان لە وانەکان</Button>
             </Link>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16">
-            <StatCard value="٤١" label="وانە" />
-            <StatCard value="٥" label="بەش" />
+            <StatCard value={`${stats?.lessonsCount || 0}`} label="وانە" />
+            <StatCard value={`${stats?.categoriesCount || 0}`} label="بەش" />
             <StatCard value="١٠+" label="کاتژمێر ڤیدیۆ" />
           </div>
         </div>
@@ -58,8 +74,12 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} variant="compact" />
+            {categories?.map((category) => (
+              <CategoryCard 
+                key={category.id} 
+                category={{ ...category, lessonCount: lessonCounts?.[category.id] || 0 }} 
+                variant="compact" 
+              />
             ))}
           </div>
         </div>
@@ -94,9 +114,7 @@ const Index = () => {
             هەموو وانەکان بەخۆڕایی و بە کوردی سۆرانین. ئێستا دەستپێبکە بە گەشەکردنی زانستت لە بواری ڕادیۆلۆجیدا.
           </p>
           <Link to="/categories">
-            <Button size="lg" variant="secondary" className="text-lg px-8">
-              دەستپێکردن
-            </Button>
+            <Button size="lg" variant="secondary" className="text-lg px-8">دەستپێکردن</Button>
           </Link>
         </div>
       </section>

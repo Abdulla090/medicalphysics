@@ -14,16 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          description: string
+          english_name: string
+          icon: string
+          id: Database["public"]["Enums"]["category_type"]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          english_name: string
+          icon?: string
+          id: Database["public"]["Enums"]["category_type"]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          english_name?: string
+          icon?: string
+          id?: Database["public"]["Enums"]["category_type"]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lessons: {
+        Row: {
+          category: Database["public"]["Enums"]["category_type"]
+          content: string
+          created_at: string
+          description: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          duration: string
+          id: string
+          image_url: string
+          instructor: string
+          is_published: boolean
+          publish_date: string
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["category_type"]
+          content: string
+          created_at?: string
+          description: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          duration: string
+          id?: string
+          image_url: string
+          instructor: string
+          is_published?: boolean
+          publish_date?: string
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["category_type"]
+          content?: string
+          created_at?: string
+          description?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          duration?: string
+          id?: string
+          image_url?: string
+          instructor?: string
+          is_published?: boolean
+          publish_date?: string
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_category_fkey"
+            columns: ["category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_category_lesson_count: {
+        Args: { cat_id: Database["public"]["Enums"]["category_type"] }
+        Returns: number
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      category_type: "xray" | "ct" | "mri" | "ultrasound" | "nuclear"
+      difficulty_level: "beginner" | "intermediate" | "advanced"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +277,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      category_type: ["xray", "ct", "mri", "ultrasound", "nuclear"],
+      difficulty_level: ["beginner", "intermediate", "advanced"],
+    },
   },
 } as const

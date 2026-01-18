@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import type { CategoryInfo } from '@/data/lessons';
+import type { Category, CategoryType } from '@/lib/api';
 
 interface CategoryCardProps {
-  category: CategoryInfo;
+  category: Category & { lessonCount?: number };
   variant?: 'default' | 'compact';
 }
 
-const categoryBgStyles: Record<string, string> = {
+const categoryBgStyles: Record<CategoryType, string> = {
   xray: 'bg-category-xray-bg border-category-xray/20',
   ct: 'bg-category-ct-bg border-category-ct/20',
   mri: 'bg-category-mri-bg border-category-mri/20',
@@ -15,7 +15,7 @@ const categoryBgStyles: Record<string, string> = {
   nuclear: 'bg-category-nuclear-bg border-category-nuclear/20',
 };
 
-const categoryTextStyles: Record<string, string> = {
+const categoryTextStyles: Record<CategoryType, string> = {
   xray: 'text-category-xray',
   ct: 'text-category-ct',
   mri: 'text-category-mri',
@@ -31,7 +31,7 @@ const CategoryCard = ({ category, variant = 'default' }: CategoryCardProps) => {
           <CardContent className="p-4 text-center">
             <span className="text-3xl mb-2 block">{category.icon}</span>
             <h3 className={`font-bold ${categoryTextStyles[category.id]}`}>{category.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{category.englishName}</p>
+            <p className="text-xs text-muted-foreground mt-1">{category.english_name}</p>
           </CardContent>
         </Card>
       </Link>
@@ -48,10 +48,10 @@ const CategoryCard = ({ category, variant = 'default' }: CategoryCardProps) => {
               <h3 className={`font-bold text-xl ${categoryTextStyles[category.id]}`}>
                 {category.name}
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">{category.englishName}</p>
+              <p className="text-sm text-muted-foreground mt-1">{category.english_name}</p>
               <p className="text-sm mt-2">{category.description}</p>
               <p className={`text-sm font-medium mt-3 ${categoryTextStyles[category.id]}`}>
-                {category.lessonCount} وانە
+                {category.lessonCount || 0} وانە
               </p>
             </div>
           </div>
