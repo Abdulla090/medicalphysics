@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import html2pdf from 'html2pdf.js';
 
 interface PDFDownloadButtonProps {
   title: string;
@@ -18,101 +18,62 @@ const PDFDownloadButton = ({ title, content, instructor, category }: PDFDownload
     setGenerating(true);
     
     try {
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+      // Process content - convert markdown to HTML
+      const htmlContent = content
+        .replace(/^### (.*)$/gm, '<h3 style="font-size: 16px; font-weight: bold; margin: 16px 0 8px 0;">$1</h3>')
+        .replace(/^## (.*)$/gm, '<h2 style="font-size: 18px; font-weight: bold; margin: 20px 0 10px 0;">$1</h2>')
+        .replace(/^# (.*)$/gm, '<h1 style="font-size: 22px; font-weight: bold; margin: 24px 0 12px 0;">$1</h1>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">$1</code>')
+        .replace(/```[\s\S]*?```/g, (match) => {
+          const code = match.replace(/```\w*\n?/g, '').replace(/```/g, '');
+          return `<pre style="background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 12px; direction: ltr;">${code}</pre>`;
+        })
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: #2563eb;">$1</a>')
+        .replace(/!\[.*?\]\(.*?\)/g, '')
+        .replace(/^>\s+(.*)$/gm, '<blockquote style="border-right: 4px solid #e5e7eb; padding-right: 16px; margin: 12px 0; color: #6b7280;">$1</blockquote>')
+        .replace(/^[-*+]\s+(.*)$/gm, '<li style="margin: 4px 0;">$1</li>')
+        .replace(/(<li.*<\/li>\n?)+/g, '<ul style="list-style-type: disc; padding-right: 24px; margin: 8px 0;">$&</ul>')
+        .replace(/^\d+\.\s+(.*)$/gm, '<li style="margin: 4px 0;">$1</li>')
+        .replace(/\n\n/g, '</p><p style="margin: 12px 0;">')
+        .replace(/\n/g, '<br>');
 
-      // Set RTL direction and Arabic font
-      pdf.setR2L(true);
-      
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      let yPosition = margin;
+      // Create the HTML container
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <div style="font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; text-align: right; padding: 20px; line-height: 1.8;">
+          <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 12px; color: #1f2937;">${title}</h1>
+          ${(instructor || category) ? `
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">
+              ${[instructor, category].filter(Boolean).join(' | ')}
+            </p>
+          ` : ''}
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+          <div style="font-size: 14px; color: #374151;">
+            <p style="margin: 12px 0;">${htmlContent}</p>
+          </div>
+        </div>
+      `;
 
-      // Title
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      const titleLines = pdf.splitTextToSize(title, contentWidth);
-      pdf.text(titleLines, pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += titleLines.length * 10 + 5;
+      const opt = {
+        margin: [15, 15, 20, 15] as [number, number, number, number],
+        filename: `${title.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_')}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+        },
+        jsPDF: { 
+          unit: 'mm' as const, 
+          format: 'a4' as const, 
+          orientation: 'portrait' as const 
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
 
-      // Metadata
-      if (instructor || category) {
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(100);
-        const meta = [instructor, category].filter(Boolean).join(' | ');
-        pdf.text(meta, pageWidth - margin, yPosition, { align: 'right' });
-        yPosition += 10;
-        pdf.setTextColor(0);
-      }
-
-      // Divider line
-      pdf.setDrawColor(200);
-      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 10;
-
-      // Process content - remove markdown syntax and format
-      const cleanContent = content
-        .replace(/^#{1,6}\s+(.*)$/gm, '$1') // Remove headers
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-        .replace(/\*(.*?)\*/g, '$1') // Remove italic
-        .replace(/`([^`]+)`/g, '$1') // Remove inline code
-        .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
-        .replace(/!\[.*?\]\(.*?\)/g, '') // Remove images
-        .replace(/^>\s+/gm, '') // Remove blockquotes
-        .replace(/^[-*+]\s+/gm, '• ') // Convert lists
-        .replace(/^\d+\.\s+/gm, '• ') // Convert numbered lists
-        .replace(/\n{3,}/g, '\n\n') // Max 2 newlines
-        .trim();
-
-      // Content
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      
-      const lines = cleanContent.split('\n');
-      
-      for (const line of lines) {
-        if (line.trim() === '') {
-          yPosition += 5;
-          continue;
-        }
-
-        const textLines = pdf.splitTextToSize(line, contentWidth);
-        
-        for (const textLine of textLines) {
-          if (yPosition > pageHeight - margin - 20) {
-            pdf.addPage();
-            yPosition = margin;
-          }
-          
-          pdf.text(textLine, pageWidth - margin, yPosition, { align: 'right' });
-          yPosition += 7;
-        }
-      }
-
-      // Footer with page numbers
-      const totalPages = pdf.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(10);
-        pdf.setTextColor(150);
-        pdf.text(
-          `${i} / ${totalPages}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
-      }
-
-      // Download
-      const fileName = `${title.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_')}.pdf`;
-      pdf.save(fileName);
+      await html2pdf().set(opt).from(container).save();
       
       toast.success('PDF دروستکرا!');
     } catch (error) {
