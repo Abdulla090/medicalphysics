@@ -5,10 +5,15 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
-  Copy
+  Copy,
+  Eye,
+  Edit3,
+  Code
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { 
   ContentBlock, 
@@ -27,6 +32,7 @@ import { VideoBlock } from './blocks/VideoBlock';
 import { TableBlock } from './blocks/TableBlock';
 import { ListBlock } from './blocks/ListBlock';
 import { CalloutBlock } from './blocks/CalloutBlock';
+import { MarkdownPreview } from './MarkdownPreview';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -205,106 +211,169 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'markdown'>('editor');
+  const [rawMarkdown, setRawMarkdown] = useState(value);
+
+  // Sync raw markdown with blocks
+  useEffect(() => {
+    if (activeTab === 'editor') {
+      setRawMarkdown(blocksToMarkdown(blocks));
+    }
+  }, [blocks, activeTab]);
+
+  const handleRawMarkdownChange = (newMarkdown: string) => {
+    setRawMarkdown(newMarkdown);
+    onChange(newMarkdown);
+    // Don't update blocks here - only when switching tabs
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab === 'editor' && activeTab === 'markdown') {
+      // Parse markdown to blocks when switching from markdown to editor
+      setBlocks(markdownToBlocks(rawMarkdown));
+    }
+    setActiveTab(tab as 'editor' | 'preview' | 'markdown');
+  };
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <div className="flex items-center justify-between mb-3">
+        <TabsList>
+          <TabsTrigger value="editor" className="gap-2">
+            <Edit3 className="h-4 w-4" />
+            دەستکاری
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="gap-2">
+            <Eye className="h-4 w-4" />
+            پیشاندان
+          </TabsTrigger>
+          <TabsTrigger value="markdown" className="gap-2">
+            <Code className="h-4 w-4" />
+            Markdown
+          </TabsTrigger>
+        </TabsList>
+        
+        {activeTab === 'editor' && (
+          <span className="text-xs text-muted-foreground">
+            {blocks.length} بلۆک
+          </span>
+        )}
+      </div>
+
+      <TabsContent value="editor" className="mt-0 space-y-3">
         <BlockToolbar onAddBlock={(type) => addBlock(type)} />
-        <span className="text-xs text-muted-foreground">
-          {blocks.length} بلۆک
-        </span>
-      </div>
 
-      <div className="space-y-2">
-        {blocks.map((block, index) => (
-          <div
-            key={block.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDragEnd={handleDragEnd}
-            className={cn(
-              'group relative',
-              draggedIndex === index && 'opacity-50',
-              dropIndex === index && 'ring-2 ring-primary ring-offset-2 rounded-lg'
-            )}
-          >
-            <Card className="p-4 transition-shadow hover:shadow-md">
-              <div className="flex gap-2">
-                {/* Drag handle & actions */}
-                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+        <div className="space-y-2">
+          {blocks.map((block, index) => (
+            <div
+              key={block.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                'group relative',
+                draggedIndex === index && 'opacity-50',
+                dropIndex === index && 'ring-2 ring-primary ring-offset-2 rounded-lg'
+              )}
+            >
+              <Card className="p-4 transition-shadow hover:shadow-md">
+                <div className="flex gap-2">
+                  {/* Drag handle & actions */}
+                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => moveBlock(block.id, 'up')} disabled={index === 0}>
+                          <ChevronUp className="h-4 w-4 ml-2" />
+                          بردن بۆ سەرەوە
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => moveBlock(block.id, 'down')} disabled={index === blocks.length - 1}>
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                          بردن بۆ خوارەوە
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => duplicateBlock(block.id)}>
+                          <Copy className="h-4 w-4 ml-2" />
+                          کۆپی
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => deleteBlock(block.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          سڕینەوە
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => moveBlock(block.id, 'up')} disabled={index === 0}>
-                        <ChevronUp className="h-4 w-4 ml-2" />
-                        بردن بۆ سەرەوە
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => moveBlock(block.id, 'down')} disabled={index === blocks.length - 1}>
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                        بردن بۆ خوارەوە
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => duplicateBlock(block.id)}>
-                        <Copy className="h-4 w-4 ml-2" />
-                        کۆپی
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => deleteBlock(block.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 ml-2" />
-                        سڕینەوە
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
 
-                {/* Block content */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                    {BLOCK_LABELS[block.type]}
+                  {/* Block content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                      {BLOCK_LABELS[block.type]}
+                    </div>
+                    {renderBlock(block)}
                   </div>
-                  {renderBlock(block)}
                 </div>
-              </div>
-            </Card>
+              </Card>
 
-            {/* Quick add button between blocks */}
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-6 w-6 rounded-full bg-background shadow-md"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {Object.entries(BLOCK_LABELS).map(([type, label]) => (
-                    <DropdownMenuItem 
-                      key={type} 
-                      onClick={() => addBlock(type as BlockType, block.id)}
+              {/* Quick add button between blocks */}
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-6 w-6 rounded-full bg-background shadow-md"
                     >
-                      {label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {Object.entries(BLOCK_LABELS).map(([type, label]) => (
+                      <DropdownMenuItem 
+                        key={type} 
+                        onClick={() => addBlock(type as BlockType, block.id)}
+                      >
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="preview" className="mt-0">
+        <Card className="p-6 min-h-[400px]">
+          <MarkdownPreview content={blocksToMarkdown(blocks)} />
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="markdown" className="mt-0">
+        <Textarea
+          value={rawMarkdown}
+          onChange={(e) => handleRawMarkdownChange(e.target.value)}
+          placeholder="# سەردێڕ&#10;&#10;ناوەڕۆک..."
+          className="min-h-[400px] font-mono text-sm"
+          dir="auto"
+        />
+        <p className="text-xs text-muted-foreground mt-2">
+          دەتوانیت ڕاستەوخۆ Markdown بنووسیت. کاتێک بگەڕێیتەوە بۆ "دەستکاری"، گۆڕانکاری ڕەوانەکراو دەبن.
+        </p>
+      </TabsContent>
+    </Tabs>
   );
 };
