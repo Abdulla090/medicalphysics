@@ -1,13 +1,33 @@
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
-import { getCategoryById, getLessonsByCategory } from '@/data/lessons';
+import { fetchCategoryById, fetchLessonsByCategory, CategoryType } from '@/lib/api';
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const category = getCategoryById(id || '');
-  const lessons = getLessonsByCategory(id || '');
+
+  const { data: category, isLoading: isLoadingCategory } = useQuery({
+    queryKey: ['category', id],
+    queryFn: () => fetchCategoryById(id as CategoryType),
+    enabled: !!id,
+  });
+
+  const { data: lessons, isLoading: isLoadingLessons } = useQuery({
+    queryKey: ['lessons-by-category', id],
+    queryFn: () => fetchLessonsByCategory(id as CategoryType),
+    enabled: !!id,
+  });
+
+  if (isLoadingCategory) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-16 text-center">بارکردن...</div>
+      </div>
+    );
+  }
 
   if (!category) {
     return (
@@ -41,11 +61,13 @@ const CategoryDetail = () => {
           <div className="text-center mb-12">
             <span className="text-5xl mb-4 block">{category.icon}</span>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">{category.name}</h1>
-            <p className="text-muted-foreground">{category.englishName}</p>
+            <p className="text-muted-foreground">{category.english_name}</p>
             <p className="text-lg mt-4">{category.description}</p>
           </div>
 
-          {lessons.length > 0 ? (
+          {isLoadingLessons ? (
+            <div className="text-center py-8">بارکردن...</div>
+          ) : lessons && lessons.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {lessons.map((lesson) => (
                 <LessonCard key={lesson.id} lesson={lesson} />
