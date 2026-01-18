@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { BlockEditor } from '@/components/admin/editor/BlockEditor';
 import {
   Form,
   FormControl,
@@ -386,12 +387,11 @@ const LessonEditor = () => {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ناوەڕۆکی وانە (Markdown)</FormLabel>
+                      <FormLabel>ناوەڕۆکی وانە</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="## پێشەکی&#10;&#10;ناوەڕۆکی وانە..."
-                          className="min-h-[300px] font-mono"
-                          {...field}
+                        <BlockEditor
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
