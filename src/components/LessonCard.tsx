@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { Lesson } from '@/data/lessons';
+import type { LessonWithCategory, getDifficultyName } from '@/lib/api';
 
 interface LessonCardProps {
-  lesson: Lesson;
+  lesson: LessonWithCategory;
 }
 
 const categoryStyles: Record<string, string> = {
@@ -22,19 +22,25 @@ const difficultyStyles: Record<string, string> = {
   advanced: 'difficulty-advanced',
 };
 
+const difficultyNames: Record<string, string> = {
+  beginner: 'سەرەتایی',
+  intermediate: 'ناوەندی',
+  advanced: 'پێشکەوتوو',
+};
+
 const LessonCard = ({ lesson }: LessonCardProps) => {
   return (
-    <Link to={`/lesson/${lesson.id}`}>
+    <Link to={`/lesson/${lesson.slug}`}>
       <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
         <div className="relative aspect-video overflow-hidden">
           <img
-            src={lesson.image}
+            src={lesson.image_url}
             alt={lesson.title}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute top-3 right-3 flex gap-2">
             <Badge className={categoryStyles[lesson.category]}>
-              {lesson.categoryName}
+              {lesson.categories?.name}
             </Badge>
           </div>
           <div className="absolute bottom-3 right-3 flex gap-2">
@@ -43,7 +49,7 @@ const LessonCard = ({ lesson }: LessonCardProps) => {
               {lesson.duration}
             </Badge>
             <Badge className={difficultyStyles[lesson.difficulty]}>
-              {lesson.difficultyName}
+              {difficultyNames[lesson.difficulty]}
             </Badge>
           </div>
         </div>
