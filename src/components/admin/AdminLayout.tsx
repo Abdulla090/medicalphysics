@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import { DesktopAdminSidebar, MobileAdminSidebar } from '@/components/admin/AdminSidebar';
 import { Loader2 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -35,11 +35,22 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <AdminSidebar />
-      <main className="flex-1 p-6 overflow-auto">
-        {children}
-      </main>
+    <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <header className="lg:hidden sticky top-0 z-50 flex items-center justify-between p-4 bg-card border-b">
+        <h1 className="text-lg font-bold text-primary">پانێڵی بەڕێوەبەر</h1>
+        <MobileAdminSidebar />
+      </header>
+
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <DesktopAdminSidebar />
+        
+        {/* Main Content */}
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
