@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import ProgressButton from '@/components/ProgressButton';
 import QuizCard from '@/components/QuizCard';
 import PDFDownloadButton from '@/components/PDFDownloadButton';
+import SocialShare from '@/components/SocialShare';
 import { MarkdownPreview } from '@/components/admin/editor/MarkdownPreview';
 import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -124,18 +125,24 @@ const Lesson = () => {
                   </div>
                 </div>
 
-                {/* Progress Button & PDF Download */}
-                {user && (
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <ProgressButton lessonId={lesson.id} />
-                    <PDFDownloadButton
-                      title={lesson.title}
-                      content={lesson.content}
-                      instructor={lesson.instructor}
-                      category={lesson.categories?.name}
-                    />
-                  </div>
-                )}
+                {/* Action Buttons */}
+                <div className="mt-6 flex flex-wrap gap-3">
+                  {user && (
+                    <>
+                      <ProgressButton lessonId={lesson.id} />
+                      <PDFDownloadButton
+                        title={lesson.title}
+                        content={lesson.content}
+                        instructor={lesson.instructor}
+                        category={lesson.categories?.name}
+                      />
+                    </>
+                  )}
+                  <SocialShare
+                    title={lesson.title}
+                    description={lesson.description}
+                  />
+                </div>
               </div>
 
               {/* Video Player */}
