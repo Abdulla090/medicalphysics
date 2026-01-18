@@ -332,8 +332,9 @@ const QuizEditor = () => {
                             <Select
                               value={q.question_type}
                               onValueChange={(v) => {
-                                updateQuestionField(qIndex, 'question_type', v);
-                                if (v === 'true_false') {
+                                const questionType = v as 'multiple_choice' | 'true_false';
+                                updateQuestionField(qIndex, 'question_type', questionType);
+                                if (questionType === 'true_false') {
                                   updateQuestionField(qIndex, 'options', ['ڕاستە', 'هەڵەیە']);
                                 } else {
                                   updateQuestionField(qIndex, 'options', ['', '', '', '']);
