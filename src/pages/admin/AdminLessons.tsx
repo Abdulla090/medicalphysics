@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -76,14 +77,14 @@ const AdminLessons = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 lg:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">وانەکان</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold">وانەکان</h1>
             <p className="text-muted-foreground mt-1">بەڕێوەبردنی هەموو وانەکان</p>
           </div>
           <Link to="/admin/lessons/new">
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 ml-2" />
               وانەی نوێ
             </Button>
@@ -91,7 +92,7 @@ const AdminLessons = () => {
         </div>
 
         {/* Search */}
-        <div className="relative max-w-md">
+        <div className="relative w-full sm:max-w-md">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="گەڕان..."
@@ -101,8 +102,81 @@ const AdminLessons = () => {
           />
         </div>
 
-        {/* Table */}
-        <div className="rounded-lg border bg-card">
+        {/* Mobile Cards View */}
+        <div className="lg:hidden space-y-3">
+          {isLoading ? (
+            <div className="text-center py-8">بارکردن...</div>
+          ) : filteredLessons?.length === 0 ? (
+            <div className="text-center py-8">هیچ وانەیەک نەدۆزرایەوە</div>
+          ) : (
+            filteredLessons?.map((lesson) => (
+              <Card key={lesson.id} className="p-4">
+                <div className="flex gap-3">
+                  <img
+                    src={lesson.image_url}
+                    alt={lesson.title}
+                    className="w-20 h-14 object-cover rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{lesson.title}</p>
+                    <p className="text-sm text-muted-foreground">{lesson.categories?.name}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant={lesson.is_published ? 'default' : 'secondary'} className="text-xs">
+                        {lesson.is_published ? 'بڵاوکراوە' : 'پێشنووس'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      togglePublishMutation.mutate({
+                        id: lesson.id,
+                        is_published: !lesson.is_published,
+                      })
+                    }
+                  >
+                    {lesson.is_published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Link to={`/admin/lessons/${lesson.id}/edit`}>
+                    <Button variant="ghost" size="sm">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>دڵنیایت؟</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          ئەم کردارە ناگەڕێتەوە. ئەم وانەیە بۆ هەمیشە سڕدرێتەوە.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>پاشگەزبوونەوە</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(lesson.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          سڕینەوە
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden lg:block rounded-lg border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

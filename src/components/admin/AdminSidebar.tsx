@@ -5,13 +5,20 @@ import {
   FolderOpen, 
   LogOut,
   Home,
-  ChevronLeft
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useState } from 'react';
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onNavigate?: () => void;
+}
+
+const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -34,8 +41,12 @@ const AdminSidebar = () => {
     return location.pathname.startsWith(path);
   };
 
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
+
   return (
-    <div className="w-64 min-h-screen bg-card border-l flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b">
         <h1 className="text-xl font-bold text-primary">پانێڵی بەڕێوەبەر</h1>
@@ -45,7 +56,7 @@ const AdminSidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (
-          <Link key={item.path} to={item.path}>
+          <Link key={item.path} to={item.path} onClick={handleNavClick}>
             <Button
               variant={isActive(item.path) ? 'secondary' : 'ghost'}
               className={cn(
@@ -62,7 +73,7 @@ const AdminSidebar = () => {
 
       {/* Footer */}
       <div className="p-4 border-t space-y-2">
-        <Link to="/">
+        <Link to="/" onClick={handleNavClick}>
           <Button variant="outline" className="w-full justify-start gap-3">
             <Home className="h-4 w-4" />
             گەڕانەوە بۆ ماڵەوە
@@ -77,6 +88,33 @@ const AdminSidebar = () => {
           چوونە دەرەوە
         </Button>
       </div>
+    </div>
+  );
+};
+
+// Mobile sidebar wrapper
+export const MobileAdminSidebar = () => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="lg:hidden">
+          <Menu className="h-6 w-6" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-64 p-0">
+        <AdminSidebar onNavigate={() => setOpen(false)} />
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+// Desktop sidebar wrapper
+export const DesktopAdminSidebar = () => {
+  return (
+    <div className="hidden lg:block w-64 min-h-screen bg-card border-l">
+      <AdminSidebar />
     </div>
   );
 };
