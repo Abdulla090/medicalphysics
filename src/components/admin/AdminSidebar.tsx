@@ -32,6 +32,7 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
     { path: '/admin', icon: LayoutDashboard, label: 'داشبۆرد' },
     { path: '/admin/lessons', icon: BookOpen, label: 'وانەکان' },
     { path: '/admin/categories', icon: FolderOpen, label: 'بەشەکان' },
+    { path: '/admin/quizzes', icon: BookOpen, label: 'تاقیکردنەوەکان' },
   ];
 
   const isActive = (path: string) => {

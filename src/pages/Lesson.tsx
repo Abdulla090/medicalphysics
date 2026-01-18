@@ -4,7 +4,12 @@ import { ChevronLeft, Clock, Calendar, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
+import ProgressButton from '@/components/ProgressButton';
+import QuizCard from '@/components/QuizCard';
+import { MarkdownPreview } from '@/components/admin/editor/MarkdownPreview';
 import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProgress } from '@/hooks/useProgress';
 
 const categoryStyles: Record<string, string> = {
   xray: 'category-xray',
@@ -22,6 +27,8 @@ const difficultyStyles: Record<string, string> = {
 
 const Lesson = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { isLessonCompleted } = useProgress();
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ['lesson', id],
@@ -36,6 +43,7 @@ const Lesson = () => {
   });
 
   const filteredRelatedLessons = relatedLessons?.filter(l => l.id !== lesson?.id).slice(0, 3) || [];
+  const completed = lesson ? isLessonCompleted(lesson.id) : false;
 
   if (isLoading) {
     return (
@@ -91,6 +99,11 @@ const Lesson = () => {
                   <Badge className={difficultyStyles[lesson.difficulty]}>
                     {getDifficultyName(lesson.difficulty)}
                   </Badge>
+                  {completed && (
+                    <Badge className="bg-green-100 text-green-700">
+                      ✓ تەواوکراوە
+                    </Badge>
+                  )}
                 </div>
                 <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
                 <p className="text-lg text-muted-foreground">{lesson.description}</p>
@@ -109,6 +122,13 @@ const Lesson = () => {
                     {lesson.publish_date}
                   </div>
                 </div>
+
+                {/* Progress Button */}
+                {user && (
+                  <div className="mt-6">
+                    <ProgressButton lessonId={lesson.id} />
+                  </div>
+                )}
               </div>
 
               {/* Video Player */}
@@ -126,40 +146,16 @@ const Lesson = () => {
 
               {/* Content */}
               <Card className="mb-8">
-                <CardContent className="p-6 md:p-8 prose prose-lg max-w-none">
+                <CardContent className="p-6 md:p-8">
                   <h2 className="text-2xl font-bold mb-4">{lesson.title}</h2>
-                  <div className="whitespace-pre-wrap leading-relaxed">
-                    {lesson.content.split('\n').map((line, index) => {
-                      if (line.startsWith('## ')) {
-                        return <h2 key={index} className="text-xl font-bold mt-6 mb-3">{line.replace('## ', '')}</h2>;
-                      }
-                      if (line.startsWith('### ')) {
-                        return <h3 key={index} className="text-lg font-semibold mt-4 mb-2">{line.replace('### ', '')}</h3>;
-                      }
-                      if (line.startsWith('> ')) {
-                        return (
-                          <blockquote key={index} className="border-r-4 border-primary pr-4 py-2 my-4 bg-muted rounded-lg">
-                            {line.replace('> ', '')}
-                          </blockquote>
-                        );
-                      }
-                      if (line.startsWith('| ')) {
-                        return null;
-                      }
-                      if (line.startsWith('- ')) {
-                        return <li key={index} className="mr-4">{line.replace('- ', '')}</li>;
-                      }
-                      if (line.match(/^\d+\. /)) {
-                        return <li key={index} className="mr-4">{line.replace(/^\d+\. /, '')}</li>;
-                      }
-                      if (line.trim() === '') {
-                        return <br key={index} />;
-                      }
-                      return <p key={index} className="mb-2">{line}</p>;
-                    })}
-                  </div>
+                  <MarkdownPreview content={lesson.content} />
                 </CardContent>
               </Card>
+
+              {/* Quiz Section */}
+              <div className="mb-8">
+                <QuizCard lessonId={lesson.id} />
+              </div>
 
               {/* Tags */}
               <div className="mb-8">
