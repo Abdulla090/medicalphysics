@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Search, User, LogIn, LogOut } from 'lucide-react';
+import { Search, User, LogIn, LogOut, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import MobileNav from './MobileNav';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
   const location = useLocation();
@@ -40,12 +41,13 @@ const Navbar = () => {
               بەشەکان
             </Button>
           </Link>
-          <Link to="/search">
+          <Link to="/courses">
             <Button 
-              variant={isActive('/search') ? 'secondary' : 'ghost'} 
-              className="font-medium"
+              variant={isActive('/courses') ? 'secondary' : 'ghost'} 
+              className="font-medium gap-1"
             >
-              گەڕان
+              <GraduationCap className="h-4 w-4" />
+              کۆرسەکان
             </Button>
           </Link>
           <Link to="/search">
@@ -53,6 +55,9 @@ const Navbar = () => {
               <Search className="h-4 w-4" />
             </Button>
           </Link>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* User Menu */}
           {user ? (
