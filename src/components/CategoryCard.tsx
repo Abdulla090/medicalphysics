@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Category, CategoryType } from '@/lib/api';
 
@@ -7,31 +8,33 @@ interface CategoryCardProps {
   variant?: 'default' | 'compact';
 }
 
-const categoryBgStyles: Record<CategoryType, string> = {
-  xray: 'bg-category-xray-bg border-category-xray/20',
-  ct: 'bg-category-ct-bg border-category-ct/20',
-  mri: 'bg-category-mri-bg border-category-mri/20',
-  ultrasound: 'bg-category-ultrasound-bg border-category-ultrasound/20',
-  nuclear: 'bg-category-nuclear-bg border-category-nuclear/20',
-};
-
-const categoryTextStyles: Record<CategoryType, string> = {
-  xray: 'text-category-xray',
-  ct: 'text-category-ct',
-  mri: 'text-category-mri',
-  ultrasound: 'text-category-ultrasound',
-  nuclear: 'text-category-nuclear',
+const categoryIcons: Record<CategoryType, string> = {
+  xray: '☢️',
+  ct: '🔬',
+  mri: '🧲',
+  ultrasound: '📡',
+  nuclear: '⚛️',
 };
 
 const CategoryCard = ({ category, variant = 'default' }: CategoryCardProps) => {
   if (variant === 'compact') {
     return (
       <Link to={`/category/${category.id}`}>
-        <Card className={`${categoryBgStyles[category.id]} border-2 transition-all duration-300 hover:shadow-md hover:-translate-y-1`}>
-          <CardContent className="p-4 text-center">
-            <span className="text-3xl mb-2 block">{category.icon}</span>
-            <h3 className={`font-bold ${categoryTextStyles[category.id]}`}>{category.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{category.english_name}</p>
+        <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200">
+          <CardContent className="p-4 text-center space-y-2">
+            <span className="text-2xl block" aria-hidden="true">
+              {category.icon || categoryIcons[category.id]}
+            </span>
+            <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
+              {category.name}
+            </h3>
+            <p className="text-xs text-muted-foreground">{category.english_name}</p>
+            {category.lessonCount !== undefined && (
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {category.lessonCount} وانە
+              </p>
+            )}
           </CardContent>
         </Card>
       </Link>
@@ -40,19 +43,28 @@ const CategoryCard = ({ category, variant = 'default' }: CategoryCardProps) => {
 
   return (
     <Link to={`/category/${category.id}`}>
-      <Card className={`${categoryBgStyles[category.id]} border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
-        <CardContent className="p-6">
+      <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200">
+        <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <span className="text-4xl">{category.icon}</span>
-            <div className="flex-1">
-              <h3 className={`font-bold text-xl ${categoryTextStyles[category.id]}`}>
+            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+              {category.icon || categoryIcons[category.id]}
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
                 {category.name}
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">{category.english_name}</p>
-              <p className="text-sm mt-2">{category.description}</p>
-              <p className={`text-sm font-medium mt-3 ${categoryTextStyles[category.id]}`}>
-                {category.lessonCount || 0} وانە
-              </p>
+              <p className="text-sm text-muted-foreground">{category.english_name}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{category.description}</p>
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  {category.lessonCount || 0} وانە
+                </span>
+                <span className="text-sm text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                  بینین
+                  <ArrowLeft className="h-4 w-4" />
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>

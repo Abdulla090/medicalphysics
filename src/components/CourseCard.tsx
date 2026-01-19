@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Clock, Trophy, ChevronLeft } from 'lucide-react';
+import { BookOpen, Clock, Trophy, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -23,12 +23,6 @@ interface Course {
 interface CourseWithLessons extends Course {
   lesson_count: number;
 }
-
-const difficultyStyles: Record<string, string> = {
-  beginner: 'difficulty-beginner',
-  intermediate: 'difficulty-intermediate',
-  advanced: 'difficulty-advanced',
-};
 
 interface CourseCardProps {
   course: CourseWithLessons;
@@ -60,51 +54,54 @@ export const CourseCard = ({ course }: CourseCardProps) => {
 
   return (
     <Link to={`/course/${course.slug}`}>
-      <Card className="h-full hover:shadow-lg transition-all overflow-hidden group">
+      <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200 overflow-hidden">
         {course.image_url && (
-          <div className="aspect-video overflow-hidden">
+          <div className="relative aspect-video overflow-hidden">
             <img
               src={course.image_url}
               alt={course.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
           </div>
         )}
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2 mb-2">
-            <Badge className={difficultyStyles[course.difficulty]}>
+            <Badge variant="outline" className="text-xs font-normal border-border">
               {getDifficultyName(course.difficulty)}
             </Badge>
-            <Badge variant="outline" className="gap-1">
+            <Badge variant="secondary" className="gap-1 text-xs font-normal">
               <BookOpen className="h-3 w-3" />
               {course.lesson_count} وانە
             </Badge>
           </div>
-          <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+          <CardTitle className="text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            {course.title}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {course.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {course.description}
             </p>
           )}
           
           {course.estimated_duration && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               {course.estimated_duration}
             </div>
           )}
 
           {user && courseLessons && courseLessons.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">پێشکەوتن</span>
                 <span className="font-medium">{progressPercent}%</span>
               </div>
-              <Progress value={progressPercent} className="h-2" />
+              <Progress value={progressPercent} className="h-1.5" />
               {progressPercent === 100 && (
-                <div className="flex items-center gap-1 text-sm text-green-600">
+                <div className="flex items-center gap-1 text-sm text-primary">
                   <Trophy className="h-4 w-4" />
                   تەواوکرا!
                 </div>
@@ -112,9 +109,9 @@ export const CourseCard = ({ course }: CourseCardProps) => {
             </div>
           )}
 
-          <div className="flex items-center gap-1 text-primary text-sm mt-4 group-hover:gap-2 transition-all">
+          <div className="flex items-center gap-1 text-sm text-primary font-medium pt-1 group-hover:gap-2 transition-all">
             <span>بینینی کۆرس</span>
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
           </div>
         </CardContent>
       </Card>

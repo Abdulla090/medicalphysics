@@ -13,6 +13,11 @@ export interface ContentBlock {
     items?: string[];
     calloutType?: 'info' | 'warning' | 'success' | 'error';
     language?: string;
+    source?: 'url' | 'upload' | 'drive';
+    uploadSource?: 'embed' | 'upload' | 'drive';
+    fileName?: string;
+    driveId?: string;
+    originalUrl?: string;
   };
 }
 
