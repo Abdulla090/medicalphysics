@@ -1,120 +1,179 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
 import CategoryCard from '@/components/CategoryCard';
 import StatCard from '@/components/StatCard';
-import { fetchCategories, fetchLessons, fetchStats, fetchCategoryLessonCounts } from '@/lib/api';
+// import { fetchCategories, fetchLessons, fetchStats, fetchCategoryLessonCounts } from '@/lib/api';
 
 const Index = () => {
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  // Use Convex queries
+  const categories = useQuery(api.api.getCategories);
+  const lessons = useQuery(api.api.getAllLessons);
 
-  const { data: lessons } = useQuery({
-    queryKey: ['lessons'],
-    queryFn: () => fetchLessons(true),
-  });
+  // Calculate stats and counts on the client for now (or create a dedicated query)
+  const stats = useMemo(() => {
+    return {
+      lessonsCount: lessons?.length || 0,
+      categoriesCount: categories?.length || 0,
+    };
+  }, [lessons, categories]);
 
-  const { data: stats } = useQuery({
-    queryKey: ['stats'],
-    queryFn: fetchStats,
-  });
+  const lessonCounts = useMemo(() => {
+    if (!lessons) return {};
+    return lessons.reduce((acc: Record<string, number>, lesson: any) => {
+      acc[lesson.category] = (acc[lesson.category] || 0) + 1;
+      return acc;
+    }, {});
+  }, [lessons]);
 
-  const { data: lessonCounts } = useQuery({
-    queryKey: ['lesson-counts'],
-    queryFn: fetchCategoryLessonCounts,
-  });
-
-  const recentLessons = lessons?.slice(0, 4) || [];
+  // Sort lessons by creation time if available, or just take the last ones.
+  // Assuming the query returns them in some order, or we sort here.
+  // Ideally, valid lessons have a _creationTime from Convex
+  const recentLessons = useMemo(() => {
+    if (!lessons) return [];
+    // Sort by _creationTime descending (newest first)
+    return [...lessons]
+      .sort((a: any, b: any) => b._creationTime - a._creationTime)
+      .slice(0, 4);
+  }, [lessons]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="container text-center">
-          <h1 className="text-3xl md:text-5xl font-bold mb-6">
-            فێربوونی ڕادیۆلۆجی بە کوردی سۆرانی
+      <section className="relative py-20 md:py-32 overflow-hidden">
+        {/* Abstract Background Blobs */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2" />
+
+        <div className="container text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8 border border-primary/20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            <span className="text-sm font-medium">فێربوونی زیرەک بۆ داهاتووی پزیشکی</span>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+            فێربوونی <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">ڕادیۆلۆجی</span><br />
+            بە شێوازێکی مۆدێرن
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            پلاتفۆرمی تایبەت بۆ خوێندکارانی فیزیکی پزیشکی و ڕادیۆلۆجی. فێربوونی شوێنی نەخۆش و تەکنیکی وێنەگرتن لە هەموو ئامێرەکانی ڕادیۆلۆجی.
+          <p className="text-lg md:text-xl text-muted-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed">
+            یەکەمین و باشترین سەرچاوەی کوردی بۆ فێربوونی تەکنیکەکانی وێنەگرتنی پزیشکی بە کوالێتی ئەکادیمی
           </p>
+
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/categories">
-              <Button size="lg" className="text-lg px-8">دەستپێکردن</Button>
+              <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-primary/25 hover:-translate-y-1 transition-all duration-300">
+                دەستپێکردن بەخۆڕایی
+              </Button>
             </Link>
             <Link to="/search">
-              <Button size="lg" variant="outline" className="text-lg px-8">گەڕان لە وانەکان</Button>
+              <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-2 hover:bg-accent hover:text-accent-foreground transition-all duration-300">
+                گەڕان لە وانەکان
+              </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16">
-            <StatCard value={`${stats?.lessonsCount || 0}`} label="وانە" />
-            <StatCard value={`${stats?.categoriesCount || 0}`} label="بەش" />
-            <StatCard value="١٠+" label="کاتژمێر ڤیدیۆ" />
+          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mt-20 px-4">
+            <StatCard value={`${stats.lessonsCount}`} label="وانەی بەردەست" />
+            <StatCard value={`${stats.categoriesCount}`} label="بەشی سەرەکی" />
+            <StatCard value="١٠٠+" label="خوێندکاری چالاک" />
           </div>
         </div>
       </section>
 
       {/* Categories Section */}
-      <section className="py-16 bg-card">
+      <section className="py-24 bg-muted/30 relative">
         <div className="container">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-end justify-between mb-12">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold">بەشەکانی وێنەگرتن</h2>
-              <p className="text-muted-foreground mt-2">هەموو جۆرەکانی وێنەگرتنی پزیشکی لەیەک شوێندا</p>
+              <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">بەشەکانی وێنەگرتن</h2>
+              <p className="text-muted-foreground mt-2 text-lg">هەموو جۆرەکانی وێنەگرتنی پزیشکی لەیەک شوێندا</p>
             </div>
             <Link to="/categories">
-              <Button variant="outline">هەموو بەشەکان</Button>
+              <Button variant="ghost" className="hidden md:flex gap-2">
+                هەموو بەشەکان <span className="text-xl">→</span>
+              </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories?.map((category) => (
-              <CategoryCard 
-                key={category.id} 
-                category={{ ...category, lessonCount: lessonCounts?.[category.id] || 0 }} 
-                variant="compact" 
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {categories?.map((category, index) => (
+              <CategoryCard
+                key={category.id}
+                index={index}
+                category={{ ...category, lessonCount: lessonCounts?.[category.id] || 0 } as any}
+                variant="compact"
               />
             ))}
+          </div>
+
+          <div className="mt-8 text-center md:hidden">
+            <Link to="/categories">
+              <Button variant="outline" className="w-full">هەموو بەشەکان</Button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Recent Lessons Section */}
-      <section className="py-16">
+      <section className="py-24">
         <div className="container">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-end justify-between mb-12">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold">وانە تازەکان</h2>
-              <p className="text-muted-foreground mt-2">نوێترین وانەکانی فێربوون</p>
+              <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">وانە تازەکان</h2>
+              <p className="text-muted-foreground mt-2 text-lg">نوێترین وانەکانی فێربوون</p>
             </div>
             <Link to="/search">
-              <Button variant="outline">هەموو وانەکان</Button>
+              <Button variant="ghost" className="hidden md:flex gap-2">
+                هەموو وانەکان <span className="text-xl">→</span>
+              </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recentLessons.map((lesson) => (
-              <LessonCard key={lesson.id} lesson={lesson} />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {recentLessons.length > 0 ? (
+              recentLessons.map((lesson: any) => (
+                <LessonCard key={lesson._id} lesson={lesson} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 bg-muted/30 rounded-2xl border border-dashed">
+                <p className="text-muted-foreground">هیچ وانەیەک بەردەست نییە</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-12 text-center md:hidden">
+            <Link to="/search">
+              <Button variant="outline" className="w-full">هەموو وانەکان</Button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">ئامادەیت بۆ فێربوون؟</h2>
-          <p className="text-lg opacity-90 max-w-2xl mx-auto mb-8">
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5" />
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl opacity-30 translate-x-1/2 translate-y-1/2" />
+
+        <div className="container text-center relative z-10">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">ئامادەیت بۆ دەستپێکردن؟</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             هەموو وانەکان بەخۆڕایی و بە کوردی سۆرانین. ئێستا دەستپێبکە بە گەشەکردنی زانستت لە بواری ڕادیۆلۆجیدا.
           </p>
           <Link to="/categories">
-            <Button size="lg" variant="secondary" className="text-lg px-8">دەستپێکردن</Button>
+            <Button size="lg" className="h-14 px-10 text-lg rounded-full shadow-xl hover:shadow-primary/20 hover:-translate-y-1 transition-all">
+              دەستپێکردن بەخۆڕایی
+            </Button>
           </Link>
         </div>
       </section>

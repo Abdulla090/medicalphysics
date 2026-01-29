@@ -1,9 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
@@ -26,49 +24,43 @@ import AdminCourses from "./pages/admin/AdminCourses";
 import CourseEditor from "./pages/admin/CourseEditor";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <PWAInstallPrompt />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/category/:id" element={<CategoryDetail />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/lesson/:id" element={<Lesson />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/course/:id" element={<CourseDetail />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/lessons" element={<AdminLessons />} />
-            <Route path="/admin/lessons/new" element={<LessonEditor />} />
-            <Route path="/admin/lessons/:id/edit" element={<LessonEditor />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-            <Route path="/admin/quizzes" element={<AdminQuizzes />} />
-            <Route path="/admin/quizzes/new" element={<QuizEditor />} />
-            <Route path="/admin/quizzes/:id/edit" element={<QuizEditor />} />
-            <Route path="/admin/courses" element={<AdminCourses />} />
-            <Route path="/admin/courses/new" element={<CourseEditor />} />
-            <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ThemeProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <PWAInstallPrompt />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/category/:id" element={<CategoryDetail />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/lesson/:id" element={<Lesson />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/course/:id" element={<CourseDetail />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/lessons" element={<AdminLessons />} />
+          <Route path="/admin/lessons/new" element={<LessonEditor />} />
+          <Route path="/admin/lessons/:id/edit" element={<LessonEditor />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/quizzes" element={<AdminQuizzes />} />
+          <Route path="/admin/quizzes/new" element={<QuizEditor />} />
+          <Route path="/admin/quizzes/:id/edit" element={<QuizEditor />} />
+          <Route path="/admin/courses" element={<AdminCourses />} />
+          <Route path="/admin/courses/new" element={<CourseEditor />} />
+          <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </ThemeProvider>
 );
 
 export default App;

@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Loader2 } from 'lucide-react';
+// import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import { ArrowRight, Loader2, Upload, Link as LinkIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,26 +32,21 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
-import {
-  fetchCategories,
-  createLesson,
-  updateLesson,
-  CategoryType,
-  DifficultyLevel,
-} from '@/lib/api';
-import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const lessonSchema = z.object({
   slug: z.string().min(1, 'سلەگ پێویستە').regex(/^[a-z0-9-]+$/, 'تەنها پیتی بچووک و ژمارە و - ڕێگەپێدراوە'),
   title: z.string().min(1, 'ناونیشان پێویستە'),
   description: z.string().min(1, 'وەسف پێویستە'),
-  category: z.enum(['xray', 'ct', 'mri', 'ultrasound', 'nuclear'] as const),
+  category: z.string().min(1, 'Category is required'),
   duration: z.string().min(1, 'ماوە پێویستە'),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced'] as const),
   instructor: z.string().min(1, 'ناوی مامۆستا پێویستە'),
   publish_date: z.string().min(1, 'بەروار پێویستە'),
-  image_url: z.string().url('بەستەری وێنە دروست نییە'),
-  video_id: z.string().min(1, 'ئایدی ڤیدیۆ پێویستە'),
+  image_url: z.string().optional(),
+  image_storage_id: z.string().optional(),
+  video_id: z.string().optional(),
+  video_storage_id: z.string().optional(),
   content: z.string().min(1, 'ناوەڕۆک پێویستە'),
   tags: z.string(),
   is_published: z.boolean(),
@@ -61,27 +59,21 @@ const LessonEditor = () => {
   const isEditing = id && id !== 'new';
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  const categories = useQuery(api.api.getCategories);
 
-  const { data: existingLesson, isLoading: isLoadingLesson } = useQuery({
-    queryKey: ['lesson', id],
-    queryFn: async () => {
-      if (!isEditing) return null;
-      const { data, error } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!isEditing,
-  });
+  // Use convex query for editing
+  const existingLesson = useQuery(api.api.getLessonById,
+    isEditing ? { id: id as Id<"lessons"> } : "skip"
+  );
+
+  const isLoadingLesson = isEditing && existingLesson === undefined;
+
+  const createLessonMutation = useMutation(api.admin_actions.createLesson);
+  const updateLessonMutation = useMutation(api.admin_actions.updateLesson);
+  const generateUploadUrl = useMutation(api.admin_actions.generateUploadUrl);
 
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonSchema),
@@ -95,7 +87,9 @@ const LessonEditor = () => {
       instructor: '',
       publish_date: new Date().toISOString().split('T')[0],
       image_url: '',
+      image_storage_id: '',
       video_id: '',
+      video_storage_id: '',
       content: '',
       tags: '',
       is_published: false,
@@ -108,64 +102,113 @@ const LessonEditor = () => {
         slug: existingLesson.slug,
         title: existingLesson.title,
         description: existingLesson.description,
-        category: existingLesson.category as CategoryType,
+        category: existingLesson.category as any,
         duration: existingLesson.duration,
-        difficulty: existingLesson.difficulty as DifficultyLevel,
+        difficulty: existingLesson.difficulty as any,
         instructor: existingLesson.instructor,
-        publish_date: existingLesson.publish_date,
-        image_url: existingLesson.image_url,
-        video_id: existingLesson.video_id,
+        publish_date: existingLesson.publishDate || new Date().toISOString().split('T')[0],
+        image_url: existingLesson.imageUrl || '',
+        image_storage_id: existingLesson.imageStorageId || '',
+        video_id: existingLesson.videoId || '',
+        video_storage_id: existingLesson.videoStorageId || '',
         content: existingLesson.content,
         tags: (existingLesson.tags || []).join(', '),
-        is_published: existingLesson.is_published,
+        is_published: existingLesson.isPublished,
       });
     }
   }, [existingLesson, form]);
 
-  const createMutation = useMutation({
-    mutationFn: createLesson,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
-      toast({ title: 'سەرکەوتوو', description: 'وانە دروستکرا' });
-      navigate('/admin/lessons');
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: 'هەڵە', 
-        description: error.message.includes('duplicate') 
-          ? 'ئەم سلەگە پێشتر بەکارهاتووە' 
-          : 'دروستکردن سەرکەوتوو نەبوو', 
-        variant: 'destructive' 
+  const handleFileUpload = async (file: File, type: 'image' | 'video') => {
+    try {
+      if (type === 'image') setIsUploadingImage(true);
+      else setIsUploadingVideo(true);
+
+      // 1. Get upload URL
+      const postUrl = await generateUploadUrl();
+
+      // 2. POST the file
+      const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
       });
-    },
-  });
 
-  const updateMutation = useMutation({
-    mutationFn: (data: Partial<LessonFormData>) => updateLesson(id!, {
-      ...data,
-      tags: data.tags?.split(',').map((t) => t.trim()).filter(Boolean),
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
-      toast({ title: 'سەرکەوتوو', description: 'وانە نوێکرایەوە' });
-      navigate('/admin/lessons');
-    },
-    onError: () => {
-      toast({ title: 'هەڵە', description: 'نوێکردنەوە سەرکەوتوو نەبوو', variant: 'destructive' });
-    },
-  });
+      if (!result.ok) throw new Error("Upload failed");
 
-  const onSubmit = (data: LessonFormData) => {
-    const tags = data.tags.split(',').map((t) => t.trim()).filter(Boolean);
+      const { storageId } = await result.json();
 
-    if (isEditing) {
-      updateMutation.mutate({ ...data, tags } as any);
-    } else {
-      createMutation.mutate({ ...data, tags } as any);
+      // 3. Set the form value
+      if (type === 'image') {
+        form.setValue('image_storage_id', storageId);
+        form.setValue('image_url', ''); // Clear URL if upload is used
+        toast({ title: "وێنە بارکرا", description: "وێنەکە بە سەرکەوتوویی بارکرا بۆ سێرڤەر" });
+      } else {
+        form.setValue('video_storage_id', storageId);
+        form.setValue('video_id', ''); // Clear URL if upload is used
+        toast({ title: "ڤیدیۆ بارکرا", description: "ڤیدیۆکە بە سەرکەوتوویی بارکرا بۆ سێرڤەر" });
+      }
+
+    } catch (error) {
+      console.error(error);
+      toast({ title: "هەڵە", description: "بارکردنی فایل سەرکەوتوو نەبوو", variant: "destructive" });
+    } finally {
+      if (type === 'image') setIsUploadingImage(false);
+      else setIsUploadingVideo(false);
     }
   };
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const onSubmit = async (data: LessonFormData) => {
+    const tagsArray = data.tags.split(',').map((t) => t.trim()).filter(Boolean);
+
+    // Convert empty strings to undefined for optional fields
+    const imageUrl = data.image_url || undefined;
+    const videoId = data.video_id || undefined;
+    // Cast storage IDs to Id<"_storage"> or undefined
+    const imageStorageId = data.image_storage_id ? (data.image_storage_id as Id<"_storage">) : undefined;
+    const videoStorageId = data.video_storage_id ? (data.video_storage_id as Id<"_storage">) : undefined;
+
+    const payload = {
+      title: data.title,
+      slug: data.slug,
+      description: data.description,
+      content: data.content,
+      imageUrl: imageUrl,
+      imageStorageId: imageStorageId,
+      videoId: videoId,
+      videoStorageId: videoStorageId,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      category: data.category,
+      instructor: data.instructor,
+      isPublished: data.is_published,
+      tags: tagsArray,
+      publishDate: data.publish_date,
+    };
+
+    try {
+      if (isEditing) {
+        await updateLessonMutation({
+          id: id as Id<"lessons">,
+          ...payload
+        });
+        toast({ title: 'سەرکەوتوو', description: 'وانە نوێکرایەوە' });
+      } else {
+        await createLessonMutation(payload);
+        toast({ title: 'سەرکەوتوو', description: 'وانە دروستکرا' });
+      }
+      navigate('/admin/lessons');
+    } catch (error: any) {
+      toast({
+        title: 'هەڵە',
+        description: error.message.includes('Duplicate')
+          ? 'ئەم سلەگە پێشتر بەکارهاتووە'
+          : 'کردارەکە سەرکەوتوو نەبوو:\n' + error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const isSubmitting = false;
 
   if (isEditing && isLoadingLesson) {
     return (
@@ -249,7 +292,7 @@ const LessonEditor = () => {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>بەش</FormLabel>
+                        <FormLabel>بەش (Category ID)</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -259,7 +302,10 @@ const LessonEditor = () => {
                           <SelectContent>
                             {categories?.map((cat) => (
                               <SelectItem key={cat.id} value={cat.id}>
-                                {cat.icon} {cat.name}
+                                <div className="flex items-center gap-2">
+                                  <span>{cat.icon}</span>
+                                  <span>{cat.name}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -341,39 +387,107 @@ const LessonEditor = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>میدیا</CardTitle>
+                <CardTitle>میدیا (وێنە و ڤیدیۆ)</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="image_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>بەستەری وێنە</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://..." dir="ltr" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <CardContent className="space-y-6">
 
-                <FormField
-                  control={form.control}
-                  name="video_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ئایدی ڤیدیۆی یوتیوب</FormLabel>
-                      <FormControl>
-                        <Input placeholder="dQw4w9WgXcQ" dir="ltr" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        تەنها ئایدی ڤیدیۆکە، نەک هەموو بەستەرەکە
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Image Section */}
+                <div className="space-y-4 border p-4 rounded-md">
+                  <h3 className="font-medium flex items-center gap-2"><ImageIcon className="w-4 h-4" /> وێنەی وانە</h3>
+                  <Tabs defaultValue="upload" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="upload">بارکردن لە ئامێرەوە</TabsTrigger>
+                      <TabsTrigger value="link">بەستەر (Link)</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload" className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, 'image');
+                          }}
+                          disabled={isUploadingImage}
+                        />
+                        {isUploadingImage && <Loader2 className="animate-spin" />}
+                      </div>
+                      {form.watch("image_storage_id") && <p className="text-sm text-green-600">✓ وێنە هەڵبژێردراوە (Storage ID)</p>}
+                    </TabsContent>
+                    <TabsContent value="link">
+                      <FormField
+                        control={form.control}
+                        name="image_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder="https://example.com/image.jpg"
+                                dir="ltr"
+                                {...field} // spread remaining props
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Clear storage ID if typing link
+                                  if (e.target.value) form.setValue('image_storage_id', '');
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>بەستەری ڕاستەوخۆی وێنە</FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </div>
+
+                {/* Video Section */}
+                <div className="space-y-4 border p-4 rounded-md">
+                  <h3 className="font-medium flex items-center gap-2"><VideoIcon className="w-4 h-4" /> ڤیدیۆی وانە</h3>
+                  <Tabs defaultValue="link" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="link">بەستەر (YouTube/Drive)</TabsTrigger>
+                      <TabsTrigger value="upload">بارکردن لە ئامێرەوە</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload" className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, 'video');
+                          }}
+                          disabled={isUploadingVideo}
+                        />
+                        {isUploadingVideo && <Loader2 className="animate-spin" />}
+                      </div>
+                      {form.watch("video_storage_id") && <p className="text-sm text-green-600">✓ ڤیدیۆ هەڵبژێردراوە (Storage ID)</p>}
+                    </TabsContent>
+                    <TabsContent value="link">
+                      <FormField
+                        control={form.control}
+                        name="video_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder="YouTube ID or Drive Link"
+                                dir="ltr"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Clear storage ID if typing link
+                                  if (e.target.value) form.setValue('video_storage_id', '');
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>دەتوانیت IDـی یوتیوب یان لینکی Google Drive دابنێیت</FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </div>
               </CardContent>
             </Card>
 
@@ -440,8 +554,8 @@ const LessonEditor = () => {
                     )}
                   />
 
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                  <Button type="submit" disabled={isSubmitting || isUploadingImage || isUploadingVideo}>
+                    {(isSubmitting || isUploadingImage || isUploadingVideo) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                     {isEditing ? 'نوێکردنەوە' : 'دروستکردن'}
                   </Button>
                 </div>

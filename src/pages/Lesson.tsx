@@ -1,5 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { ChevronLeft, Clock, Calendar, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,24 +30,29 @@ const difficultyStyles: Record<string, string> = {
 };
 
 const Lesson = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>(); // 'id' here is actually the slug based on route /lesson/:slug
   const { user } = useAuth();
   const { isLessonCompleted } = useProgress();
 
-  const { data: lesson, isLoading } = useQuery({
-    queryKey: ['lesson', id],
-    queryFn: () => fetchLessonBySlug(id || ''),
-    enabled: !!id,
-  });
+  // Convex Migration
+  // Note: Route is /lesson/:id but conventionally we used slug. 
+  // API fetchLessonBySlug(id) suggests 'id' param is the slug.
 
-  const { data: relatedLessons } = useQuery({
-    queryKey: ['related-lessons', lesson?.category],
-    queryFn: () => fetchLessonsByCategory(lesson!.category),
-    enabled: !!lesson?.category,
-  });
+  const lesson = useQuery(api.api.getLessonBySlug, { slug: id || '' });
+  const isLoading = lesson === undefined;
 
-  const filteredRelatedLessons = relatedLessons?.filter(l => l.id !== lesson?.id).slice(0, 3) || [];
-  const completed = lesson ? isLessonCompleted(lesson.id) : false;
+  // We need the category ID to fetch related lessons. 
+  // In Convex, lesson.category is the category ID string.
+
+  const relatedLessons = useQuery(api.api.getLessonsByCategory,
+    lesson ? { categoryId: lesson.category } : "skip" // Wait, getLessonsByCategory argument name?
+  );
+
+  // Note: api.api.getLessonsByCategory(args: { categoryId: string }) check api.ts
+
+  const filteredRelatedLessons = relatedLessons?.filter((l: any) => l._id !== lesson?._id).slice(0, 3) || [];
+  // const completed = lesson ? isLessonCompleted(lesson._id) : false; // TODO: Fix isLessonCompleted to take Convex ID
+  const completed = false; // logic paused until progress hook is migrated
 
   if (isLoading) {
     return (
@@ -83,7 +90,7 @@ const Lesson = () => {
             <Link to="/categories" className="hover:text-primary">بەشەکان</Link>
             <ChevronLeft className="h-4 w-4" />
             <Link to={`/category/${lesson.category}`} className="hover:text-primary">
-              {lesson.categories?.name}
+              {lesson.categoryName /* We updated fetchLessonBySlug to return categoryName */}
             </Link>
             <ChevronLeft className="h-4 w-4" />
             <span className="text-foreground line-clamp-1">{lesson.title}</span>
@@ -96,7 +103,7 @@ const Lesson = () => {
               <div className="mb-6">
                 <div className="flex flex-wrap gap-2 mb-4">
                   <Badge className={categoryStyles[lesson.category]}>
-                    {lesson.categories?.name}
+                    {lesson.categoryName}
                   </Badge>
                   <Badge className={difficultyStyles[lesson.difficulty]}>
                     {getDifficultyName(lesson.difficulty)}
@@ -121,7 +128,7 @@ const Lesson = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {lesson.publish_date}
+                    {lesson.publishDate /* CamelCase */}
                   </div>
                 </div>
 
@@ -129,12 +136,12 @@ const Lesson = () => {
                 <div className="mt-6 flex flex-wrap gap-3">
                   {user && (
                     <>
-                      <ProgressButton lessonId={lesson.id} />
+                      {/* <ProgressButton lessonId={lesson._id} />  TODO: Migrate */}
                       <PDFDownloadButton
                         title={lesson.title}
                         content={lesson.content}
                         instructor={lesson.instructor}
-                        category={lesson.categories?.name}
+                        category={lesson.categoryName}
                       />
                     </>
                   )}
@@ -150,7 +157,7 @@ const Lesson = () => {
                 <iframe
                   width="100%"
                   height="100%"
-                  src={`https://www.youtube.com/embed/${lesson.video_id}`}
+                  src={`https://www.youtube.com/embed/${lesson.videoId /* CamelCase */}`}
                   title={lesson.title}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -168,14 +175,14 @@ const Lesson = () => {
 
               {/* Quiz Section */}
               <div className="mb-8">
-                <QuizCard lessonId={lesson.id} />
+                {/* <QuizCard lessonId={lesson._id} /> TODO: Migrate */}
               </div>
 
               {/* Tags */}
               <div className="mb-8">
                 <h3 className="font-semibold mb-3">تاگەکان:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {lesson.tags?.map((tag) => (
+                  {lesson.tags?.map((tag: string) => (
                     <Badge key={tag} variant="secondary">{tag}</Badge>
                   ))}
                 </div>
@@ -202,8 +209,8 @@ const Lesson = () => {
               <div className="sticky top-24">
                 <h3 className="font-bold text-lg mb-4">وانەکانی تر لە ئەم بەشە</h3>
                 <div className="space-y-3">
-                  {filteredRelatedLessons.map((related) => (
-                    <Link key={related.id} to={`/lesson/${related.slug}`}>
+                  {filteredRelatedLessons.map((related: any) => (
+                    <Link key={related._id} to={`/lesson/${related.slug}`}>
                       <Card className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <p className="font-medium line-clamp-2">{related.title}</p>

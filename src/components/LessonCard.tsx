@@ -15,21 +15,26 @@ const difficultyNames: Record<string, string> = {
 };
 
 const LessonCard = ({ lesson }: LessonCardProps) => {
+  // Support both snake_case (Supabase) and camelCase (Convex)
+  const imageUrl = (lesson as any).imageUrl || lesson.image_url;
+  const categoryName = (lesson as any).categoryName || lesson.categories?.name;
+  const publishDate = (lesson as any).publishDate || lesson.publish_date; // if needed
+
   return (
     <Link to={`/lesson/${lesson.slug}`}>
       <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200">
         <div className="relative aspect-[16/10] overflow-hidden">
           <img
-            src={lesson.image_url}
+            src={imageUrl}
             alt={lesson.title}
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className="absolute top-3 right-3 bg-background/90 text-foreground text-xs font-normal"
           >
-            {lesson.categories?.name}
+            {categoryName}
           </Badge>
         </div>
         <CardContent className="p-4 space-y-3">
@@ -50,8 +55,8 @@ const LessonCard = ({ lesson }: LessonCardProps) => {
                 {lesson.instructor}
               </span>
             </div>
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="text-xs font-normal border-border"
             >
               {difficultyNames[lesson.difficulty]}

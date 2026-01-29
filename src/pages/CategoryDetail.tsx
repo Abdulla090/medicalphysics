@@ -1,24 +1,19 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { ChevronLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
-import { fetchCategoryById, fetchLessonsByCategory, CategoryType } from '@/lib/api';
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
 
-  const { data: category, isLoading: isLoadingCategory } = useQuery({
-    queryKey: ['category', id],
-    queryFn: () => fetchCategoryById(id as CategoryType),
-    enabled: !!id,
-  });
+  // Use Convex queries
+  const category = useQuery(api.api.getCategoryById, { id: id || '' });
+  const isLoadingCategory = category === undefined;
 
-  const { data: lessons, isLoading: isLoadingLessons } = useQuery({
-    queryKey: ['lessons-by-category', id],
-    queryFn: () => fetchLessonsByCategory(id as CategoryType),
-    enabled: !!id,
-  });
+  const lessons = useQuery(api.api.getLessonsByCategory, { categoryId: id || '' });
+  const isLoadingLessons = lessons === undefined;
 
   if (isLoadingCategory) {
     return (
@@ -61,7 +56,7 @@ const CategoryDetail = () => {
           <div className="text-center mb-12">
             <span className="text-5xl mb-4 block">{category.icon}</span>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">{category.name}</h1>
-            <p className="text-muted-foreground">{category.english_name}</p>
+            <p className="text-muted-foreground">{(category as any).englishName || (category as any).english_name}</p>
             <p className="text-lg mt-4">{category.description}</p>
           </div>
 
@@ -69,8 +64,8 @@ const CategoryDetail = () => {
             <div className="text-center py-8">بارکردن...</div>
           ) : lessons && lessons.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lessons.map((lesson) => (
-                <LessonCard key={lesson.id} lesson={lesson} />
+              {lessons.map((lesson: any) => (
+                <LessonCard key={lesson._id} lesson={lesson} />
               ))}
             </div>
           ) : (

@@ -66,13 +66,13 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            urlPattern: /^https:\/\/.*supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
+            urlPattern: /^https:\/\/.*convex\.cloud\/.*/i,
+            handler: 'NetworkFirst', // Use NetworkFirst for API data to get fresh content
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'convex-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60, // 1 hour
+                maxAgeSeconds: 60 * 5, // 5 minutes
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -80,6 +80,10 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module',
       },
     }),
   ].filter(Boolean),

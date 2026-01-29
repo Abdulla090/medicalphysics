@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,41 +40,71 @@ const difficultyStyles: Record<string, string> = {
 
 const AdminLessons = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Convex updates automatically
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: lessons, isLoading } = useQuery({
-    queryKey: ['admin-lessons'],
-    queryFn: () => fetchLessons(false),
-  });
+  // Convex Migration
+  const lessons = useQuery(api.admin.getRecentLessons); // Assuming getRecentLessons returns all for now, or we should create specific list query
+  // Ideally we create a `api.admin.getAllLessons` but `getRecentLessons` might be enough if it's not limited too much. 
+  // Let's check admin.ts... getRecentLessons returns all lessons sorted by date. Perfect.
+  const isLoading = lessons === undefined;
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteLesson,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
+  const deleteMutation = useMutation(api.admin_actions.deleteLesson);
+  const updateMutation = useMutation(api.admin_actions.updateLesson);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation({ id: id as any }); // Cast because id is string from UI but Convex expects Id
       toast({ title: 'سەرکەوتوو', description: 'وانە سڕایەوە' });
-    },
-    onError: () => {
+    } catch (error) {
       toast({ title: 'هەڵە', description: 'سڕینەوە سەرکەوتوو نەبوو', variant: 'destructive' });
-    },
-  });
+    }
+  };
 
-  const togglePublishMutation = useMutation({
-    mutationFn: ({ id, is_published }: { id: string; is_published: boolean }) =>
-      updateLesson(id, { is_published }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
+  const handleTogglePublish = async (lesson: any) => {
+    try {
+      await updateMutation({
+        id: lesson._id,
+        // We need to pass ALL required fields to updateLesson because we defined args as required in schema?
+        // Wait, schema definition for `updateLesson` in `admin_actions.ts` has specific args.
+        // Let's check `admin_actions.ts`. 
+        // `updateLesson` args list all fields as required v.string() or v.optional().
+        // If they are not v.optional(), we must provide them!
+        // This is a common pitfall. The validation `args: { ... }` means arguments must match this shape.
+
+        // FIXME: The `updateLesson` mutation I created earlier requires providing ALL fields. This is bad for partial updates.
+        // I should have used `v.optional()` for all fields in `updateLesson` args, or just `v.object` with `v.optional`.
+
+        // WORKAROUND: For now, we will just not use the update mutation for toggling publish here, 
+        // OR we fix the mutation in the next step. 
+        // I will assume I will fix the mutation to allow partial updates.
+
+        // Let's optimistically attempt partial update or fix the backend mutation.
+        // I'll fix the backend mutation next.
+        isPublished: !lesson.isPublished,
+        title: lesson.title,
+        slug: lesson.slug,
+        description: lesson.description,
+        content: lesson.content,
+        imageUrl: lesson.imageUrl,
+        videoId: lesson.videoId,
+        duration: lesson.duration,
+        difficulty: lesson.difficulty,
+        category: lesson.category,
+        instructor: lesson.instructor,
+        tags: lesson.tags,
+        publishDate: lesson.publishDate
+      });
       toast({ title: 'سەرکەوتوو', description: 'دۆخی وانە گۆڕا' });
-    },
-    onError: () => {
+    } catch (error) {
       toast({ title: 'هەڵە', description: 'گۆڕین سەرکەوتوو نەبوو', variant: 'destructive' });
-    },
-  });
+    }
+  };
 
   const filteredLessons = lessons?.filter(lesson =>
     lesson.title.includes(searchQuery) ||
     lesson.instructor.includes(searchQuery) ||
-    lesson.categories?.name.includes(searchQuery)
+    lesson.categoryName?.includes(searchQuery) // categoryName comes from join in admin.ts
   );
 
   return (
@@ -110,19 +142,19 @@ const AdminLessons = () => {
             <div className="text-center py-8">هیچ وانەیەک نەدۆزرایەوە</div>
           ) : (
             filteredLessons?.map((lesson) => (
-              <Card key={lesson.id} className="p-4">
+              <Card key={lesson._id} className="p-4">
                 <div className="flex gap-3">
                   <img
-                    src={lesson.image_url}
+                    src={lesson.imageUrl}
                     alt={lesson.title}
                     className="w-20 h-14 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{lesson.title}</p>
-                    <p className="text-sm text-muted-foreground">{lesson.categories?.name}</p>
+                    <p className="text-sm text-muted-foreground">{lesson.categoryName}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <Badge variant={lesson.is_published ? 'default' : 'secondary'} className="text-xs">
-                        {lesson.is_published ? 'بڵاوکراوە' : 'پێشنووس'}
+                      <Badge variant={lesson.isPublished ? 'default' : 'secondary'} className="text-xs">
+                        {lesson.isPublished ? 'بڵاوکراوە' : 'پێشنووس'}
                       </Badge>
                     </div>
                   </div>
@@ -131,16 +163,11 @@ const AdminLessons = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
-                      togglePublishMutation.mutate({
-                        id: lesson.id,
-                        is_published: !lesson.is_published,
-                      })
-                    }
+                    onClick={() => handleTogglePublish(lesson)}
                   >
-                    {lesson.is_published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {lesson.isPublished ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
-                  <Link to={`/admin/lessons/${lesson.id}/edit`}>
+                  <Link to={`/admin/lessons/${lesson._id}/edit`}>
                     <Button variant="ghost" size="sm">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -161,7 +188,7 @@ const AdminLessons = () => {
                       <AlertDialogFooter>
                         <AlertDialogCancel>پاشگەزبوونەوە</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => deleteMutation.mutate(lesson.id)}
+                          onClick={() => handleDelete(lesson._id)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                           سڕینەوە
@@ -205,10 +232,10 @@ const AdminLessons = () => {
                 </TableRow>
               ) : (
                 filteredLessons?.map((lesson) => (
-                  <TableRow key={lesson.id}>
+                  <TableRow key={lesson._id}>
                     <TableCell>
                       <img
-                        src={lesson.image_url}
+                        src={lesson.imageUrl}
                         alt={lesson.title}
                         className="w-16 h-12 object-cover rounded"
                       />
@@ -216,7 +243,7 @@ const AdminLessons = () => {
                     <TableCell className="font-medium max-w-[200px] truncate">
                       {lesson.title}
                     </TableCell>
-                    <TableCell>{lesson.categories?.name}</TableCell>
+                    <TableCell>{lesson.categoryName}</TableCell>
                     <TableCell>
                       <Badge className={difficultyStyles[lesson.difficulty]}>
                         {getDifficultyName(lesson.difficulty)}
@@ -224,11 +251,11 @@ const AdminLessons = () => {
                     </TableCell>
                     <TableCell>{lesson.instructor}</TableCell>
                     <TableCell>
-                      {format(new Date(lesson.publish_date), 'yyyy/MM/dd')}
+                      {lesson.publishDate ? format(new Date(lesson.publishDate), 'yyyy/MM/dd') : '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={lesson.is_published ? 'default' : 'secondary'}>
-                        {lesson.is_published ? 'بڵاوکراوە' : 'پێشنووس'}
+                      <Badge variant={lesson.isPublished ? 'default' : 'secondary'}>
+                        {lesson.isPublished ? 'بڵاوکراوە' : 'پێشنووس'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -236,20 +263,15 @@ const AdminLessons = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() =>
-                            togglePublishMutation.mutate({
-                              id: lesson.id,
-                              is_published: !lesson.is_published,
-                            })
-                          }
+                          onClick={() => handleTogglePublish(lesson)}
                         >
-                          {lesson.is_published ? (
+                          {lesson.isPublished ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
                           )}
                         </Button>
-                        <Link to={`/admin/lessons/${lesson.id}/edit`}>
+                        <Link to={`/admin/lessons/${lesson._id}/edit`}>
                           <Button variant="ghost" size="icon">
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -270,7 +292,7 @@ const AdminLessons = () => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>پاشگەزبوونەوە</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => deleteMutation.mutate(lesson.id)}
+                                onClick={() => handleDelete(lesson._id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 سڕینەوە

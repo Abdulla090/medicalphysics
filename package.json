@@ -13,6 +13,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.60.0",
+    "@convex-dev/react-query": "^0.1.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -46,6 +48,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "convex": "^1.31.6",
+    "convex-helpers": "^0.1.111",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "html2canvas": "^1.4.1",

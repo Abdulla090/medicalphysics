@@ -1,25 +1,22 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
-import { fetchLessons, fetchCategories, CategoryType, DifficultyLevel } from '@/lib/api';
+import { CategoryType, DifficultyLevel } from '@/lib/api';
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<CategoryType[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Changed category type to string to match Convex
   const [selectedDifficulties, setSelectedDifficulties] = useState<DifficultyLevel[]>([]);
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  const categories = useQuery(api.api.getCategories);
 
-  const { data: lessons, isLoading } = useQuery({
-    queryKey: ['lessons'],
-    queryFn: () => fetchLessons(true),
-  });
+  const lessons = useQuery(api.api.getAllLessons);
+  const isLoading = lessons === undefined;
 
   const difficulties: { id: DifficultyLevel; name: string }[] = [
     { id: 'beginner', name: 'سەرەتایی' },
@@ -27,7 +24,7 @@ const Search = () => {
     { id: 'advanced', name: 'پێشکەوتوو' },
   ];
 
-  const toggleCategory = (categoryId: CategoryType) => {
+  const toggleCategory = (categoryId: string) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
         ? prev.filter((c) => c !== categoryId)
@@ -45,19 +42,19 @@ const Search = () => {
 
   const filteredLessons = useMemo(() => {
     if (!lessons) return [];
-    
-    return lessons.filter((lesson) => {
+
+    return lessons.filter((lesson: any) => {
       const matchesSearch =
         searchQuery === '' ||
-        lesson.title.includes(searchQuery) ||
-        lesson.description.includes(searchQuery) ||
-        lesson.tags?.some((tag) => tag.includes(searchQuery));
+        lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lesson.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lesson.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesCategory =
         selectedCategories.length === 0 || selectedCategories.includes(lesson.category);
 
       const matchesDifficulty =
-        selectedDifficulties.length === 0 || selectedDifficulties.includes(lesson.difficulty);
+        selectedDifficulties.length === 0 || selectedDifficulties.includes(lesson.difficulty as DifficultyLevel);
 
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
@@ -85,7 +82,7 @@ const Search = () => {
           {/* Filters */}
           <div className="max-w-4xl mx-auto mb-12">
             <p className="text-sm text-muted-foreground mb-3">فلتەرکردن:</p>
-            
+
             {/* Category Filters */}
             <div className="flex flex-wrap gap-2 mb-4">
               {categories?.map((category) => (
@@ -126,8 +123,8 @@ const Search = () => {
             <div className="text-center py-8">بارکردن...</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredLessons.map((lesson) => (
-                <LessonCard key={lesson.id} lesson={lesson} />
+              {filteredLessons.map((lesson: any) => (
+                <LessonCard key={lesson._id} lesson={lesson} />
               ))}
             </div>
           )}
