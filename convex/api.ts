@@ -203,3 +203,142 @@ export const getAllLessons = query({
         }));
     }
 });
+
+// === User Progress ===
+export const markLessonComplete = mutation({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("lesson_progress")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                completed: true,
+                completedAt: new Date().toISOString(),
+                progressPercent: 100,
+            });
+        } else {
+            await ctx.db.insert("lesson_progress", {
+                userId: args.userId,
+                lessonId: args.lessonId,
+                completed: true,
+                completedAt: new Date().toISOString(),
+                progressPercent: 100,
+            });
+        }
+    },
+});
+
+export const unmarkLessonComplete = mutation({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("lesson_progress")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                completed: false,
+                progressPercent: 0,
+            });
+        }
+    },
+});
+
+export const getUserProgress = query({
+    args: { userId: v.string() },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query("lesson_progress")
+            .withIndex("by_user", (q) => q.eq("userId", args.userId))
+            .collect();
+    },
+});
+
+export const isLessonCompleted = query({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const progress = await ctx.db
+            .query("lesson_progress")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+        return progress?.completed || false;
+    },
+});
+
+// === Bookmarks ===
+export const addBookmark = mutation({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("bookmarks")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+
+        if (!existing) {
+            await ctx.db.insert("bookmarks", {
+                userId: args.userId,
+                lessonId: args.lessonId,
+                createdAt: new Date().toISOString(),
+            });
+        }
+    },
+});
+
+export const removeBookmark = mutation({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("bookmarks")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+
+        if (existing) {
+            await ctx.db.delete(existing._id);
+        }
+    },
+});
+
+export const getUserBookmarks = query({
+    args: { userId: v.string() },
+    handler: async (ctx, args) => {
+        const bookmarks = await ctx.db
+            .query("bookmarks")
+            .withIndex("by_user", (q) => q.eq("userId", args.userId))
+            .collect();
+
+        // Fetch full lesson details
+        return await Promise.all(
+            bookmarks.map(async (b) => {
+                const lesson = await ctx.db.get(b.lessonId);
+                return { ...b, lesson };
+            })
+        );
+    },
+});
+
+export const isLessonBookmarked = query({
+    args: { userId: v.string(), lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        const bookmark = await ctx.db
+            .query("bookmarks")
+            .withIndex("by_user_lesson", (q) =>
+                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+            )
+            .first();
+        return !!bookmark;
+    },
+});

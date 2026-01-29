@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Search, User, LogIn, LogOut, GraduationCap } from 'lucide-react';
+import { Search, User, LogIn, LogOut, GraduationCap, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,28 +26,37 @@ const Navbar = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           <Link to="/">
-            <Button 
-              variant={isActive('/') ? 'secondary' : 'ghost'} 
+            <Button
+              variant={isActive('/') ? 'secondary' : 'ghost'}
               className="font-medium"
             >
               سەرەتا
             </Button>
           </Link>
           <Link to="/categories">
-            <Button 
-              variant={isActive('/categories') ? 'secondary' : 'ghost'} 
+            <Button
+              variant={isActive('/categories') ? 'secondary' : 'ghost'}
               className="font-medium"
             >
               بەشەکان
             </Button>
           </Link>
           <Link to="/courses">
-            <Button 
-              variant={isActive('/courses') ? 'secondary' : 'ghost'} 
+            <Button
+              variant={isActive('/courses') ? 'secondary' : 'ghost'}
               className="font-medium gap-1"
             >
               <GraduationCap className="h-4 w-4" />
               کۆرسەکان
+            </Button>
+          </Link>
+          <Link to="/demo/image-viewer">
+            <Button
+              variant={location.pathname.startsWith('/demo') ? 'secondary' : 'ghost'}
+              className="font-medium gap-1"
+            >
+              <ScanLine className="h-4 w-4" />
+              بینەری وێنە
             </Button>
           </Link>
           <Link to="/search">

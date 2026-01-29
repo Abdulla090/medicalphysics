@@ -106,5 +106,14 @@ export default defineSchema({
         completed: v.boolean(),
         completedAt: v.optional(v.string()),
         progressPercent: v.number(),
-    }).index("by_user_lesson", ["userId", "lessonId"]),
+    }).index("by_user_lesson", ["userId", "lessonId"])
+        .index("by_user", ["userId"]),
+
+    // Bookmarks / Favorites
+    bookmarks: defineTable({
+        userId: v.string(),
+        lessonId: v.id("lessons"),
+        createdAt: v.string(),
+    }).index("by_user", ["userId"])
+        .index("by_user_lesson", ["userId", "lessonId"]),
 });

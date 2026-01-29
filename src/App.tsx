@@ -22,6 +22,7 @@ import AdminQuizzes from "./pages/admin/AdminQuizzes";
 import QuizEditor from "./pages/admin/QuizEditor";
 import AdminCourses from "./pages/admin/AdminCourses";
 import CourseEditor from "./pages/admin/CourseEditor";
+import ImageViewerDemo from "./pages/ImageViewerDemo";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -41,6 +42,9 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/course/:id" element={<CourseDetail />} />
+
+          {/* Demo Pages */}
+          <Route path="/demo/image-viewer" element={<ImageViewerDemo />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

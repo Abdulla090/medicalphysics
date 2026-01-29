@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
 import CategoryCard from '@/components/CategoryCard';
 import StatCard from '@/components/StatCard';
+import { LessonCardSkeleton, CategoryCardSkeleton, StatCardSkeleton } from '@/components/Skeletons';
 // import { fetchCategories, fetchLessons, fetchStats, fetchCategoryLessonCounts } from '@/lib/api';
 
 const Index = () => {
@@ -106,14 +107,21 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {categories?.map((category, index) => (
-              <CategoryCard
-                key={category.id}
-                index={index}
-                category={{ ...category, lessonCount: lessonCounts?.[category.id] || 0 } as any}
-                variant="compact"
-              />
-            ))}
+            {categories === undefined ? (
+              // Show skeletons while loading
+              Array.from({ length: 5 }).map((_, i) => (
+                <CategoryCardSkeleton key={i} />
+              ))
+            ) : (
+              categories?.map((category, index) => (
+                <CategoryCard
+                  key={category.id}
+                  index={index}
+                  category={{ ...category, lessonCount: lessonCounts?.[category.id] || 0 } as any}
+                  variant="compact"
+                />
+              ))
+            )}
           </div>
 
           <div className="mt-8 text-center md:hidden">
@@ -140,7 +148,12 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {recentLessons.length > 0 ? (
+            {lessons === undefined ? (
+              // Show skeletons while loading
+              Array.from({ length: 4 }).map((_, i) => (
+                <LessonCardSkeleton key={i} />
+              ))
+            ) : recentLessons.length > 0 ? (
               recentLessons.map((lesson: any) => (
                 <LessonCard key={lesson._id} lesson={lesson} />
               ))

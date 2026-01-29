@@ -29,10 +29,15 @@ const difficultyStyles: Record<string, string> = {
   advanced: 'difficulty-advanced',
 };
 
+import MedicalImageViewer from '@/components/MedicalImageViewer';
+import LessonActions from '@/components/LessonActions';
+import { useState } from 'react';
+
 const Lesson = () => {
   const { id } = useParams<{ id: string }>(); // 'id' here is actually the slug based on route /lesson/:slug
   const { user } = useAuth();
   const { isLessonCompleted } = useProgress();
+  const [activeMedia, setActiveMedia] = useState<'video' | 'image' | null>(null);
 
   // Convex Migration
   // Note: Route is /lesson/:id but conventionally we used slug. 
@@ -136,7 +141,7 @@ const Lesson = () => {
                 <div className="mt-6 flex flex-wrap gap-3">
                   {user && (
                     <>
-                      {/* <ProgressButton lessonId={lesson._id} />  TODO: Migrate */}
+                      <LessonActions lessonId={lesson._id} />
                       <PDFDownloadButton
                         title={lesson.title}
                         content={lesson.content}
@@ -152,17 +157,61 @@ const Lesson = () => {
                 </div>
               </div>
 
-              {/* Video Player */}
-              <div className="aspect-video mb-8 rounded-2xl overflow-hidden bg-card">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${lesson.videoId /* CamelCase */}`}
-                  title={lesson.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+              {/* Media Section: Tabs for Video/Image */}
+              <div className="mb-8">
+                {(lesson.videoId && lesson.imageUrl) ? (
+                  <div className="flex gap-4 mb-4 border-b">
+                    <button
+                      className={`pb-2 px-4 font-medium ${!activeMedia || activeMedia === 'video' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+                      onClick={() => setActiveMedia('video')}
+                    >
+                      ڤیدیۆ
+                    </button>
+                    <button
+                      className={`pb-2 px-4 font-medium ${activeMedia === 'image' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+                      onClick={() => setActiveMedia('image')}
+                    >
+                      وێنەی پزیشکی (Advanced Viewer)
+                    </button>
+                  </div>
+                ) : null}
+
+                {/* Video Player */}
+                {(!activeMedia || activeMedia === 'video') && lesson.videoId && (
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+                    {lesson.videoId.startsWith('http') ? (
+                      <video
+                        src={lesson.videoId}
+                        controls
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${lesson.videoId}`}
+                        title={lesson.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Medical Image Viewer */}
+                {(activeMedia === 'image' || (!lesson.videoId && lesson.imageUrl)) && lesson.imageUrl && (
+                  <div className="w-full">
+                    <MedicalImageViewer
+                      src={lesson.imageUrl}
+                      alt={lesson.title}
+                      className="aspect-video md:aspect-[16/9] w-full h-[500px]"
+                    />
+                    <p className="text-sm text-center text-muted-foreground mt-2">
+                      دەتوانێت وێنەکە نزیک بکەیتەوە (Zoom) و مۆدەکانی Contrast بەکاربهێنیت
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Content */}
