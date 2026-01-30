@@ -15,6 +15,74 @@ import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/hooks/useProgress';
 
+// Helper functions for video source detection
+const extractYouTubeId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /^[a-zA-Z0-9_-]{11}$/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1] || url;
+  }
+  return null;
+};
+
+const extractGoogleDriveId = (url: string): string | null => {
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([^\/]+)/,
+    /drive\.google\.com\/open\?id=([^&]+)/,
+    /docs\.google\.com\/file\/d\/([^\/]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
+
+const extractVimeoId = (url: string): string | null => {
+  const match = url.match(/vimeo\.com\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+type VideoSource = 'youtube' | 'drive' | 'vimeo' | 'direct' | 'youtube_id';
+
+const detectVideoSource = (videoId: string): { source: VideoSource; id: string | null } => {
+  if (!videoId) return { source: 'youtube_id', id: null };
+
+  // Check if it's a Google Drive link
+  const driveId = extractGoogleDriveId(videoId);
+  if (driveId) return { source: 'drive', id: driveId };
+
+  // Check if it's a YouTube URL
+  const youtubeId = extractYouTubeId(videoId);
+  if (youtubeId && videoId.includes('youtube') || videoId.includes('youtu.be')) {
+    return { source: 'youtube', id: youtubeId };
+  }
+
+  // Check if it's a Vimeo link
+  const vimeoId = extractVimeoId(videoId);
+  if (vimeoId) return { source: 'vimeo', id: vimeoId };
+
+  // Check if it's a direct video URL (mp4, webm, ogg)
+  if (videoId.match(/\.(mp4|webm|ogg)$/i) || videoId.startsWith('http')) {
+    // Make sure it's not a Google Drive or other embed URL
+    if (!videoId.includes('drive.google') && !videoId.includes('youtube') && !videoId.includes('vimeo')) {
+      return { source: 'direct', id: videoId };
+    }
+  }
+
+  // Default: assume it's a YouTube ID (11 characters)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+    return { source: 'youtube_id', id: videoId };
+  }
+
+  return { source: 'youtube_id', id: videoId };
+};
+
 const categoryStyles: Record<string, string> = {
   xray: 'category-xray',
   ct: 'category-ct',
@@ -177,27 +245,50 @@ const Lesson = () => {
                 ) : null}
 
                 {/* Video Player */}
-                {(!activeMedia || activeMedia === 'video') && lesson.videoId && (
-                  <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
-                    {lesson.videoId.startsWith('http') ? (
-                      <video
-                        src={lesson.videoId}
-                        controls
-                        className="w-full h-full"
-                      />
-                    ) : (
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={`https://www.youtube.com/embed/${lesson.videoId}`}
-                        title={lesson.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    )}
-                  </div>
-                )}
+                {(!activeMedia || activeMedia === 'video') && lesson.videoId && (() => {
+                  const { source, id } = detectVideoSource(lesson.videoId);
+                  return (
+                    <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+                      {source === 'youtube' || source === 'youtube_id' ? (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://www.youtube.com/embed/${id}`}
+                          title={lesson.title}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : source === 'drive' ? (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://drive.google.com/file/d/${id}/preview`}
+                          title={lesson.title}
+                          frameBorder="0"
+                          allow="autoplay; fullscreen"
+                          allowFullScreen
+                        />
+                      ) : source === 'vimeo' ? (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://player.vimeo.com/video/${id}`}
+                          title={lesson.title}
+                          frameBorder="0"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={lesson.videoId}
+                          controls
+                          className="w-full h-full"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Medical Image Viewer */}
                 {(activeMedia === 'image' || (!lesson.videoId && lesson.imageUrl)) && lesson.imageUrl && (

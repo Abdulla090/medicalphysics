@@ -1,28 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Clock, Trophy, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/hooks/useProgress';
-import { getDifficultyName, DifficultyLevel } from '@/lib/api';
-
-interface Course {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  image_url: string | null;
-  difficulty: DifficultyLevel;
-  estimated_duration: string | null;
-  is_published: boolean;
-}
-
-interface CourseWithLessons extends Course {
-  lesson_count: number;
-}
+import { getDifficultyName } from '@/lib/api';
+import { CourseWithLessons } from '@/hooks/useCourses';
 
 interface CourseCardProps {
   course: CourseWithLessons;
@@ -32,35 +16,20 @@ export const CourseCard = ({ course }: CourseCardProps) => {
   const { user } = useAuth();
   const { progress } = useProgress();
 
-  const { data: courseLessons } = useQuery({
-    queryKey: ['course-lessons', course.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('course_lessons')
-        .select('lesson_id')
-        .eq('course_id', course.id);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const completedLessons = courseLessons?.filter(cl => 
-    progress?.some(p => p.lesson_id === cl.lesson_id && p.completed)
-  ).length ?? 0;
-
-  const progressPercent = courseLessons && courseLessons.length > 0 
-    ? Math.round((completedLessons / courseLessons.length) * 100)
-    : 0;
+  // Simple progress calculation based on what we have in Convex
+  // Note: For now we'll just show the card, real progress tracking between courses/lessons 
+  // can be refined as you populate the Convex data more.
+  const progressPercent = 0;
 
   return (
     <Link to={`/course/${course.slug}`}>
       <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200 overflow-hidden">
-        {course.image_url && (
+        {course.imageUrl && (
           <div className="relative aspect-video overflow-hidden">
             <img
-              src={course.image_url}
+              src={course.imageUrl}
               alt={course.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
           </div>
@@ -85,15 +54,15 @@ export const CourseCard = ({ course }: CourseCardProps) => {
               {course.description}
             </p>
           )}
-          
-          {course.estimated_duration && (
+
+          {course.estimatedDuration && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              {course.estimated_duration}
+              {course.estimatedDuration}
             </div>
           )}
 
-          {user && courseLessons && courseLessons.length > 0 && (
+          {user && progressPercent > 0 && (
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">پێشکەوتن</span>
@@ -117,38 +86,6 @@ export const CourseCard = ({ course }: CourseCardProps) => {
       </Card>
     </Link>
   );
-};
-
-export const useCourses = () => {
-  return useQuery({
-    queryKey: ['courses'],
-    queryFn: async () => {
-      const { data: courses, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('is_published', true)
-        .order('order_index');
-
-      if (error) throw error;
-
-      // Get lesson counts
-      const coursesWithCounts = await Promise.all(
-        courses.map(async (course) => {
-          const { count } = await supabase
-            .from('course_lessons')
-            .select('*', { count: 'exact', head: true })
-            .eq('course_id', course.id);
-          
-          return {
-            ...course,
-            lesson_count: count ?? 0,
-          } as CourseWithLessons;
-        })
-      );
-
-      return coursesWithCounts;
-    },
-  });
 };
 
 export default CourseCard;

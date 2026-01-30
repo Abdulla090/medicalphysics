@@ -1,114 +1,67 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { Id } from '../../convex/_generated/dataModel';
 
 interface LessonProgress {
-  id: string;
-  user_id: string;
-  lesson_id: string;
+  _id: Id<"lesson_progress">;
+  userId: string;
+  lessonId: Id<"lessons">;
   completed: boolean;
-  completed_at: string | null;
-  progress_percent: number;
+  completedAt?: string;
+  progressPercent: number;
 }
 
 export const useProgress = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const userId = user?.id;
 
-  const { data: progress, isLoading } = useQuery({
-    queryKey: ['progress', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('lesson_progress')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      return data as LessonProgress[];
-    },
-    enabled: !!user,
-  });
+  // Query user progress from Convex
+  const progress = useQuery(
+    api.api.getUserProgress,
+    userId ? { userId } : "skip"
+  ) as LessonProgress[] | undefined;
 
-  const getLessonProgress = (lessonId: string) => {
-    return progress?.find(p => p.lesson_id === lessonId);
+  const isLoading = progress === undefined && !!userId;
+
+  const getLessonProgress = (lessonId: Id<"lessons">) => {
+    return progress?.find(p => p.lessonId === lessonId);
   };
 
-  const isLessonCompleted = (lessonId: string) => {
-    return progress?.some(p => p.lesson_id === lessonId && p.completed) ?? false;
+  const isLessonCompleted = (lessonId: Id<"lessons">) => {
+    return progress?.some(p => p.lessonId === lessonId && p.completed) ?? false;
   };
 
   const completedCount = progress?.filter(p => p.completed).length ?? 0;
 
-  const markComplete = useMutation({
-    mutationFn: async (lessonId: string) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const existing = getLessonProgress(lessonId);
-      
-      if (existing) {
-        const { error } = await supabase
-          .from('lesson_progress')
-          .update({ 
-            completed: true, 
-            completed_at: new Date().toISOString(),
-            progress_percent: 100 
-          })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('lesson_progress')
-          .insert({ 
-            user_id: user.id, 
-            lesson_id: lessonId, 
-            completed: true,
-            completed_at: new Date().toISOString(),
-            progress_percent: 100 
-          });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progress', user?.id] });
-    },
-  });
+  // Mutations from Convex
+  const markCompleteMutation = useMutation(api.api.markLessonComplete);
+  const unmarkCompleteMutation = useMutation(api.api.unmarkLessonComplete);
 
-  const updateProgress = useMutation({
-    mutationFn: async ({ lessonId, percent }: { lessonId: string; percent: number }) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const existing = getLessonProgress(lessonId);
-      
-      if (existing) {
-        const { error } = await supabase
-          .from('lesson_progress')
-          .update({ progress_percent: percent })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('lesson_progress')
-          .insert({ 
-            user_id: user.id, 
-            lesson_id: lessonId, 
-            progress_percent: percent 
-          });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progress', user?.id] });
-    },
-  });
+  const markComplete = async (lessonId: Id<"lessons">) => {
+    if (!userId) throw new Error('User not authenticated');
+    await markCompleteMutation({ userId, lessonId });
+  };
 
+  const unmarkComplete = async (lessonId: Id<"lessons">) => {
+    if (!userId) throw new Error('User not authenticated');
+    await unmarkCompleteMutation({ userId, lessonId });
+  };
+
+  // For compatibility, returning object with mutate methods
   return {
     progress,
     isLoading,
     getLessonProgress,
     isLessonCompleted,
     completedCount,
-    markComplete,
-    updateProgress,
+    markComplete: {
+      mutate: markComplete,
+      mutateAsync: markComplete,
+    },
+    unmarkComplete: {
+      mutate: unmarkComplete,
+      mutateAsync: unmarkComplete,
+    },
   };
 };

@@ -63,8 +63,8 @@ const Index = () => {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
-            فێربوونی <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">ڕادیۆلۆجی</span><br />
-            بە شێوازێکی مۆدێرن
+            <span className="block">فێربوونی <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">ڕادیۆلۆجی</span></span>
+            <span className="block mt-4">بە شێوازێکی مۆدێرن</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed">
             یەکەمین و باشترین سەرچاوەی کوردی بۆ فێربوونی تەکنیکەکانی وێنەگرتنی پزیشکی بە کوالێتی ئەکادیمی

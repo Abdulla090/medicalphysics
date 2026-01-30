@@ -28,3 +28,4 @@ public/DICOM/
 node_modules/
 .env*
 .convex/
+.vercel

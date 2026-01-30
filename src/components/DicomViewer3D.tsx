@@ -75,40 +75,56 @@ const SliceView: React.FC<SliceViewProps> = ({
         if (!ctx) return;
 
         const [dimX, dimY, dimZ] = volumeData.dimensions;
-        let width: number, height: number, sliceData: Float32Array | Uint8Array;
+        const [spacingX, spacingY, spacingZ] = volumeData.spacing;
+
+        // Calculate the Z scale factor to make sagittal/coronal views proportional
+        // This accounts for non-isotropic voxels (typical in MRI/CT where slice thickness differs)
+        const zScale = Math.max(1, Math.round((dimX / dimZ) * (spacingZ / spacingX)));
+
+        let sliceWidth: number, sliceHeight: number;
+        let displayWidth: number, displayHeight: number;
+        let sliceData: Float32Array;
 
         // Extract slice based on axis
         switch (axis) {
-            case 'axial': // XY plane
-                width = dimX;
-                height = dimY;
-                sliceData = new Float32Array(width * height);
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
+            case 'axial': // XY plane - viewing from top/bottom
+                sliceWidth = dimX;
+                sliceHeight = dimY;
+                displayWidth = dimX;
+                displayHeight = dimY;
+                sliceData = new Float32Array(sliceWidth * sliceHeight);
+                for (let y = 0; y < sliceHeight; y++) {
+                    for (let x = 0; x < sliceWidth; x++) {
                         const idx = x + y * dimX + sliceIndex * dimX * dimY;
-                        sliceData[x + y * width] = volumeData.data[idx] || 0;
+                        sliceData[x + y * sliceWidth] = volumeData.data[idx] || 0;
                     }
                 }
                 break;
-            case 'sagittal': // YZ plane
-                width = dimY;
-                height = dimZ;
-                sliceData = new Float32Array(width * height);
-                for (let z = 0; z < height; z++) {
-                    for (let y = 0; y < width; y++) {
+            case 'sagittal': // YZ plane - viewing from left/right
+                sliceWidth = dimY;
+                sliceHeight = dimZ;
+                displayWidth = dimY;
+                // Scale height to match proper aspect ratio
+                displayHeight = dimZ * zScale;
+                sliceData = new Float32Array(sliceWidth * sliceHeight);
+                for (let z = 0; z < sliceHeight; z++) {
+                    for (let y = 0; y < sliceWidth; y++) {
                         const idx = sliceIndex + y * dimX + z * dimX * dimY;
-                        sliceData[y + z * width] = volumeData.data[idx] || 0;
+                        sliceData[y + z * sliceWidth] = volumeData.data[idx] || 0;
                     }
                 }
                 break;
-            case 'coronal': // XZ plane
-                width = dimX;
-                height = dimZ;
-                sliceData = new Float32Array(width * height);
-                for (let z = 0; z < height; z++) {
-                    for (let x = 0; x < width; x++) {
+            case 'coronal': // XZ plane - viewing from front/back
+                sliceWidth = dimX;
+                sliceHeight = dimZ;
+                displayWidth = dimX;
+                // Scale height to match proper aspect ratio
+                displayHeight = dimZ * zScale;
+                sliceData = new Float32Array(sliceWidth * sliceHeight);
+                for (let z = 0; z < sliceHeight; z++) {
+                    for (let x = 0; x < sliceWidth; x++) {
                         const idx = x + sliceIndex * dimX + z * dimX * dimY;
-                        sliceData[x + z * width] = volumeData.data[idx] || 0;
+                        sliceData[x + z * sliceWidth] = volumeData.data[idx] || 0;
                     }
                 }
                 break;
@@ -116,12 +132,16 @@ const SliceView: React.FC<SliceViewProps> = ({
                 return;
         }
 
-        // Set canvas size
-        canvas.width = width;
-        canvas.height = height;
+        // Set canvas to display dimensions (scaled for sagittal/coronal)
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
 
-        // Create image data with windowing
-        const imageData = ctx.createImageData(width, height);
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, displayWidth, displayHeight);
+
+        // Create image data at original slice dimensions
+        const imageData = ctx.createImageData(sliceWidth, sliceHeight);
         const minVal = windowLevel - windowWidth / 2;
         const maxVal = windowLevel + windowWidth / 2;
 
@@ -138,7 +158,23 @@ const SliceView: React.FC<SliceViewProps> = ({
             imageData.data[pixelIndex + 3] = 255;   // A
         }
 
-        ctx.putImageData(imageData, 0, 0);
+        // For sagittal/coronal, we need to scale the image up
+        if (axis !== 'axial' && displayHeight !== sliceHeight) {
+            // Create a temporary canvas for the original size
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = sliceWidth;
+            tempCanvas.height = sliceHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+                tempCtx.putImageData(imageData, 0, 0);
+                // Draw scaled to main canvas
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(tempCanvas, 0, 0, sliceWidth, sliceHeight, 0, 0, displayWidth, displayHeight);
+            }
+        } else {
+            ctx.putImageData(imageData, 0, 0);
+        }
     }, [volumeData, axis, sliceIndex, windowLevel, windowWidth]);
 
     if (!volumeData) return null;
@@ -160,11 +196,11 @@ const SliceView: React.FC<SliceViewProps> = ({
             <div className="text-sm font-medium text-center text-muted-foreground">
                 {axisLabels[axis]}
             </div>
-            <div className="relative bg-black rounded-lg overflow-hidden aspect-square">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-square flex items-center justify-center">
                 <canvas
                     ref={canvasRef}
-                    className="w-full h-full object-contain"
-                    style={{ imageRendering: 'pixelated' }}
+                    className="max-w-full max-h-full object-contain"
+                    style={{ imageRendering: 'auto' }}
                 />
                 <div className="absolute bottom-2 right-2 text-xs text-white/70 bg-black/50 px-1 rounded">
                     {sliceIndex + 1} / {maxSlice + 1}
@@ -181,6 +217,7 @@ const SliceView: React.FC<SliceViewProps> = ({
         </div>
     );
 };
+
 
 // ============================================
 // MAIN 3D DICOM VIEWER
@@ -744,29 +781,29 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
                     <DropdownMenuContent className="w-72">
                         <DropdownMenuLabel>سەرچاوەکانی داگرتن</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                            <a href="https://openneuro.org" target="_blank" rel="noopener noreferrer" className="flex flex-col items-start gap-1 cursor-pointer">
+                        <DropdownMenuItem onClick={() => window.open('https://openneuro.org', '_blank')}>
+                            <div className="flex flex-col items-start gap-1">
                                 <div className="font-medium">OpenNeuro</div>
                                 <div className="text-xs text-muted-foreground">
                                     داتای MRI ی مێشک (NIfTI)
                                 </div>
-                            </a>
+                            </div>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <a href="https://www.cancerimagingarchive.net" target="_blank" rel="noopener noreferrer" className="flex flex-col items-start gap-1 cursor-pointer">
+                        <DropdownMenuItem onClick={() => window.open('https://www.cancerimagingarchive.net', '_blank')}>
+                            <div className="flex flex-col items-start gap-1">
                                 <div className="font-medium">TCIA</div>
                                 <div className="text-xs text-muted-foreground">
                                     داتای CT و MRI (DICOM)
                                 </div>
-                            </a>
+                            </div>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <a href="https://www.osirix-viewer.com/resources/dicom-image-library/" target="_blank" rel="noopener noreferrer" className="flex flex-col items-start gap-1 cursor-pointer">
+                        <DropdownMenuItem onClick={() => window.open('https://www.osirix-viewer.com/resources/dicom-image-library/', '_blank')}>
+                            <div className="flex flex-col items-start gap-1">
                                 <div className="font-medium">OsiriX DICOM Library</div>
                                 <div className="text-xs text-muted-foreground">
                                     نموونەی DICOM بۆ تاقیکردنەوە
                                 </div>
-                            </a>
+                            </div>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

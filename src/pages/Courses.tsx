@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { CourseCard, useCourses } from '@/components/CourseCard';
+import CourseCard from '@/components/CourseCard';
+import { useCourses } from '@/hooks/useCourses';
 
 const Courses = () => {
-  const { data: courses, isLoading } = useCourses();
+  const { courses, isLoading } = useCourses();
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,11 +24,11 @@ const Courses = () => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8">بارکردن...</div>
+            <div className="text-center py-8 text-primary/50 animate-pulse">بارکردن...</div>
           ) : courses && courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((course) => (
-                <CourseCard key={course.id} course={course} />
+                <CourseCard key={course._id} course={course} />
               ))}
             </div>
           ) : (
