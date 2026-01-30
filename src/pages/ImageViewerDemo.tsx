@@ -161,27 +161,29 @@ const ImageViewerDemo = () => {
                 </div>
 
                 {/* Viewer Type Tabs */}
-                <div className="flex gap-2 p-1 bg-muted rounded-xl mb-6 w-fit">
+                <div className="flex gap-2 p-1 bg-muted rounded-xl mb-6 w-full sm:w-fit overflow-x-auto">
                     <Button
                         variant={viewerTab === '2d' ? 'default' : 'ghost'}
                         onClick={() => setViewerTab('2d')}
-                        className="gap-2 rounded-lg"
+                        className="gap-2 rounded-lg flex-1 sm:flex-none min-w-fit"
+                        size="sm"
                     >
                         <ImageIcon className="h-4 w-4" />
-                        بینەری 2D
+                        <span className="hidden sm:inline">بینەری</span> 2D
                     </Button>
                     <Button
                         variant={viewerTab === '3d' ? 'default' : 'ghost'}
                         onClick={() => setViewerTab('3d')}
-                        className="gap-2 rounded-lg"
+                        className="gap-2 rounded-lg flex-1 sm:flex-none min-w-fit"
+                        size="sm"
                     >
                         <Layers3 className="h-4 w-4" />
-                        بینەری 3D (DICOM/NIfTI)
+                        <span className="hidden sm:inline">بینەری</span> 3D
                     </Button>
                 </div>
 
-                {/* Info Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {/* Info Cards - Hidden on mobile */}
+                <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
                         <CardContent className="pt-6">
                             <div className="flex items-start gap-3">
@@ -246,9 +248,9 @@ const ImageViewerDemo = () => {
 
                 {/* 2D Image Viewer */}
                 {viewerTab === '2d' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        {/* Image Selection Sidebar */}
-                        <div className="lg:col-span-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8">
+                        {/* Image Selection Sidebar - Horizontal scroll on mobile */}
+                        <div className="lg:col-span-1 order-2 lg:order-1">
                             <Card className="sticky top-24">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-lg">هەڵبژاردنی وێنە</CardTitle>
@@ -274,8 +276,8 @@ const ImageViewerDemo = () => {
                                                         key={img.id}
                                                         onClick={() => setSelectedImage(img)}
                                                         className={`w-full p-3 rounded-lg text-right transition-all ${selectedImage.id === img.id
-                                                                ? 'bg-primary/10 border-2 border-primary'
-                                                                : 'bg-muted/50 hover:bg-muted border-2 border-transparent'
+                                                            ? 'bg-primary/10 border-2 border-primary'
+                                                            : 'bg-muted/50 hover:bg-muted border-2 border-transparent'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-3">
@@ -301,7 +303,7 @@ const ImageViewerDemo = () => {
                         </div>
 
                         {/* Main Viewer */}
-                        <div className="lg:col-span-3">
+                        <div className="lg:col-span-3 order-1 lg:order-2">
                             <Card className="overflow-hidden">
                                 <CardHeader className="pb-3 border-b">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -325,14 +327,14 @@ const ImageViewerDemo = () => {
                                         key={selectedImage.id}
                                         src={selectedImage.src}
                                         alt={selectedImage.title}
-                                        className="w-full h-[600px]"
+                                        className="w-full h-[350px] sm:h-[450px] md:h-[500px] lg:h-[600px]"
                                         enableAnnotations={isAdminMode}
                                     />
                                 </CardContent>
                             </Card>
 
-                            {/* Usage Tips */}
-                            <Card className="mt-6">
+                            {/* Usage Tips - Hidden on small mobile */}
+                            <Card className="mt-4 lg:mt-6 hidden sm:block">
                                 <CardHeader>
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <Lightbulb className="h-5 w-5 text-yellow-500" />

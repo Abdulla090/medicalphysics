@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { Loader2, Upload, Layers3, RotateCw, ZoomIn, ZoomOut, Box, Grid3X3, Maximize2, Download, ChevronDown } from 'lucide-react';
+import { Loader2, Upload, Layers3, RotateCw, ZoomIn, ZoomOut, Box, Grid3X3, Maximize2, Download, ChevronDown, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -749,310 +749,291 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
 
     return (
         <div className={cn("flex flex-col gap-4", className)}>
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-xl border">
-                {/* File Upload */}
+            {/* Toolbar - Responsive Layout */}
+            <div className="flex flex-wrap items-center gap-2 p-2 bg-card border rounded-lg shadow-sm mb-4">
                 <input
-                    ref={fileInputRef}
                     type="file"
-                    accept=".nii,.nii.gz,.dcm"
+                    ref={fileInputRef}
                     onChange={handleFileUpload}
+                    accept=".nii,.nii.gz,.dcm"
                     className="hidden"
                 />
-                <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="gap-2"
-                    disabled={isLoading}
-                >
-                    <Upload className="h-4 w-4" />
-                    بارکردنی فایل
-                </Button>
 
-                {/* Sample Datasets Info */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2" disabled={isLoading}>
-                            <Download className="h-4 w-4" />
-                            داگرتنی نموونە
+                        <Button variant="ghost" size="sm" className="gap-2 h-9">
+                            <Upload className="h-4 w-4" />
+                            <span className="hidden sm:inline">فایل</span>
                             <ChevronDown className="h-3 w-3 opacity-60" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-72">
-                        <DropdownMenuLabel>سەرچاوەکانی داگرتن</DropdownMenuLabel>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>بارکردن</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="h-4 w-4 mr-2" />
+                            بارکردنی لە کۆمپیوتەر
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                            const url = prompt('URL ی فایل بنووسە:');
+                            if (url) loadFromUrl(url);
+                        }}>
+                            <Download className="h-4 w-4 mr-2" />
+                            بارکردن لە URL
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => window.open('https://openneuro.org', '_blank')}>
-                            <div className="flex flex-col items-start gap-1">
-                                <div className="font-medium">OpenNeuro</div>
-                                <div className="text-xs text-muted-foreground">
-                                    داتای MRI ی مێشک (NIfTI)
-                                </div>
-                            </div>
+                        <DropdownMenuItem onClick={() => generateSyntheticVolume('brain')}>
+                            <Brain className="h-4 w-4 mr-2" />
+                            مێشکی نموونە
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open('https://www.cancerimagingarchive.net', '_blank')}>
-                            <div className="flex flex-col items-start gap-1">
-                                <div className="font-medium">TCIA</div>
-                                <div className="text-xs text-muted-foreground">
-                                    داتای CT و MRI (DICOM)
-                                </div>
-                            </div>
-                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => window.open('https://www.osirix-viewer.com/resources/dicom-image-library/', '_blank')}>
                             <div className="flex flex-col items-start gap-1">
-                                <div className="font-medium">OsiriX DICOM Library</div>
-                                <div className="text-xs text-muted-foreground">
-                                    نموونەی DICOM بۆ تاقیکردنەوە
-                                </div>
+                                <span className="font-medium">OsiriX Library</span>
+                                <span className="text-xs text-muted-foreground">داتای تاقیکردنەوە</span>
                             </div>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <div className="h-6 w-px bg-border" />
+                <div className="h-6 w-px bg-border hidden sm:block" />
 
-                {/* View Mode Toggle */}
-                <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                {/* View Mode Toggle - Icons only on mobile */}
+                <div className="flex gap-1 p-1 bg-muted rounded-lg flex-1 sm:flex-none justify-center">
                     <Button
                         variant={viewMode === 'multiplanar' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setViewMode('multiplanar')}
-                        className="gap-1"
+                        className="gap-1 flex-1 sm:flex-none h-8"
                     >
                         <Grid3X3 className="h-4 w-4" />
-                        MPR
+                        <span className="hidden sm:inline">MPR</span>
                     </Button>
                     <Button
                         variant={viewMode === '3d' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setViewMode('3d')}
-                        className="gap-1"
+                        className="gap-1 flex-1 sm:flex-none h-8"
                         disabled
-                        title="Coming soon"
                     >
                         <Box className="h-4 w-4" />
-                        3D
+                        <span className="hidden sm:inline">3D</span>
                     </Button>
                 </div>
 
-                <div className="h-6 w-px bg-border" />
+                <div className="h-6 w-px bg-border hidden sm:block" />
 
-                {/* Window/Level Presets */}
+                {/* Window/Level - Dropdown on small screens */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2">
+                        <Button variant="outline" size="sm" className="gap-2 h-9 ml-auto sm:ml-0">
                             <Layers3 className="h-4 w-4" />
-                            پەنجەرە
+                            <span className="hidden sm:inline">پەنجەرە</span>
                             <ChevronDown className="h-3 w-3 opacity-60" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => applyPreset(128, 256)}>
-                            ئاسایی (Default)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => applyPreset(40, 80)}>
-                            مێشک (Brain)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => applyPreset(50, 350)}>
-                            شلی نەرم (Soft Tissue)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => applyPreset(400, 1800)}>
-                            ئێسک (Bone)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => applyPreset(-600, 1500)}>
-                            سییەکان (Lung)
-                        </DropdownMenuItem>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Presets</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => applyPreset(128, 256)}>ئاسایی (Default)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => applyPreset(40, 80)}>مێشک (Brain)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => applyPreset(50, 350)}>شلی نەرم (Soft)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => applyPreset(400, 1800)}>ئێسک (Bone)</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => applyPreset(-600, 1500)}>سییەکان (Lung)</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-
-                {/* Volume Info */}
-                {volumeData && (
-                    <div className="ml-auto text-sm text-muted-foreground">
-                        قەبارە: {volumeData.dimensions[0]} × {volumeData.dimensions[1]} × {volumeData.dimensions[2]}
-                    </div>
-                )}
             </div>
 
             {/* Loading State */}
-            {isLoading && (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                        <p className="text-lg font-medium">بارکردن...</p>
-                        <div className="w-64 h-2 bg-muted rounded-full mt-4 overflow-hidden">
-                            <div
-                                className="h-full bg-primary transition-all duration-300"
-                                style={{ width: `${loadProgress}%` }}
-                            />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-2">{loadProgress}%</p>
-                    </CardContent>
-                </Card>
-            )}
+            {
+                isLoading && (
+                    <Card>
+                        <CardContent className="flex flex-col items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                            <p className="text-lg font-medium">بارکردن...</p>
+                            <div className="w-64 h-2 bg-muted rounded-full mt-4 overflow-hidden">
+                                <div
+                                    className="h-full bg-primary transition-all duration-300"
+                                    style={{ width: `${loadProgress}%` }}
+                                />
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-2">{loadProgress}%</p>
+                        </CardContent>
+                    </Card>
+                )
+            }
 
             {/* Error State */}
-            {error && (
-                <Card className="border-destructive">
-                    <CardContent className="py-8 text-center">
-                        <p className="text-destructive font-medium">هەڵە: {error}</p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                            تکایە فایلێکی NIfTI (.nii, .nii.gz) یان DICOM (.dcm) بارکە
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
+            {
+                error && (
+                    <Card className="border-destructive">
+                        <CardContent className="py-8 text-center">
+                            <p className="text-destructive font-medium">هەڵە: {error}</p>
+                            <p className="text-sm text-muted-foreground mt-2">
+                                تکایە فایلێکی NIfTI (.nii, .nii.gz) یان DICOM (.dcm) بارکە
+                            </p>
+                        </CardContent>
+                    </Card>
+                )
+            }
 
             {/* Empty State */}
-            {!isLoading && !error && !volumeData && (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                            <Layers3 className="h-10 w-10 text-primary" />
-                        </div>
-                        <h3 className="text-xl font-bold mb-2">بینەری 3D ی DICOM/NIfTI</h3>
-                        <p className="text-muted-foreground text-center max-w-md mb-6">
-                            بارکردنی فایل یان بەکارهێنانی داتای تاقیکردنەوەی دروستکراو
-                        </p>
-
-                        {/* Test Volumes - No Download Required */}
-                        <div className="mb-6">
-                            <p className="text-sm font-medium mb-3 text-center">🧪 داتای تاقیکردنەوە (بەبێ داگرتن):</p>
-                            <div className="flex flex-wrap gap-2 justify-center">
-                                <Button
-                                    onClick={() => generateSyntheticVolume('brain')}
-                                    variant="default"
-                                    className="gap-2"
-                                >
-                                    🧠 مێشکی نموونە
-                                </Button>
-                                <Button
-                                    onClick={() => generateSyntheticVolume('phantom')}
-                                    variant="secondary"
-                                    className="gap-2"
-                                >
-                                    👻 فانتۆم (CT)
-                                </Button>
-                                <Button
-                                    onClick={() => generateSyntheticVolume('sphere')}
-                                    variant="outline"
-                                    className="gap-2"
-                                >
-                                    ⚪ گۆی سادە
-                                </Button>
+            {
+                !isLoading && !error && !volumeData && (
+                    <Card className="mt-4">
+                        <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                                <Layers3 className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                             </div>
-                        </div>
-
-                        <div className="h-px w-full max-w-md bg-border my-4" />
-
-                        {/* Real DICOM Data from Public Folder */}
-                        <div className="mb-6">
-                            <p className="text-sm font-medium mb-3 text-center">🏥 داتای DICOM ی ڕاستەقینە (MRI):</p>
-                            <div className="flex flex-wrap gap-2 justify-center">
-                                {LOCAL_DICOM_SERIES.series.map((series) => (
-                                    <Button
-                                        key={series.id}
-                                        onClick={() => loadLocalDicomSeries(series.id)}
-                                        variant="default"
-                                        className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-                                    >
-                                        🧠 {series.name} ({series.count} slices)
-                                    </Button>
-                                ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 text-center">
-                                ئەم داتایەی لە فۆڵدەری public/DICOM دایە
+                            <h3 className="text-lg sm:text-xl font-bold mb-2 text-center">بینەری 3D ی DICOM/NIfTI</h3>
+                            <p className="text-muted-foreground text-center max-w-md mb-6 text-sm sm:text-base">
+                                بارکردنی فایل یان بەکارهێنانی داتای تاقیکردنەوەی دروستکراو
                             </p>
-                        </div>
 
-                        <div className="h-px w-full max-w-xs bg-border my-4" />
+                            {/* Test Volumes - No Download Required */}
+                            <div className="mb-6">
+                                <p className="text-sm font-medium mb-3 text-center">🧪 داتای تاقیکردنەوە (بەبێ داگرتن):</p>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    <Button
+                                        onClick={() => generateSyntheticVolume('brain')}
+                                        variant="default"
+                                        className="gap-2"
+                                    >
+                                        🧠 مێشکی نموونە
+                                    </Button>
+                                    <Button
+                                        onClick={() => generateSyntheticVolume('phantom')}
+                                        variant="secondary"
+                                        className="gap-2"
+                                    >
+                                        👻 فانتۆم (CT)
+                                    </Button>
+                                    <Button
+                                        onClick={() => generateSyntheticVolume('sphere')}
+                                        variant="outline"
+                                        className="gap-2"
+                                    >
+                                        ⚪ گۆی سادە
+                                    </Button>
+                                </div>
+                            </div>
 
-                        {/* File Upload */}
-                        <p className="text-sm text-muted-foreground mb-2">یان فایلی خۆت بار بکە:</p>
-                        <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="gap-2">
-                            <Upload className="h-4 w-4" />
-                            بارکردنی فایل
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
+                            <div className="h-px w-full max-w-md bg-border my-4" />
+
+                            {/* Real DICOM Data from Public Folder */}
+                            <div className="mb-6">
+                                <p className="text-sm font-medium mb-3 text-center">🏥 داتای DICOM ی ڕاستەقینە (MRI):</p>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {LOCAL_DICOM_SERIES.series.map((series) => (
+                                        <Button
+                                            key={series.id}
+                                            onClick={() => loadLocalDicomSeries(series.id)}
+                                            variant="default"
+                                            size="sm"
+                                            className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 w-full sm:w-auto text-xs sm:text-sm"
+                                        >
+                                            🧠 {series.name} ({series.count})
+                                        </Button>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2 text-center">
+                                    ئەم داتایەی لە فۆڵدەری public/DICOM دایە
+                                </p>
+                            </div>
+
+                            <div className="h-px w-full max-w-xs bg-border my-4" />
+
+                            {/* File Upload */}
+                            <p className="text-sm text-muted-foreground mb-2">یان فایلی خۆت بار بکە:</p>
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="gap-2">
+                                <Upload className="h-4 w-4" />
+                                بارکردنی فایل
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )
+            }
 
             {/* Multiplanar View */}
-            {!isLoading && volumeData && viewMode === 'multiplanar' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                        <CardContent className="p-4">
-                            <SliceView
-                                volumeData={volumeData}
-                                axis="axial"
-                                sliceIndex={axialSlice}
-                                onSliceChange={setAxialSlice}
-                                windowLevel={windowLevel}
-                                windowWidth={windowWidth}
-                            />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <SliceView
-                                volumeData={volumeData}
-                                axis="sagittal"
-                                sliceIndex={sagittalSlice}
-                                onSliceChange={setSagittalSlice}
-                                windowLevel={windowLevel}
-                                windowWidth={windowWidth}
-                            />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <SliceView
-                                volumeData={volumeData}
-                                axis="coronal"
-                                sliceIndex={coronalSlice}
-                                onSliceChange={setCoronalSlice}
-                                windowLevel={windowLevel}
-                                windowWidth={windowWidth}
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+            {
+                !isLoading && volumeData && viewMode === 'multiplanar' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card>
+                            <CardContent className="p-4">
+                                <SliceView
+                                    volumeData={volumeData}
+                                    axis="axial"
+                                    sliceIndex={axialSlice}
+                                    onSliceChange={setAxialSlice}
+                                    windowLevel={windowLevel}
+                                    windowWidth={windowWidth}
+                                />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4">
+                                <SliceView
+                                    volumeData={volumeData}
+                                    axis="sagittal"
+                                    sliceIndex={sagittalSlice}
+                                    onSliceChange={setSagittalSlice}
+                                    windowLevel={windowLevel}
+                                    windowWidth={windowWidth}
+                                />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4">
+                                <SliceView
+                                    volumeData={volumeData}
+                                    axis="coronal"
+                                    sliceIndex={coronalSlice}
+                                    onSliceChange={setCoronalSlice}
+                                    windowLevel={windowLevel}
+                                    windowWidth={windowWidth}
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
+                )
+            }
 
-            {/* Window/Level Controls */}
-            {volumeData && (
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span>Window Level (ئاست)</span>
-                                    <span className="font-mono">{windowLevel}</span>
+            {/* Window/Level Controls - Stack on mobile */}
+            {
+                volumeData && (
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span>Window Level (ئاست)</span>
+                                        <span className="font-mono">{windowLevel}</span>
+                                    </div>
+                                    <Slider
+                                        value={[windowLevel]}
+                                        onValueChange={([v]) => setWindowLevel(v)}
+                                        min={0}
+                                        max={255}
+                                        step={1}
+                                    />
                                 </div>
-                                <Slider
-                                    value={[windowLevel]}
-                                    onValueChange={([v]) => setWindowLevel(v)}
-                                    min={0}
-                                    max={255}
-                                    step={1}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span>Window Width (پانی)</span>
-                                    <span className="font-mono">{windowWidth}</span>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span>Window Width (پانی)</span>
+                                        <span className="font-mono">{windowWidth}</span>
+                                    </div>
+                                    <Slider
+                                        value={[windowWidth]}
+                                        onValueChange={([v]) => setWindowWidth(v)}
+                                        min={1}
+                                        max={512}
+                                        step={1}
+                                    />
                                 </div>
-                                <Slider
-                                    value={[windowWidth]}
-                                    onValueChange={([v]) => setWindowWidth(v)}
-                                    min={1}
-                                    max={512}
-                                    step={1}
-                                />
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+                        </CardContent>
+                    </Card>
+                )
+            }
+        </div >
     );
 };
 

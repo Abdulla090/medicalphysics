@@ -332,7 +332,7 @@ const systemIcons: Record<string, React.ReactNode> = {
 export default function AnatomyViewer() {
     const [selectedPart, setSelectedPart] = useState<string | null>(null);
     const [hoveredPart, setHoveredPart] = useState<string | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [lang, setLang] = useState<Lang>('en');
 
     const t = uiTranslations[lang];
@@ -353,10 +353,11 @@ export default function AnatomyViewer() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setLang(lang === 'en' ? 'ku' : 'en')}
-                    className="text-white hover:bg-white/10 gap-2 bg-black/30 backdrop-blur-xl border border-white/10"
+                    className="text-white hover:bg-white/10 gap-1 sm:gap-2 bg-black/30 backdrop-blur-xl border border-white/10 px-2 sm:px-3"
                 >
                     <Languages className="w-4 h-4" />
-                    {lang === 'en' ? 'کوردی' : 'English'}
+                    <span className="hidden sm:inline">{lang === 'en' ? 'کوردی' : 'English'}</span>
+                    <span className="sm:hidden">{lang === 'en' ? 'KU' : 'EN'}</span>
                 </Button>
             </div>
 
@@ -367,29 +368,29 @@ export default function AnatomyViewer() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none"
+                        className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none px-4 w-full sm:w-auto"
                     >
-                        <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 px-4 py-2 rounded-full shadow-xl shadow-red-500/10">
-                            <span className="text-red-400 font-medium text-sm">
+                        <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 px-3 sm:px-4 py-2 rounded-full shadow-xl shadow-red-500/10 text-center">
+                            <span className="text-red-400 font-medium text-xs sm:text-sm">
                                 {lang === 'ku' && anatomyData[hoveredPart] ? anatomyData[hoveredPart].ku.title : hoveredPart}
                             </span>
-                            <span className="text-white/50 text-xs mx-2">•</span>
-                            <span className="text-white/50 text-xs">{t.clickForDetails}</span>
+                            <span className="text-white/50 text-xs mx-1 sm:mx-2 hidden sm:inline">•</span>
+                            <span className="text-white/50 text-xs hidden sm:inline">{t.clickForDetails}</span>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Top Navigation Bar */}
-            <nav className="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
-                <div className="pointer-events-auto flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-                        <Menu />
+            <nav className="absolute top-0 left-0 right-0 z-10 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+                <div className="pointer-events-auto flex items-center gap-2 sm:gap-4">
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-9 w-9" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                        <Menu className="h-5 w-5" />
                     </Button>
-                    <h1 className="text-2xl font-bold text-white tracking-wider">{t.title}<span className="text-cyan-400">{t.titleAccent}</span></h1>
+                    <h1 className="text-lg sm:text-2xl font-bold text-white tracking-wider">{t.title}<span className="text-cyan-400">{t.titleAccent}</span></h1>
                 </div>
 
-                <div className="pointer-events-auto flex items-center gap-3">
+                <div className="pointer-events-auto items-center gap-3 hidden md:flex">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
                         <input
@@ -409,9 +410,9 @@ export default function AnatomyViewer() {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: 30, scale: 0.95 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className={`absolute bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-20 w-[400px] max-w-[calc(100vw-340px)] pointer-events-auto`}
+                        className={`absolute bottom-4 sm:bottom-6 left-4 right-4 sm:left-auto ${isRTL ? 'sm:left-4 sm:right-auto' : 'sm:right-4 sm:left-auto'} z-20 sm:w-[380px] md:w-[400px] sm:max-w-[calc(100vw-340px)] pointer-events-auto`}
                     >
-                        <div className="bg-black/50 backdrop-blur-2xl border border-white/10 p-6 rounded-2xl shadow-2xl shadow-cyan-500/10">
+                        <div className="bg-black/50 backdrop-blur-2xl border border-white/10 p-4 sm:p-6 rounded-2xl shadow-2xl shadow-cyan-500/10 max-h-[60vh] sm:max-h-none overflow-y-auto">
                             {/* Header */}
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
@@ -467,9 +468,18 @@ export default function AnatomyViewer() {
                         animate={{ x: 0 }}
                         exit={{ x: isRTL ? 320 : -320 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className={`absolute top-0 ${isRTL ? 'right-0 border-l' : 'left-0 border-r'} h-full w-80 bg-black/40 backdrop-blur-2xl border-white/10 z-10 pt-20 pointer-events-auto overflow-y-auto`}
+                        className={`absolute top-0 ${isRTL ? 'right-0 border-l' : 'left-0 border-r'} h-full w-[280px] sm:w-80 bg-black/60 sm:bg-black/40 backdrop-blur-2xl border-white/10 z-10 pt-16 sm:pt-20 pointer-events-auto overflow-y-auto`}
                     >
-                        <div className="h-full px-4 pb-4">
+                        <div className="h-full px-3 sm:px-4 pb-4">
+                            {/* Mobile Close Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-3 right-3 sm:hidden text-white hover:bg-white/10 h-8 w-8"
+                                onClick={() => setIsSidebarOpen(false)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
                             <div className="space-y-6">
                                 <div>
                                     <h3 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-3">{t.bodySystems}</h3>
