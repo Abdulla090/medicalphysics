@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
@@ -22,52 +23,68 @@ import AdminQuizzes from "./pages/admin/AdminQuizzes";
 import QuizEditor from "./pages/admin/QuizEditor";
 import AdminCourses from "./pages/admin/AdminCourses";
 import CourseEditor from "./pages/admin/CourseEditor";
+import AdminAnatomyAtlas from "./pages/admin/AdminAnatomyAtlas";
 import ImageViewerDemo from "./pages/ImageViewerDemo";
 import NotFound from "./pages/NotFound";
 import AnatomyViewer from "./pages/AnatomyViewer";
+import AnatomyAtlas from "./pages/AnatomyAtlas";
+import AnatomyAtlasDetail from "./pages/AnatomyAtlasDetail";
+import XrayCalculator from "./pages/XrayCalculator";
+import Tools from "./pages/Tools";
 
 const App = () => (
-  <ThemeProvider>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <PWAInstallPrompt />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/category/:id" element={<CategoryDetail />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/lesson/:id" element={<Lesson />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/course/:id" element={<CourseDetail />} />
+  <LanguageProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <PWAInstallPrompt />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/category/:id" element={<CategoryDetail />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/lesson/:id" element={<Lesson />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/course/:id" element={<CourseDetail />} />
 
-          {/* Demo Pages */}
-          <Route path="/demo/image-viewer" element={<ImageViewerDemo />} />
+            {/* Demo Pages */}
+            <Route path="/demo/image-viewer" element={<ImageViewerDemo />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/lessons" element={<AdminLessons />} />
-          <Route path="/admin/lessons/new" element={<LessonEditor />} />
-          <Route path="/admin/lessons/:id/edit" element={<LessonEditor />} />
-          <Route path="/admin/categories" element={<AdminCategories />} />
-          <Route path="/admin/quizzes" element={<AdminQuizzes />} />
-          <Route path="/admin/quizzes/new" element={<QuizEditor />} />
-          <Route path="/admin/quizzes/:id/edit" element={<QuizEditor />} />
-          <Route path="/anatomy" element={<AnatomyViewer />} />
+            {/* Anatomy Routes */}
+            <Route path="/anatomy" element={<AnatomyViewer />} />
+            <Route path="/anatomy/atlas" element={<AnatomyAtlas />} />
+            <Route path="/anatomy/atlas/:deviceId" element={<AnatomyAtlasDetail />} />
 
-          <Route path="/admin/courses" element={<AdminCourses />} />
-          <Route path="/admin/courses/new" element={<CourseEditor />} />
-          <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
+            {/* Tools */}
+            <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/xray-calculator" element={<XrayCalculator />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </ThemeProvider>
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/lessons" element={<AdminLessons />} />
+            <Route path="/admin/lessons/:id/edit" element={<LessonEditor />} />
+            <Route path="/admin/lessons/new" element={<LessonEditor />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
+            <Route path="/admin/quizzes" element={<AdminQuizzes />} />
+            <Route path="/admin/quizzes/new" element={<QuizEditor />} />
+            <Route path="/admin/quizzes/:id/edit" element={<QuizEditor />} />
+
+            <Route path="/admin/courses" element={<AdminCourses />} />
+            <Route path="/admin/courses/new" element={<CourseEditor />} />
+            <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
+            <Route path="/admin/anatomy" element={<AdminAnatomyAtlas />} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </LanguageProvider>
 );
 
 export default App;

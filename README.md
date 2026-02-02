@@ -57,10 +57,11 @@ A cutting-edge educational platform built for **Kurdish medical students** and p
 <td width="50%">
 
 ### 🔬 Medical Tools
+- **X-ray Calculator** — AI-powered mAs & kVp parameter calculation
+- **Anatomy Atlas** — Interactive atlas for X-ray, CT, MRI & Ultrasound
 - **DICOM Viewer** — View CT, MRI, and X-ray images
 - **Multi-plane Reconstruction** — Axial, Sagittal, Coronal views
 - **Window/Level Control** — Professional image adjustments
-- **NIfTI Support** — Neuroimaging format compatibility
 
 </td>
 </tr>

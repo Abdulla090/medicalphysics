@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 
 interface SearchSuggestion {
@@ -43,23 +43,27 @@ const SearchAutocomplete = ({ value, onChange, onSelect }: SearchAutocompletePro
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const { data: suggestions, isLoading } = useQuery({
-    queryKey: ['search-suggestions', debouncedQuery],
-    queryFn: async () => {
-      if (!debouncedQuery || debouncedQuery.length < 2) return [];
-      
-      const { data, error } = await supabase
-        .from('lessons')
-        .select('id, title, slug, category')
-        .eq('is_published', true)
-        .or(`title.ilike.%${debouncedQuery}%,description.ilike.%${debouncedQuery}%,content.ilike.%${debouncedQuery}%`)
-        .limit(8);
+  // Use Convex to get lessons and filter client-side
+  const allLessons = useQuery(api.api.getAllLessons);
 
-      if (error) throw error;
-      return data as SearchSuggestion[];
-    },
-    enabled: debouncedQuery.length >= 2,
-  });
+  const suggestions: SearchSuggestion[] = allLessons && debouncedQuery.length >= 2
+    ? allLessons
+      .filter(lesson =>
+        lesson.isPublished && (
+          lesson.title.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+          lesson.description.toLowerCase().includes(debouncedQuery.toLowerCase())
+        )
+      )
+      .slice(0, 8)
+      .map(lesson => ({
+        id: lesson._id,
+        title: lesson.title,
+        slug: lesson.slug,
+        category: lesson.category,
+      }))
+    : [];
+
+  const isLoading = allLessons === undefined && debouncedQuery.length >= 2;
 
   const handleSelect = (suggestion: SearchSuggestion) => {
     onChange(suggestion.title);
@@ -67,7 +71,7 @@ const SearchAutocomplete = ({ value, onChange, onSelect }: SearchAutocompletePro
     onSelect?.(suggestion);
   };
 
-  const showSuggestions = open && debouncedQuery.length >= 2 && (suggestions?.length || isLoading);
+  const showSuggestions = open && debouncedQuery.length >= 2 && (suggestions.length || isLoading);
 
   return (
     <div ref={containerRef} className="relative">

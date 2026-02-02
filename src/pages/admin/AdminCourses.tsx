@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { Plus, Edit, Trash2, GraduationCap, BookOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,52 +22,25 @@ const AdminCourses = () => {
     }
   }, [user, isAdmin, loading, navigate]);
 
-  const { data: courses, isLoading, refetch } = useQuery({
-    queryKey: ['admin-courses'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .order('order_index');
-      
-      if (error) throw error;
-      
-      // Get lesson counts
-      const coursesWithCounts = await Promise.all(
-        data.map(async (course) => {
-          const { count } = await supabase
-            .from('course_lessons')
-            .select('*', { count: 'exact', head: true })
-            .eq('course_id', course.id);
-          
-          return { ...course, lesson_count: count ?? 0 };
-        })
-      );
-      
-      return coursesWithCounts;
-    },
-    enabled: !!user && !!isAdmin,
-  });
+  const courses = useQuery(api.api.getCourses);
+  const deleteCourse = useMutation(api.admin_actions.deleteCourse);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: Id<"courses">) => {
     if (!confirm('دڵنیایت لە سڕینەوەی ئەم کۆرسە؟')) return;
 
-    const { error } = await supabase
-      .from('courses')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('هەڵەیەک ڕوویدا');
-    } else {
+    try {
+      await deleteCourse({ id });
       toast.success('کۆرس سڕایەوە');
-      refetch();
+    } catch (error) {
+      toast.error('هەڵەیەک ڕوویدا');
     }
   };
 
   if (loading || !user || !isAdmin) {
     return null;
   }
+
+  const isLoading = courses === undefined;
 
   return (
     <AdminLayout>
@@ -102,13 +76,13 @@ const AdminCourses = () => {
         ) : (
           <div className="grid gap-4">
             {courses?.map((course) => (
-              <Card key={course.id}>
+              <Card key={course._id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      {course.image_url && (
-                        <img 
-                          src={course.image_url} 
+                      {course.imageUrl && (
+                        <img
+                          src={course.imageUrl}
                           alt={course.title}
                           className="w-20 h-14 object-cover rounded"
                         />
@@ -121,8 +95,8 @@ const AdminCourses = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={course.is_published ? 'default' : 'secondary'}>
-                        {course.is_published ? 'بڵاوکراوەتەوە' : 'ڕەشنووس'}
+                      <Badge variant={course.isPublished ? 'default' : 'secondary'}>
+                        {course.isPublished ? 'بڵاوکراوەتەوە' : 'ڕەشنووس'}
                       </Badge>
                     </div>
                   </div>
@@ -132,24 +106,24 @@ const AdminCourses = () => {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <BookOpen className="h-4 w-4" />
-                        {course.lesson_count} وانە
+                        {course.estimatedDuration || '0'} وانە
                       </span>
                       <Badge variant="outline">
                         {getDifficultyName(course.difficulty as DifficultyLevel)}
                       </Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Link to={`/admin/courses/${course.id}/edit`}>
+                      <Link to={`/admin/courses/${course._id}/edit`}>
                         <Button variant="outline" size="sm" className="gap-1">
                           <Edit className="h-4 w-4" />
                           دەستکاری
                         </Button>
                       </Link>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         className="gap-1"
-                        onClick={() => handleDelete(course.id)}
+                        onClick={() => handleDelete(course._id)}
                       >
                         <Trash2 className="h-4 w-4" />
                         سڕینەوە

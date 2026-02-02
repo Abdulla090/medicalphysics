@@ -1,28 +1,15 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { ChevronLeft, Clock, BookOpen, Trophy, CheckCircle, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Navbar from '@/components/Navbar';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/hooks/useProgress';
 import { getDifficultyName, DifficultyLevel } from '@/lib/api';
-
-interface CourseLesson {
-  id: string;
-  lesson_id: string;
-  order_index: number;
-  lessons: {
-    id: string;
-    title: string;
-    slug: string;
-    description: string;
-    duration: string;
-  };
-}
 
 const difficultyStyles: Record<string, string> = {
   beginner: 'difficulty-beginner',
@@ -35,46 +22,23 @@ const CourseDetail = () => {
   const { user } = useAuth();
   const { progress, isLessonCompleted } = useProgress();
 
-  const { data: course, isLoading } = useQuery({
-    queryKey: ['course', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('slug', id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
+  // Get all courses and find by slug
+  const courses = useQuery(api.api.getCourses);
+  const course = courses?.find(c => c.slug === id);
 
-  const { data: courseLessons } = useQuery({
-    queryKey: ['course-lessons-detail', course?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('course_lessons')
-        .select(`
-          id,
-          lesson_id,
-          order_index,
-          lessons (id, title, slug, description, duration)
-        `)
-        .eq('course_id', course!.id)
-        .order('order_index');
-      
-      if (error) throw error;
-      return data as CourseLesson[];
-    },
-    enabled: !!course?.id,
-  });
+  // Get course lessons
+  const courseLessonsData = useQuery(
+    api.api.getCourseLessons,
+    course?._id ? { courseId: course._id } : "skip"
+  );
 
-  const completedCount = courseLessons?.filter(cl => 
-    isLessonCompleted(cl.lesson_id)
+  const isLoading = courses === undefined;
+
+  const completedCount = courseLessonsData?.filter(cl =>
+    cl.lesson && isLessonCompleted(cl.lessonId)
   ).length ?? 0;
 
-  const totalLessons = courseLessons?.length ?? 0;
+  const totalLessons = courseLessonsData?.length ?? 0;
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
   const isCompleted = progressPercent === 100;
 
@@ -121,9 +85,9 @@ const CourseDetail = () => {
             <div className="lg:col-span-2">
               {/* Header */}
               <div className="mb-8">
-                {course.image_url && (
+                {course.imageUrl && (
                   <img
-                    src={course.image_url}
+                    src={course.imageUrl}
                     alt={course.title}
                     className="w-full aspect-video object-cover rounded-2xl mb-6"
                   />
@@ -137,10 +101,10 @@ const CourseDetail = () => {
                     <BookOpen className="h-3 w-3" />
                     {totalLessons} وانە
                   </Badge>
-                  {course.estimated_duration && (
+                  {course.estimatedDuration && (
                     <Badge variant="outline" className="gap-1">
                       <Clock className="h-3 w-3" />
-                      {course.estimated_duration}
+                      {course.estimatedDuration}
                     </Badge>
                   )}
                 </div>
@@ -155,18 +119,20 @@ const CourseDetail = () => {
               <div>
                 <h2 className="text-xl font-bold mb-4">وانەکان</h2>
                 <div className="space-y-3">
-                  {courseLessons?.map((cl, index) => {
-                    const completed = isLessonCompleted(cl.lesson_id);
-                    
+                  {courseLessonsData?.map((cl, index) => {
+                    const lesson = cl.lesson;
+                    if (!lesson) return null;
+
+                    const completed = isLessonCompleted(cl.lessonId);
+
                     return (
-                      <Link key={cl.id} to={`/lesson/${cl.lessons.slug}`}>
+                      <Link key={cl._id} to={`/lesson/${lesson.slug}`}>
                         <Card className={`hover:shadow-md transition-all ${completed ? 'border-green-200 bg-green-50/50' : ''}`}>
                           <CardContent className="p-4 flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                              completed 
-                                ? 'bg-green-100 text-green-600' 
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${completed
+                                ? 'bg-green-100 text-green-600'
                                 : 'bg-muted text-muted-foreground'
-                            }`}>
+                              }`}>
                               {completed ? (
                                 <CheckCircle className="h-5 w-5" />
                               ) : (
@@ -174,13 +140,13 @@ const CourseDetail = () => {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium">{cl.lessons.title}</p>
+                              <p className="font-medium">{lesson.title}</p>
                               <p className="text-sm text-muted-foreground line-clamp-1">
-                                {cl.lessons.description}
+                                {lesson.description}
                               </p>
                             </div>
                             <div className="text-sm text-muted-foreground shrink-0">
-                              {cl.lessons.duration}
+                              {lesson.duration}
                             </div>
                           </CardContent>
                         </Card>
@@ -225,8 +191,8 @@ const CourseDetail = () => {
                       </div>
                     ) : (
                       <>
-                        {courseLessons && courseLessons.length > 0 && (
-                          <Link to={`/lesson/${courseLessons[completedCount]?.lessons.slug || courseLessons[0].lessons.slug}`}>
+                        {courseLessonsData && courseLessonsData.length > 0 && (
+                          <Link to={`/lesson/${courseLessonsData[completedCount]?.lesson?.slug || courseLessonsData[0]?.lesson?.slug}`}>
                             <Button className="w-full">
                               {completedCount > 0 ? 'بەردەوامبوون' : 'دەستپێکردن'}
                             </Button>

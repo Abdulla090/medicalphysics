@@ -11,9 +11,17 @@ import QuizCard from '@/components/QuizCard';
 import PDFDownloadButton from '@/components/PDFDownloadButton';
 import SocialShare from '@/components/SocialShare';
 import { MarkdownPreview } from '@/components/admin/editor/MarkdownPreview';
-import { fetchLessonBySlug, fetchLessonsByCategory, getDifficultyName } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/hooks/useProgress';
+
+const getDifficultyName = (difficulty: string): string => {
+  const names: Record<string, string> = {
+    beginner: 'سەرەتایی',
+    intermediate: 'ناوەندی',
+    advanced: 'پێشکەوتوو',
+  };
+  return names[difficulty] || difficulty;
+};
 
 // Helper functions for video source detection
 const extractYouTubeId = (url: string): string | null => {

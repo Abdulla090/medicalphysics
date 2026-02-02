@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminQuiz } from '@/hooks/useQuiz';
-import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,23 +14,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { fetchLessons } from '@/lib/api';
 
 interface Question {
   id?: string;
-  question_text: string;
-  question_type: 'multiple_choice' | 'true_false';
+  questionText: string;
+  questionType: 'multiple_choice' | 'true_false';
   options: string[];
-  correct_answer: string;
+  correctAnswer: string;
   explanation: string;
-  order_index: number;
+  orderIndex: number;
 }
 
 const QuizEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const { createQuiz, updateQuiz, addQuestion, updateQuestion, deleteQuestion } = useAdminQuiz();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -40,41 +38,18 @@ const QuizEditor = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const { data: lessons } = useQuery({
-    queryKey: ['lessons-for-quiz'],
-    queryFn: () => fetchLessons(false),
-    enabled: !!user && !!isAdmin,
-  });
+  // Convex queries
+  const lessons = useQuery(api.api.getLessons);
+  const existingQuiz = useQuery(api.api.getQuizById,
+    id ? { id: id as Id<"quizzes"> } : "skip"
+  );
 
-  const { data: existingQuiz, isLoading } = useQuery({
-    queryKey: ['quiz-edit', id],
-    queryFn: async () => {
-      if (!id) return null;
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user && !!isAdmin,
-  });
-
-  const { data: existingQuestions } = useQuery({
-    queryKey: ['quiz-questions-edit', id],
-    queryFn: async () => {
-      if (!id) return [];
-      const { data, error } = await supabase
-        .from('quiz_questions')
-        .select('*')
-        .eq('quiz_id', id)
-        .order('order_index');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user && !!isAdmin,
-  });
+  // Convex mutations
+  const createQuiz = useMutation(api.admin_actions.createQuiz);
+  const updateQuiz = useMutation(api.admin_actions.updateQuiz);
+  const createQuizQuestion = useMutation(api.admin_actions.createQuizQuestion);
+  const updateQuizQuestion = useMutation(api.admin_actions.updateQuizQuestion);
+  const deleteQuizQuestion = useMutation(api.admin_actions.deleteQuizQuestion);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -86,34 +61,32 @@ const QuizEditor = () => {
     if (existingQuiz) {
       setTitle(existingQuiz.title);
       setDescription(existingQuiz.description || '');
-      setLessonId(existingQuiz.lesson_id);
-      setPassingScore(existingQuiz.passing_score);
-      setIsPublished(existingQuiz.is_published);
+      setLessonId(existingQuiz.lessonId);
+      setPassingScore(existingQuiz.passingScore);
+      setIsPublished(existingQuiz.isPublished);
+
+      if (existingQuiz.questions) {
+        setQuestions(existingQuiz.questions.map((q: any) => ({
+          id: q._id,
+          questionText: q.questionText,
+          questionType: q.questionType as 'multiple_choice' | 'true_false',
+          options: q.options as string[],
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation || '',
+          orderIndex: q.orderIndex,
+        })));
+      }
     }
   }, [existingQuiz]);
 
-  useEffect(() => {
-    if (existingQuestions && existingQuestions.length > 0) {
-      setQuestions(existingQuestions.map(q => ({
-        id: q.id,
-        question_text: q.question_text,
-        question_type: q.question_type as 'multiple_choice' | 'true_false',
-        options: q.options as string[],
-        correct_answer: q.correct_answer,
-        explanation: q.explanation || '',
-        order_index: q.order_index,
-      })));
-    }
-  }, [existingQuestions]);
-
   const addNewQuestion = () => {
     setQuestions([...questions, {
-      question_text: '',
-      question_type: 'multiple_choice',
+      questionText: '',
+      questionType: 'multiple_choice',
       options: ['', '', '', ''],
-      correct_answer: '',
+      correctAnswer: '',
       explanation: '',
-      order_index: questions.length,
+      orderIndex: questions.length,
     }]);
   };
 
@@ -129,10 +102,14 @@ const QuizEditor = () => {
     setQuestions(updated);
   };
 
-  const removeQuestion = (index: number) => {
+  const removeQuestion = async (index: number) => {
     const q = questions[index];
     if (q.id) {
-      deleteQuestion.mutate(q.id);
+      try {
+        await deleteQuizQuestion({ id: q.id as Id<"quiz_questions"> });
+      } catch (error) {
+        console.error('Error deleting question:', error);
+      }
     }
     setQuestions(questions.filter((_, i) => i !== index));
   };
@@ -143,7 +120,7 @@ const QuizEditor = () => {
       return;
     }
 
-    if (questions.some(q => !q.question_text || !q.correct_answer)) {
+    if (questions.some(q => !q.questionText || !q.correctAnswer)) {
       toast.error('تکایە هەموو پرسیارەکان تەواو بکە');
       return;
     }
@@ -151,59 +128,65 @@ const QuizEditor = () => {
     setSaving(true);
 
     try {
-      let quizId = id;
+      let quizId: Id<"quizzes">;
 
       if (id) {
-        await updateQuiz.mutateAsync({
-          id,
+        await updateQuiz({
+          id: id as Id<"quizzes">,
           title,
-          description,
-          lesson_id: lessonId,
-          passing_score: passingScore,
-          is_published: isPublished,
+          description: description || undefined,
+          lessonId: lessonId as Id<"lessons">,
+          passingScore,
+          isPublished,
         });
+        quizId = id as Id<"quizzes">;
       } else {
-        const result = await createQuiz.mutateAsync({
+        quizId = await createQuiz({
           title,
-          description,
-          lesson_id: lessonId,
-          passing_score: passingScore,
-          is_published: isPublished,
+          description: description || undefined,
+          lessonId: lessonId as Id<"lessons">,
+          passingScore,
+          isPublished,
         });
-        quizId = result.id;
       }
 
       // Save questions
       for (const [index, q] of questions.entries()) {
         const questionData = {
-          quiz_id: quizId!,
-          question_text: q.question_text,
-          question_type: q.question_type,
+          quizId,
+          questionText: q.questionText,
+          questionType: q.questionType,
           options: q.options.filter(o => o.trim() !== ''),
-          correct_answer: q.correct_answer,
-          explanation: q.explanation,
-          order_index: index,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation || undefined,
+          orderIndex: index,
         };
 
         if (q.id) {
-          await updateQuestion.mutateAsync({ id: q.id, ...questionData });
+          await updateQuizQuestion({
+            id: q.id as Id<"quiz_questions">,
+            ...questionData
+          });
         } else {
-          await addQuestion.mutateAsync(questionData);
+          await createQuizQuestion(questionData);
         }
       }
 
       toast.success('تاقیکردنەوە پاشەکەوتکرا');
       navigate('/admin/quizzes');
     } catch (error) {
+      console.error(error);
       toast.error('هەڵەیەک ڕوویدا');
     } finally {
       setSaving(false);
     }
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return null;
   }
+
+  const isLoading = id && existingQuiz === undefined;
 
   return (
     <AdminLayout>
@@ -214,7 +197,7 @@ const QuizEditor = () => {
               {id ? 'دەستکاری تاقیکردنەوە' : 'تاقیکردنەوەی نوێ'}
             </h1>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Button onClick={handleSave} disabled={saving || isLoading} className="gap-2">
             <Save className="h-4 w-4" />
             {saving ? 'پاشەکەوتکردن...' : 'پاشەکەوتکردن'}
           </Button>
@@ -244,7 +227,7 @@ const QuizEditor = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {lessons?.map((lesson) => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
+                        <SelectItem key={lesson._id} value={lesson._id}>
                           {lesson.title}
                         </SelectItem>
                       ))}
@@ -321,8 +304,8 @@ const QuizEditor = () => {
                           <div className="space-y-2">
                             <Label>دەقی پرسیار</Label>
                             <Textarea
-                              value={q.question_text}
-                              onChange={(e) => updateQuestionField(qIndex, 'question_text', e.target.value)}
+                              value={q.questionText}
+                              onChange={(e) => updateQuestionField(qIndex, 'questionText', e.target.value)}
                               placeholder="پرسیار بنووسە..."
                             />
                           </div>
@@ -330,10 +313,10 @@ const QuizEditor = () => {
                           <div className="space-y-2">
                             <Label>جۆری پرسیار</Label>
                             <Select
-                              value={q.question_type}
+                              value={q.questionType}
                               onValueChange={(v) => {
                                 const questionType = v as 'multiple_choice' | 'true_false';
-                                updateQuestionField(qIndex, 'question_type', questionType);
+                                updateQuestionField(qIndex, 'questionType', questionType);
                                 if (questionType === 'true_false') {
                                   updateQuestionField(qIndex, 'options', ['ڕاستە', 'هەڵەیە']);
                                 } else {
@@ -360,7 +343,7 @@ const QuizEditor = () => {
                                   value={opt}
                                   onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
                                   placeholder={`هەڵبژاردەی ${oIndex + 1}`}
-                                  disabled={q.question_type === 'true_false'}
+                                  disabled={q.questionType === 'true_false'}
                                 />
                               ))}
                             </div>
@@ -369,8 +352,8 @@ const QuizEditor = () => {
                           <div className="space-y-2">
                             <Label>وەڵامی دروست</Label>
                             <Select
-                              value={q.correct_answer}
-                              onValueChange={(v) => updateQuestionField(qIndex, 'correct_answer', v)}
+                              value={q.correctAnswer}
+                              onValueChange={(v) => updateQuestionField(qIndex, 'correctAnswer', v)}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="وەڵامی دروست هەڵبژێرە" />

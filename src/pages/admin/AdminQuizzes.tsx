@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { Plus, Edit, Trash2, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,42 +21,25 @@ const AdminQuizzes = () => {
     }
   }, [user, isAdmin, loading, navigate]);
 
-  const { data: quizzes, isLoading, refetch } = useQuery({
-    queryKey: ['admin-quizzes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select(`
-          *,
-          lessons:lesson_id (title, slug)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!isAdmin,
-  });
+  const quizzes = useQuery(api.api.getQuizzes);
+  const deleteQuiz = useMutation(api.admin_actions.deleteQuiz);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: Id<"quizzes">) => {
     if (!confirm('دڵنیایت لە سڕینەوەی ئەم تاقیکردنەوەیە؟')) return;
 
-    const { error } = await supabase
-      .from('quizzes')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('هەڵەیەک ڕوویدا');
-    } else {
+    try {
+      await deleteQuiz({ id });
       toast.success('تاقیکردنەوە سڕایەوە');
-      refetch();
+    } catch (error) {
+      toast.error('هەڵەیەک ڕوویدا');
     }
   };
 
   if (loading || !user || !isAdmin) {
     return null;
   }
+
+  const isLoading = quizzes === undefined;
 
   return (
     <AdminLayout>
@@ -91,20 +75,23 @@ const AdminQuizzes = () => {
         ) : (
           <div className="grid gap-4">
             {quizzes?.map((quiz) => (
-              <Card key={quiz.id}>
+              <Card key={quiz._id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                      {quiz.lessons && (
+                      {quiz.lesson && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          وانە: {quiz.lessons.title}
+                          وانە: {quiz.lesson.title}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={quiz.is_published ? 'default' : 'secondary'}>
-                        {quiz.is_published ? 'بڵاوکراوەتەوە' : 'ڕەشنووس'}
+                      <Badge variant={quiz.isPublished ? 'default' : 'secondary'}>
+                        {quiz.isPublished ? 'بڵاوکراوەتەوە' : 'ڕەشنووس'}
+                      </Badge>
+                      <Badge variant="outline">
+                        {quiz.questionsCount} پرسیار
                       </Badge>
                     </div>
                   </div>
@@ -112,20 +99,20 @@ const AdminQuizzes = () => {
                 <CardContent className="pt-0">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      نمرەی تێپەڕین: {quiz.passing_score}%
+                      نمرەی تێپەڕین: {quiz.passingScore}%
                     </p>
                     <div className="flex gap-2">
-                      <Link to={`/admin/quizzes/${quiz.id}/edit`}>
+                      <Link to={`/admin/quizzes/${quiz._id}/edit`}>
                         <Button variant="outline" size="sm" className="gap-1">
                           <Edit className="h-4 w-4" />
                           دەستکاری
                         </Button>
                       </Link>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         className="gap-1"
-                        onClick={() => handleDelete(quiz.id)}
+                        onClick={() => handleDelete(quiz._id)}
                       >
                         <Trash2 className="h-4 w-4" />
                         سڕینەوە

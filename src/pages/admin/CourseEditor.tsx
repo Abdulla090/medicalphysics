@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { fetchLessons, DifficultyLevel } from '@/lib/api';
+import { DifficultyLevel } from '@/lib/api';
 
 interface CourseLesson {
-  lesson_id: string;
-  order_index: number;
+  lessonId: string;
+  orderIndex: number;
   title?: string;
 }
 
@@ -36,45 +37,17 @@ const CourseEditor = () => {
   const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const { data: availableLessons } = useQuery({
-    queryKey: ['lessons-for-course'],
-    queryFn: () => fetchLessons(false),
-    enabled: !!user && !!isAdmin,
-  });
+  // Convex queries
+  const availableLessons = useQuery(api.api.getLessons);
+  const existingCourse = useQuery(api.api.getCourseById,
+    id ? { id: id as Id<"courses"> } : "skip"
+  );
 
-  const { data: existingCourse, isLoading } = useQuery({
-    queryKey: ['course-edit', id],
-    queryFn: async () => {
-      if (!id) return null;
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user && !!isAdmin,
-  });
-
-  const { data: existingCourseLessons } = useQuery({
-    queryKey: ['course-lessons-edit', id],
-    queryFn: async () => {
-      if (!id) return [];
-      const { data, error } = await supabase
-        .from('course_lessons')
-        .select('lesson_id, order_index, lessons(title)')
-        .eq('course_id', id)
-        .order('order_index');
-      if (error) throw error;
-      return data.map(cl => ({
-        lesson_id: cl.lesson_id,
-        order_index: cl.order_index,
-        title: (cl.lessons as { title: string })?.title,
-      }));
-    },
-    enabled: !!id && !!user && !!isAdmin,
-  });
+  // Convex mutations
+  const createCourse = useMutation(api.admin_actions.createCourse);
+  const updateCourse = useMutation(api.admin_actions.updateCourse);
+  const addLessonToCourse = useMutation(api.admin_actions.addLessonToCourse);
+  const removeLessonFromCourse = useMutation(api.admin_actions.removeLessonFromCourse);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -87,18 +60,20 @@ const CourseEditor = () => {
       setTitle(existingCourse.title);
       setSlug(existingCourse.slug);
       setDescription(existingCourse.description || '');
-      setImageUrl(existingCourse.image_url || '');
+      setImageUrl(existingCourse.imageUrl || '');
       setDifficulty(existingCourse.difficulty as DifficultyLevel);
-      setEstimatedDuration(existingCourse.estimated_duration || '');
-      setIsPublished(existingCourse.is_published);
+      setEstimatedDuration(existingCourse.estimatedDuration || '');
+      setIsPublished(existingCourse.isPublished);
+
+      if (existingCourse.lessons) {
+        setCourseLessons(existingCourse.lessons.map((cl: any) => ({
+          lessonId: cl.lessonId,
+          orderIndex: cl.orderIndex,
+          title: cl.lesson?.title,
+        })));
+      }
     }
   }, [existingCourse]);
-
-  useEffect(() => {
-    if (existingCourseLessons && existingCourseLessons.length > 0) {
-      setCourseLessons(existingCourseLessons);
-    }
-  }, [existingCourseLessons]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -112,14 +87,14 @@ const CourseEditor = () => {
   }, [title, id]);
 
   const addLesson = (lessonId: string) => {
-    if (courseLessons.some(cl => cl.lesson_id === lessonId)) {
+    if (courseLessons.some(cl => cl.lessonId === lessonId)) {
       toast.error('ئەم وانەیە پێشتر زیادکراوە');
       return;
     }
-    const lesson = availableLessons?.find(l => l.id === lessonId);
+    const lesson = availableLessons?.find(l => l._id === lessonId);
     setCourseLessons([...courseLessons, {
-      lesson_id: lessonId,
-      order_index: courseLessons.length,
+      lessonId: lessonId,
+      orderIndex: courseLessons.length,
       title: lesson?.title,
     }]);
   };
@@ -131,10 +106,10 @@ const CourseEditor = () => {
   const moveLesson = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= courseLessons.length) return;
-    
+
     const updated = [...courseLessons];
     [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-    setCourseLessons(updated.map((cl, i) => ({ ...cl, order_index: i })));
+    setCourseLessons(updated.map((cl, i) => ({ ...cl, orderIndex: i })));
   };
 
   const handleSave = async () => {
@@ -146,52 +121,44 @@ const CourseEditor = () => {
     setSaving(true);
 
     try {
-      let courseId = id;
+      let courseId: Id<"courses">;
 
       const courseData = {
         title,
         slug,
-        description,
-        image_url: imageUrl || null,
-        difficulty,
-        estimated_duration: estimatedDuration || null,
-        is_published: isPublished,
+        description: description || undefined,
+        imageUrl: imageUrl || undefined,
+        difficulty: difficulty as "beginner" | "intermediate" | "advanced",
+        estimatedDuration: estimatedDuration || undefined,
+        isPublished,
+        orderIndex: 0,
       };
 
       if (id) {
-        const { error } = await supabase
-          .from('courses')
-          .update(courseData)
-          .eq('id', id);
-        if (error) throw error;
+        await updateCourse({
+          id: id as Id<"courses">,
+          ...courseData
+        });
+        courseId = id as Id<"courses">;
       } else {
-        const { data, error } = await supabase
-          .from('courses')
-          .insert(courseData)
-          .select()
-          .single();
-        if (error) throw error;
-        courseId = data.id;
+        courseId = await createCourse(courseData);
       }
 
-      // Delete existing course lessons
-      if (id) {
-        await supabase
-          .from('course_lessons')
-          .delete()
-          .eq('course_id', id);
+      // For new courses or updates, we need to manage course lessons
+      // First get existing course lessons to delete them
+      if (existingCourse?.lessons) {
+        for (const cl of existingCourse.lessons) {
+          await removeLessonFromCourse({ id: cl._id });
+        }
       }
 
       // Insert new course lessons
-      if (courseLessons.length > 0) {
-        const { error } = await supabase
-          .from('course_lessons')
-          .insert(courseLessons.map((cl, index) => ({
-            course_id: courseId,
-            lesson_id: cl.lesson_id,
-            order_index: index,
-          })));
-        if (error) throw error;
+      for (let i = 0; i < courseLessons.length; i++) {
+        await addLessonToCourse({
+          courseId,
+          lessonId: courseLessons[i].lessonId as Id<"lessons">,
+          orderIndex: i,
+        });
       }
 
       toast.success('کۆرس پاشەکەوتکرا');
@@ -204,9 +171,11 @@ const CourseEditor = () => {
     }
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return null;
   }
+
+  const isLoading = id && existingCourse === undefined;
 
   return (
     <AdminLayout>
@@ -217,7 +186,7 @@ const CourseEditor = () => {
               {id ? 'دەستکاری کۆرس' : 'کۆرسی نوێ'}
             </h1>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Button onClick={handleSave} disabled={saving || isLoading} className="gap-2">
             <Save className="h-4 w-4" />
             {saving ? 'پاشەکەوتکردن...' : 'پاشەکەوتکردن'}
           </Button>
@@ -313,10 +282,10 @@ const CourseEditor = () => {
                   <span>زیادکردنی وانە</span>
                 </SelectTrigger>
                 <SelectContent>
-                  {availableLessons?.filter(l => 
-                    !courseLessons.some(cl => cl.lesson_id === l.id)
+                  {availableLessons?.filter(l =>
+                    !courseLessons.some(cl => cl.lessonId === l._id)
                   ).map((lesson) => (
-                    <SelectItem key={lesson.id} value={lesson.id}>
+                    <SelectItem key={lesson._id} value={lesson._id}>
                       {lesson.title}
                     </SelectItem>
                   ))}
@@ -332,7 +301,7 @@ const CourseEditor = () => {
                 <div className="space-y-2">
                   {courseLessons.map((cl, index) => (
                     <div
-                      key={cl.lesson_id}
+                      key={cl.lessonId}
                       className="flex items-center gap-3 p-3 border rounded-lg bg-card"
                     >
                       <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
@@ -340,7 +309,7 @@ const CourseEditor = () => {
                         {index + 1}
                       </span>
                       <span className="flex-1 font-medium">
-                        {cl.title || availableLessons?.find(l => l.id === cl.lesson_id)?.title}
+                        {cl.title || availableLessons?.find(l => l._id === cl.lessonId)?.title}
                       </span>
                       <div className="flex gap-1">
                         <Button

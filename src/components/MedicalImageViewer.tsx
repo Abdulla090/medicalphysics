@@ -2,21 +2,13 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {
     ZoomIn, ZoomOut, RotateCcw, RotateCw, Sun, Contrast, Eye,
-    Maximize2, Move, Circle, ArrowUpRight, Type, Eraser,
-    Download, Bone, Brain, Heart, Wind, Layers, ChevronDown,
+    Maximize2, Circle, ArrowUpRight, Type, Eraser,
+    Download, Bone, Brain, Heart, Wind, Layers,
     MousePointer2, Pencil
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-    DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 
 // ============================================
 // TYPES
@@ -33,81 +25,32 @@ interface Annotation {
 interface WindowPreset {
     name: string;
     nameKu: string;
-    icon: React.ReactNode;
+    icon: React.ElementType;
     brightness: number;
     contrast: number;
     invert: boolean;
-    description: string;
 }
 
 interface MedicalImageViewerProps {
     src: string;
     alt: string;
     className?: string;
-    enableAnnotations?: boolean; // Admin feature
+    enableAnnotations?: boolean;
     initialAnnotations?: Annotation[];
     onAnnotationsChange?: (annotations: Annotation[]) => void;
 }
 
 // ============================================
-// WINDOW PRESETS (Simulating CT/MRI Windows)
+// WINDOW PRESETS
 // ============================================
 
 const WINDOW_PRESETS: WindowPreset[] = [
-    {
-        name: 'Default',
-        nameKu: 'ئاسایی',
-        icon: <Layers className="h-4 w-4" />,
-        brightness: 100,
-        contrast: 100,
-        invert: false,
-        description: 'Standard view'
-    },
-    {
-        name: 'Bone Window',
-        nameKu: 'پەنجەرەی ئێسک',
-        icon: <Bone className="h-4 w-4" />,
-        brightness: 60,
-        contrast: 200,
-        invert: false,
-        description: 'High contrast for bone structures (WW: 2000, WL: 500)'
-    },
-    {
-        name: 'Soft Tissue',
-        nameKu: 'شلی نەرم',
-        icon: <Heart className="h-4 w-4" />,
-        brightness: 100,
-        contrast: 140,
-        invert: false,
-        description: 'Optimal for soft tissue visualization (WW: 400, WL: 40)'
-    },
-    {
-        name: 'Brain Window',
-        nameKu: 'پەنجەرەی مێشک',
-        icon: <Brain className="h-4 w-4" />,
-        brightness: 110,
-        contrast: 160,
-        invert: false,
-        description: 'Optimized for brain CT (WW: 80, WL: 40)'
-    },
-    {
-        name: 'Lung Window',
-        nameKu: 'پەنجەرەی سییەکان',
-        icon: <Wind className="h-4 w-4" />,
-        brightness: 130,
-        contrast: 120,
-        invert: false,
-        description: 'Wide window for lung parenchyma (WW: 1500, WL: -600)'
-    },
-    {
-        name: 'Negative/Invert',
-        nameKu: 'نێگەتیڤ',
-        icon: <Eye className="h-4 w-4" />,
-        brightness: 100,
-        contrast: 100,
-        invert: true,
-        description: 'Inverted colors like traditional X-ray film'
-    },
+    { name: 'Default', nameKu: 'ئاسایی', icon: Layers, brightness: 100, contrast: 100, invert: false },
+    { name: 'Bone', nameKu: 'ئێسک', icon: Bone, brightness: 60, contrast: 200, invert: false },
+    { name: 'Soft Tissue', nameKu: 'شلی نەرم', icon: Heart, brightness: 100, contrast: 140, invert: false },
+    { name: 'Brain', nameKu: 'مێشک', icon: Brain, brightness: 110, contrast: 160, invert: false },
+    { name: 'Lung', nameKu: 'سی', icon: Wind, brightness: 130, contrast: 120, invert: false },
+    { name: 'Negative', nameKu: 'نێگەتیڤ', icon: Eye, brightness: 100, contrast: 100, invert: true },
 ];
 
 // ============================================
@@ -139,7 +82,6 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
     const [contrast, setContrast] = useState(100);
     const [inverted, setInverted] = useState(false);
     const [rotation, setRotation] = useState(0);
-    const [isControlsVisible, setIsControlsVisible] = useState(true);
     const [activePreset, setActivePreset] = useState<string>('Default');
 
     // Annotation states
@@ -169,11 +111,6 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
         setInverted(false);
         setRotation(0);
         setActivePreset('Default');
-    };
-
-    // Rotate image
-    const rotateImage = (degrees: number) => {
-        setRotation((prev) => (prev + degrees) % 360);
     };
 
     // Filter style for the image
@@ -228,7 +165,6 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                 points: [...prev.points, coords]
             } : null);
         } else {
-            // For arrow and circle, we only need start and end points
             setCurrentAnnotation(prev => prev ? {
                 ...prev,
                 points: [prev.points[0], coords]
@@ -279,10 +215,8 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw all saved annotations
         [...annotations, currentAnnotation].filter(Boolean).forEach((ann) => {
             if (!ann) return;
 
@@ -296,13 +230,11 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                 case 'arrow':
                     if (ann.points.length >= 2) {
                         const [start, end] = ann.points;
-                        // Draw line
                         ctx.beginPath();
                         ctx.moveTo(start.x, start.y);
                         ctx.lineTo(end.x, end.y);
                         ctx.stroke();
 
-                        // Draw arrowhead
                         const angle = Math.atan2(end.y - start.y, end.x - start.x);
                         const headLength = 15;
                         ctx.beginPath();
@@ -346,7 +278,6 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                 case 'text':
                     if (ann.points.length >= 1 && ann.text) {
                         ctx.font = 'bold 16px Inter, sans-serif';
-                        // Draw background
                         const textMetrics = ctx.measureText(ann.text);
                         ctx.fillStyle = 'rgba(0,0,0,0.7)';
                         ctx.fillRect(
@@ -355,7 +286,6 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                             textMetrics.width + 8,
                             22
                         );
-                        // Draw text
                         ctx.fillStyle = ann.color;
                         ctx.fillText(ann.text, ann.points[0].x, ann.points[0].y);
                     }
@@ -364,16 +294,8 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
         });
     }, [annotations, currentAnnotation]);
 
-    // ============================================
-    // DOWNLOAD IMAGE
-    // ============================================
-
+    // Download Image
     const downloadImage = () => {
-        const container = imageContainerRef.current;
-        const canvas = canvasRef.current;
-        if (!container || !canvas) return;
-
-        // For now, just download the original with a note
         const link = document.createElement('a');
         link.download = `medical-image-${Date.now()}.png`;
         link.href = src;
@@ -381,7 +303,7 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
     };
 
     return (
-        <div className={cn("relative overflow-hidden rounded-xl bg-black border border-border shadow-xl", className)}>
+        <div className={cn("flex flex-col gap-4", className)}>
             <TransformWrapper
                 initialScale={1}
                 minScale={0.5}
@@ -391,22 +313,22 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                 panning={{ disabled: currentTool !== 'pan' }}
             >
                 {({ zoomIn, zoomOut, resetTransform }) => (
-                    <div className="relative w-full h-full flex flex-col">
-                        {/* Main Image Area */}
+                    <div className="flex flex-col gap-4">
+                        {/* Image Container - Clean, no overlays */}
                         <div
                             ref={imageContainerRef}
-                            className="flex-1 w-full relative bg-gradient-to-br from-gray-900 to-black"
+                            className="relative overflow-hidden rounded-xl bg-black border border-border shadow-xl"
                         >
                             <TransformComponent
-                                wrapperClass="!w-full !h-full flex items-center justify-center min-h-[400px]"
-                                contentClass="!w-full !h-full flex items-center justify-center relative"
+                                wrapperClass="!w-full"
+                                contentClass="!w-full flex items-center justify-center min-h-[300px] md:min-h-[400px]"
                             >
                                 <div className="relative">
                                     <img
                                         src={src}
                                         alt={alt}
                                         style={filterStyle}
-                                        className="max-h-[600px] w-auto object-contain cursor-grab active:cursor-grabbing select-none"
+                                        className="max-h-[400px] md:max-h-[500px] w-auto object-contain cursor-grab active:cursor-grabbing select-none"
                                         draggable={false}
                                     />
                                     {/* Annotation Canvas Overlay */}
@@ -448,249 +370,197 @@ const MedicalImageViewer: React.FC<MedicalImageViewerProps> = ({
                             )}
                         </div>
 
-                        {/* Top Toolbar */}
-                        <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-20">
-                            {/* Window Presets Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="bg-black/70 backdrop-blur border-white/20 text-white hover:bg-black/90 gap-2"
-                                    >
-                                        <Layers className="h-4 w-4" />
-                                        {activePreset}
-                                        <ChevronDown className="h-3 w-3 opacity-60" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 bg-black/95 border-white/20 text-white">
-                                    <DropdownMenuLabel className="text-gray-400">
-                                        پەنجەرەی وێنەگرتن / Window Presets
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator className="bg-white/10" />
-                                    {WINDOW_PRESETS.map((preset) => (
-                                        <DropdownMenuItem
-                                            key={preset.name}
-                                            onClick={() => applyPreset(preset)}
-                                            className={cn(
-                                                "flex items-center gap-3 cursor-pointer hover:bg-white/10",
-                                                activePreset === preset.name && "bg-primary/20 text-primary"
-                                            )}
-                                        >
-                                            {preset.icon}
-                                            <div className="flex-1">
-                                                <div className="font-medium">{preset.nameKu}</div>
-                                                <div className="text-xs text-gray-400">{preset.name}</div>
-                                            </div>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                        {/* External Controls Panel */}
+                        <div className="p-4 md:p-5 rounded-xl bg-card border border-border">
+                            {/* Preset Buttons */}
+                            <div className="mb-4">
+                                <p className="text-xs text-muted-foreground mb-2">پەنجەرەی وێنەگرتن / Presets</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {WINDOW_PRESETS.map((preset) => {
+                                        const PresetIcon = preset.icon;
+                                        return (
+                                            <Button
+                                                key={preset.name}
+                                                variant={activePreset === preset.name ? "secondary" : "ghost"}
+                                                size="sm"
+                                                onClick={() => applyPreset(preset)}
+                                                className={cn(
+                                                    "gap-2 text-xs",
+                                                    activePreset === preset.name && "bg-primary/20 border-primary/50"
+                                                )}
+                                            >
+                                                <PresetIcon className="w-3 h-3" />
+                                                <span className="hidden sm:inline">{preset.nameKu}</span>
+                                                <span className="sm:hidden">{preset.name.slice(0, 4)}</span>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                            {/* Right side controls */}
-                            <div className="flex gap-2">
-                                {/* Download */}
+                            {/* Sliders */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="flex items-center gap-2 text-muted-foreground">
+                                            <Sun className="h-4 w-4" /> ڕووناکی
+                                        </span>
+                                        <span className="font-medium">{brightness}%</span>
+                                    </div>
+                                    <Slider
+                                        value={[brightness]}
+                                        onValueChange={(v) => { setBrightness(v[0]); setActivePreset('Custom'); }}
+                                        min={20} max={200} step={5}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="flex items-center gap-2 text-muted-foreground">
+                                            <Contrast className="h-4 w-4" /> کۆنتراست
+                                        </span>
+                                        <span className="font-medium">{contrast}%</span>
+                                    </div>
+                                    <Slider
+                                        value={[contrast]}
+                                        onValueChange={(v) => { setContrast(v[0]); setActivePreset('Custom'); }}
+                                        min={50} max={300} step={5}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                                <div className="flex items-center gap-1">
+                                    <Button size="icon" variant="ghost" onClick={() => zoomOut()} className="h-8 w-8">
+                                        <ZoomOut className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={() => zoomIn()} className="h-8 w-8">
+                                        <ZoomIn className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="w-px h-6 bg-border" />
+                                <div className="flex items-center gap-1">
+                                    <Button size="icon" variant="ghost" onClick={() => setRotation(r => r - 90)} className="h-8 w-8">
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={() => setRotation(r => r + 90)} className="h-8 w-8">
+                                        <RotateCw className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="w-px h-6 bg-border" />
                                 <Button
-                                    variant="outline"
+                                    variant={inverted ? "secondary" : "ghost"}
+                                    size="sm"
+                                    onClick={() => setInverted(!inverted)}
+                                    className="gap-2"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                    {inverted ? 'نێگەتیڤ' : 'ئاسایی'}
+                                </Button>
+                                <div className="flex-1" />
+                                <Button
                                     size="icon"
-                                    className="bg-black/70 backdrop-blur border-white/20 text-white hover:bg-black/90 h-8 w-8"
+                                    variant="ghost"
                                     onClick={downloadImage}
-                                    title="Download Image"
+                                    className="h-8 w-8"
+                                    title="Download"
                                 >
                                     <Download className="h-4 w-4" />
                                 </Button>
-
-                                {/* Toggle Controls */}
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="bg-black/70 backdrop-blur border-white/20 text-white hover:bg-black/90"
-                                    onClick={() => setIsControlsVisible(!isControlsVisible)}
+                                    onClick={() => { resetTransform(); resetFilters(); }}
+                                    className="gap-2"
                                 >
-                                    {isControlsVisible ? 'Hide' : 'Show'} Controls
+                                    <Maximize2 className="h-4 w-4" />
+                                    ڕیسێت
                                 </Button>
                             </div>
                         </div>
 
-                        {/* Annotation Toolbar (Admin Only) */}
+                        {/* Annotation Toolbar (Admin Only) - External */}
                         {enableAnnotations && (
-                            <div className="absolute top-16 left-4 flex flex-col gap-2 z-20">
-                                <div className="bg-black/80 backdrop-blur-md rounded-xl p-2 border border-white/10 flex flex-col gap-1">
+                            <div className="p-4 rounded-xl bg-card border border-border">
+                                <p className="text-xs text-muted-foreground mb-3">ئامڕازەکانی نیشانەکردن / Annotation Tools</p>
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Button
                                         variant={currentTool === 'pan' ? 'secondary' : 'ghost'}
-                                        size="icon"
+                                        size="sm"
                                         onClick={() => setCurrentTool('pan')}
-                                        className="h-9 w-9 text-white"
-                                        title="Pan/Move"
+                                        className="gap-2"
                                     >
                                         <MousePointer2 className="h-4 w-4" />
+                                        <span className="hidden sm:inline">جوڵاندن</span>
                                     </Button>
                                     <Button
                                         variant={currentTool === 'arrow' ? 'secondary' : 'ghost'}
-                                        size="icon"
+                                        size="sm"
                                         onClick={() => setCurrentTool('arrow')}
-                                        className="h-9 w-9 text-white"
-                                        title="Draw Arrow"
+                                        className="gap-2"
                                     >
                                         <ArrowUpRight className="h-4 w-4" />
+                                        <span className="hidden sm:inline">تیر</span>
                                     </Button>
                                     <Button
                                         variant={currentTool === 'circle' ? 'secondary' : 'ghost'}
-                                        size="icon"
+                                        size="sm"
                                         onClick={() => setCurrentTool('circle')}
-                                        className="h-9 w-9 text-white"
-                                        title="Draw Circle"
+                                        className="gap-2"
                                     >
                                         <Circle className="h-4 w-4" />
+                                        <span className="hidden sm:inline">بازنە</span>
                                     </Button>
                                     <Button
                                         variant={currentTool === 'freehand' ? 'secondary' : 'ghost'}
-                                        size="icon"
+                                        size="sm"
                                         onClick={() => setCurrentTool('freehand')}
-                                        className="h-9 w-9 text-white"
-                                        title="Freehand Draw"
+                                        className="gap-2"
                                     >
                                         <Pencil className="h-4 w-4" />
+                                        <span className="hidden sm:inline">کێشان</span>
                                     </Button>
                                     <Button
                                         variant={currentTool === 'text' ? 'secondary' : 'ghost'}
-                                        size="icon"
+                                        size="sm"
                                         onClick={() => setCurrentTool('text')}
-                                        className="h-9 w-9 text-white"
-                                        title="Add Text"
+                                        className="gap-2"
                                     >
                                         <Type className="h-4 w-4" />
+                                        <span className="hidden sm:inline">نووسین</span>
                                     </Button>
 
-                                    <div className="h-px bg-white/20 my-1" />
+                                    <div className="w-px h-6 bg-border" />
 
                                     {/* Color Picker */}
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-9 w-9"
-                                            >
-                                                <div
-                                                    className="h-5 w-5 rounded-full border-2 border-white"
-                                                    style={{ backgroundColor: annotationColor }}
-                                                />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="bg-black/95 border-white/20 min-w-0">
-                                            <div className="flex gap-1 p-1">
-                                                {ANNOTATION_COLORS.map((color) => (
-                                                    <button
-                                                        key={color.value}
-                                                        onClick={() => setAnnotationColor(color.value)}
-                                                        className={cn(
-                                                            "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
-                                                            annotationColor === color.value ? "border-white scale-110" : "border-transparent"
-                                                        )}
-                                                        style={{ backgroundColor: color.value }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <div className="flex gap-1">
+                                        {ANNOTATION_COLORS.map((color) => (
+                                            <button
+                                                key={color.value}
+                                                onClick={() => setAnnotationColor(color.value)}
+                                                className={cn(
+                                                    "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
+                                                    annotationColor === color.value ? "border-foreground scale-110" : "border-transparent"
+                                                )}
+                                                style={{ backgroundColor: color.value }}
+                                            />
+                                        ))}
+                                    </div>
 
-                                    <div className="h-px bg-white/20 my-1" />
+                                    <div className="flex-1" />
 
-                                    {/* Clear Annotations */}
                                     <Button
-                                        variant="ghost"
-                                        size="icon"
+                                        variant="destructive"
+                                        size="sm"
                                         onClick={clearAnnotations}
-                                        className="h-9 w-9 text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                        title="Clear All Annotations"
+                                        className="gap-2"
                                     >
                                         <Eraser className="h-4 w-4" />
+                                        <span className="hidden sm:inline">سڕینەوە</span>
                                     </Button>
                                 </div>
                             </div>
                         )}
-
-                        {/* Bottom Controls Panel */}
-                        <div className={cn(
-                            "absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-white transition-all duration-300 w-[95%] max-w-[600px] z-10",
-                            !isControlsVisible && "opacity-0 pointer-events-none translate-y-4"
-                        )}>
-                            <div className="flex flex-col gap-4">
-                                {/* Top Row: Zoom, Rotate & Quick Actions */}
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                    <div className="flex items-center gap-1">
-                                        <Button size="icon" variant="ghost" onClick={() => zoomOut()} className="h-8 w-8 hover:bg-white/20 text-white">
-                                            <ZoomOut className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => zoomIn()} className="h-8 w-8 hover:bg-white/20 text-white">
-                                            <ZoomIn className="h-4 w-4" />
-                                        </Button>
-                                        <div className="w-px h-6 bg-white/20 mx-1" />
-                                        <Button size="icon" variant="ghost" onClick={() => rotateImage(-90)} className="h-8 w-8 hover:bg-white/20 text-white" title="Rotate Left">
-                                            <RotateCcw className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => rotateImage(90)} className="h-8 w-8 hover:bg-white/20 text-white" title="Rotate Right">
-                                            <RotateCw className="h-4 w-4" />
-                                        </Button>
-                                        <div className="w-px h-6 bg-white/20 mx-1" />
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            onClick={() => { resetTransform(); resetFilters(); }}
-                                            className="h-8 w-8 hover:bg-white/20 text-white"
-                                            title="Reset All"
-                                        >
-                                            <Maximize2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-
-                                    <Button
-                                        size="sm"
-                                        variant={inverted ? "secondary" : "ghost"}
-                                        onClick={() => setInverted(!inverted)}
-                                        className="text-white hover:bg-white/20 h-8 text-xs gap-2"
-                                    >
-                                        <Eye className="h-3 w-3" />
-                                        {inverted ? 'نێگەتیڤ' : 'ئاسایی'}
-                                    </Button>
-                                </div>
-
-                                {/* Bottom Row: Sliders */}
-                                <div className="grid grid-cols-2 gap-6 pt-2 border-t border-white/10">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Sun className="h-3 w-3" /> ڕووناکی / Brightness</span>
-                                            <span>{brightness}%</span>
-                                        </div>
-                                        <Slider
-                                            value={[brightness]}
-                                            onValueChange={(v) => { setBrightness(v[0]); setActivePreset('Custom'); }}
-                                            min={20} max={200} step={5}
-                                            className="py-1"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Contrast className="h-3 w-3" /> کۆنتراست / Contrast</span>
-                                            <span>{contrast}%</span>
-                                        </div>
-                                        <Slider
-                                            value={[contrast]}
-                                            onValueChange={(v) => { setContrast(v[0]); setActivePreset('Custom'); }}
-                                            min={50} max={300} step={5}
-                                            className="py-1"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Active Preset Indicator */}
-                                <div className="text-center text-xs text-gray-500">
-                                    مۆدی ئێستا: <span className="text-primary font-medium">{activePreset}</span>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 )}
             </TransformWrapper>

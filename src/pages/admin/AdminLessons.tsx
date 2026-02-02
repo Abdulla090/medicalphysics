@@ -29,8 +29,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { fetchLessons, deleteLesson, updateLesson, getDifficultyName } from '@/lib/api';
 import { format } from 'date-fns';
+
+const getDifficultyName = (difficulty: string): string => {
+  const names: Record<string, string> = {
+    beginner: 'سەرەتایی',
+    intermediate: 'ناوەندی',
+    advanced: 'پێشکەوتوو',
+  };
+  return names[difficulty] || difficulty;
+};
 
 const difficultyStyles: Record<string, string> = {
   beginner: 'difficulty-beginner',

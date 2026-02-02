@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { 
-  GripVertical, 
-  Trash2, 
+import {
+  GripVertical,
+  Trash2,
   Plus,
   ChevronUp,
   ChevronDown,
@@ -15,14 +15,14 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { 
-  ContentBlock, 
-  BlockType, 
-  BLOCK_LABELS, 
-  createEmptyBlock, 
-  blocksToMarkdown, 
+import {
+  ContentBlock,
+  BlockType,
+  BLOCK_LABELS,
+  createEmptyBlock,
+  blocksToMarkdown,
   markdownToBlocks,
-  generateId 
+  generateId
 } from './types';
 import { BlockToolbar } from './BlockToolbar';
 import { TextBlock } from './blocks/TextBlock';
@@ -59,18 +59,19 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
     }
   }, [blocks]);
 
-  // Parse initial value only once
+  // Parse value when it becomes available (e.g. after async data fetch)
   useEffect(() => {
     if (value && blocks.length === 1 && blocks[0].content === '' && blocks[0].type === 'paragraph') {
       const parsed = markdownToBlocks(value);
-      if (parsed.length > 1 || parsed[0].content !== '') {
+      const isDefaultEmpty = parsed.length === 1 && parsed[0].type === 'paragraph' && parsed[0].content === '';
+      if (!isDefaultEmpty) {
         setBlocks(parsed);
       }
     }
-  }, []);
+  }, [value]);
 
   const updateBlock = useCallback((id: string, content: string, meta?: ContentBlock['meta']) => {
-    setBlocks(prev => prev.map(block => 
+    setBlocks(prev => prev.map(block =>
       block.id === id ? { ...block, content, meta: meta !== undefined ? meta : block.meta } : block
     ));
   }, []);
@@ -107,7 +108,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
       if (index === -1) return prev;
       if (direction === 'up' && index === 0) return prev;
       if (direction === 'down' && index === prev.length - 1) return prev;
-      
+
       const newBlocks = [...prev];
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
       [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
@@ -252,7 +253,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
             Markdown
           </TabsTrigger>
         </TabsList>
-        
+
         {activeTab === 'editor' && (
           <span className="text-xs text-muted-foreground">
             {blocks.length} بلۆک
@@ -284,7 +285,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
                     <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
                       <GripVertical className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -306,7 +307,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
                           کۆپی
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => deleteBlock(block.id)}
                           className="text-destructive"
                         >
@@ -331,9 +332,9 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
+                    <Button
+                      variant="outline"
+                      size="icon"
                       className="h-6 w-6 rounded-full bg-background shadow-md"
                     >
                       <Plus className="h-3 w-3" />
@@ -341,8 +342,8 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     {Object.entries(BLOCK_LABELS).map(([type, label]) => (
-                      <DropdownMenuItem 
-                        key={type} 
+                      <DropdownMenuItem
+                        key={type}
                         onClick={() => addBlock(type as BlockType, block.id)}
                       >
                         {label}

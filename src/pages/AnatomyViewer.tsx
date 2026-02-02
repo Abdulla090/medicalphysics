@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Scene } from '../components/3d/Scene';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, Search, Menu, Activity, Heart, Brain, Bone, Wind, Utensils, Languages } from 'lucide-react';
+import { X, Info, Search, Menu, Activity, Heart, Brain, Bone, Wind, Utensils, Languages, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Language type
@@ -96,6 +97,20 @@ const anatomyData: Record<string, {
             functions: ['پاراستنی مێشک', 'جێگای ئەندامە هەستیارەکان', 'هێزدانی دەربڕینی دەموچاو']
         }
     },
+    'Brain': {
+        en: {
+            title: 'Brain',
+            description: 'The brain is the central organ of the nervous system. It controls thought, memory, emotion, touch, motor skills, vision, breathing, temperature, hunger, and every process that regulates our body.',
+            system: 'Nervous',
+            functions: ['Controls all body functions', 'Processes sensory information', 'Stores memories', 'Enables consciousness']
+        },
+        ku: {
+            title: 'مێشک',
+            description: 'مێشک ئەندامی ناوەندی سیستەمی دەماریە. کۆنترۆڵی بیرکردنەوە، یادەوەری، هەست، پەیوەستبوون، جوڵەی جەستە، بینین، هەناسەدان، گەرمی، برسییەتی و هەموو پرۆسەیەک کە جەستەمان بەڕێوە دەبات.',
+            system: 'سیستەمی دەمار',
+            functions: ['کۆنترۆڵی هەموو کارەکانی جەستە', 'پرۆسەکردنی زانیاری هەستەکان', 'پاشەکەوتکردنی یادەوەری', 'هێزدانی هۆشیاری']
+        }
+    },
     'Neck': {
         en: {
             title: 'Neck (Cervical Region)',
@@ -124,6 +139,34 @@ const anatomyData: Record<string, {
             functions: ['پاراستنی دڵ و سییەکان', 'هێزدانی مێکانیزمی هەناسەدان', 'شایینە سەرەکییەکانی خوێن لەخۆ دەگرێت']
         }
     },
+    'Heart': {
+        en: {
+            title: 'Heart',
+            description: 'The heart is a muscular organ that pumps blood throughout the body. It has four chambers and beats about 100,000 times per day.',
+            system: 'Cardiovascular',
+            functions: ['Pumps blood', 'Maintains circulation', 'Delivers oxygen to tissues']
+        },
+        ku: {
+            title: 'دڵ',
+            description: 'دڵ ئەندامێکی ماسولکەییە کە خوێن بۆ هەموو جەستە پەمپ دەکات. چوار ژووری هەیە و نزیکەی ١٠٠،٠٠٠ جار لە ڕۆژێکدا دەتەپێ.',
+            system: 'سیستەمی دڵ و خوێن',
+            functions: ['پەمپکردنی خوێن', 'پاراستنی گەردەنی خوێن', 'گەیاندنی ئۆکسجین بۆ تەوێنەکان']
+        }
+    },
+    'Lungs': {
+        en: {
+            title: 'Lungs',
+            description: 'The lungs are paired organs for gas exchange. The right lung has three lobes, the left has two. They contain about 300 million alveoli.',
+            system: 'Respiratory',
+            functions: ['Gas exchange', 'Oxygenates blood', 'Removes carbon dioxide']
+        },
+        ku: {
+            title: 'سییەکان',
+            description: 'سییەکان دوو ئەندامن بۆ ئاڵوگۆڕی گاز. سییەی ڕاست سێ لۆبی هەیە، چەپیش دوو. نزیکەی ٣٠٠ ملیۆن ئەلڤیولی لەخۆ دەگرێت.',
+            system: 'سیستەمی هەناسە',
+            functions: ['ئاڵوگۆڕی گاز', 'داخستنی ئۆکسجین بە خوێن', 'لابردنی کاربۆن دای ئۆکساید']
+        }
+    },
     'Abdomen': {
         en: {
             title: 'Abdomen',
@@ -138,6 +181,62 @@ const anatomyData: Record<string, {
             functions: ['ئەندامەکانی هەرسکردن لەخۆ دەگرێت', 'پاراستنی گورچیلە', 'هێزدانی جوڵەی ناوەند']
         }
     },
+    'Liver': {
+        en: {
+            title: 'Liver',
+            description: 'The liver is the largest internal organ, weighing about 1.5 kg. It performs over 500 vital functions including detoxification, protein synthesis, and bile production.',
+            system: 'Digestive',
+            functions: ['Detoxification', 'Produces bile', 'Metabolizes nutrients', 'Stores vitamins']
+        },
+        ku: {
+            title: 'جگەر',
+            description: 'جگەر گەورەترین ئەندامی ناوەکییە، نزیکەی ١.٥ کگ کێشی هەیە. زیاتر لە ٥٠٠ کاری گرنگ ئەنجام دەدات وەک پاککردنەوە، دروستکردنی پڕۆتین و بەرهەمهێنانی بایل.',
+            system: 'سیستەمی هەرسکردن',
+            functions: ['پاککردنەوە لە ژەهر', 'دروستکردنی بایل', 'مێتابۆلیزەکردنی خواردن', 'پاشەکەوتکردنی ڤیتامین']
+        }
+    },
+    'Stomach': {
+        en: {
+            title: 'Stomach',
+            description: 'The stomach is a muscular organ that receives food from the esophagus and breaks it down using acid and enzymes.',
+            system: 'Digestive',
+            functions: ['Stores food', 'Digests proteins', 'Kills bacteria', 'Mixes food with digestive juices']
+        },
+        ku: {
+            title: 'گەدە',
+            description: 'گەدە ئەندامێکی ماسولکەییە کە خواردن لە خواردنەڕۆ وەردەگرێت و بە ئەسید و ئینزایم شیی دەکاتەوە.',
+            system: 'سیستەمی هەرسکردن',
+            functions: ['پاشەکەوتکردنی خواردن', 'هەرسکردنی پڕۆتین', 'کوشتنی باکتریا', 'تێکەڵکردنی خواردن بە شلە هەرسکەرەکان']
+        }
+    },
+    'Kidneys': {
+        en: {
+            title: 'Kidneys',
+            description: 'The kidneys are paired bean-shaped organs that filter blood, removing waste and excess fluid to produce urine. They filter about 180 liters of blood daily.',
+            system: 'Urinary',
+            functions: ['Filter blood', 'Produce urine', 'Regulate blood pressure', 'Balance electrolytes']
+        },
+        ku: {
+            title: 'گورچیلە',
+            description: 'گورچیلەکان دوو ئەندامی شێوە باقلا وەکن کە خوێن فلتەر دەکەن، پاشماوە و شلەی زیادە لادەبەن بۆ دروستکردنی میز. نزیکەی ١٨٠ لیتر خوێن بە ڕۆژانە فلتەر دەکەن.',
+            system: 'سیستەمی میز',
+            functions: ['فلتەرکردنی خوێن', 'دروستکردنی میز', 'ڕێکخستنی فشاری خوێن', 'هاوسەنگکردنی ئیلێکتڕۆلایت']
+        }
+    },
+    'Spine': {
+        en: {
+            title: 'Spinal Column',
+            description: 'The spine consists of 33 vertebrae divided into cervical, thoracic, lumbar, sacral, and coccygeal regions. It protects the spinal cord and provides structural support.',
+            system: 'Skeletal',
+            functions: ['Protects spinal cord', 'Provides structural support', 'Enables flexibility', 'Supports body weight']
+        },
+        ku: {
+            title: 'ستوونی پشت',
+            description: 'ستوونی پشت پێکدێت لە ٣٣ مەرە کە دابەشکراون بۆ ناوچەکانی ملی، سینەیی، ناوەڕاست، ساکرۆم و کۆکسیکس. لەدەمی پاراستن بۆ کۆردی ستوون و پشتگیری پێکهاتە.',
+            system: 'ئێسکی',
+            functions: ['پاراستنی کۆردی ستوون', 'پشتگیری پێکهاتە', 'هێزدانی نەرمی', 'هەڵگرتنی کێشی جەستە']
+        }
+    },
     'Pelvis': {
         en: {
             title: 'Pelvis',
@@ -150,6 +249,20 @@ const anatomyData: Record<string, {
             description: 'ناوچەی لانک ئێسکی لانک، گەردیلە و ئەندامەکانی زاوزێ لەخۆ دەگرێت. کێشی لاشەی سەرەوە هەڵدەگرێت و ئەندامە ناوەکییەکان دەپارێزێت.',
             system: 'ئێسکی',
             functions: ['هەڵگرتنی کێشی جەستە', 'پاراستنی ئەندامەکانی زاوزێ', 'هێزدانی جوڵەی لانک']
+        }
+    },
+    'Shoulder': {
+        en: {
+            title: 'Shoulder Joint',
+            description: 'The shoulder is the most mobile joint in the body, formed by the humerus, scapula, and clavicle. It allows for a wide range of arm movements.',
+            system: 'Musculoskeletal',
+            functions: ['Arm rotation', 'Lifting movements', 'Reaching and throwing']
+        },
+        ku: {
+            title: 'جومگەی شان',
+            description: 'شان جووڵترین جومگەی جەستەیە، پێکدێت لە ئێسکی بازوو، شانەپەڕ و ئێسکی شان. ڕێگا بە کۆمەڵێک جوڵەی باڵ دەدات.',
+            system: 'ماسولکە و ئێسکی',
+            functions: ['سوڕانەوەی باڵ', 'جوڵەکانی بەرزکردنەوە', 'گەیشتن و هاویشتن']
         }
     },
     'Left Arm': {
@@ -180,6 +293,20 @@ const anatomyData: Record<string, {
             functions: ['گەیشتن و گرتن', 'کۆنترۆڵی ورد', 'هەڵگرتنی شتەکان']
         }
     },
+    'Elbow': {
+        en: {
+            title: 'Elbow Joint',
+            description: 'The elbow is a hinge joint formed by the humerus, radius, and ulna. It allows flexion and extension of the forearm.',
+            system: 'Musculoskeletal',
+            functions: ['Forearm flexion', 'Forearm extension', 'Rotational movement']
+        },
+        ku: {
+            title: 'جومگەی ئانیشک',
+            description: 'ئانیشک جومگەیەکی دەروازەییە کە لە ئێسکی بازوو، ڕادیەس و ئەلنا پێکدێت. ڕێگا بە چەماندن و ڕاستکردنەوەی ساعید دەدات.',
+            system: 'ماسولکە و ئێسکی',
+            functions: ['چەماندنی ساعید', 'ڕاستکردنەوەی ساعید', 'جوڵەی سوڕانەوە']
+        }
+    },
     'Left Hand': {
         en: {
             title: 'Left Hand',
@@ -206,6 +333,20 @@ const anatomyData: Record<string, {
             description: 'دەست ٢٧ ئێسک لەخۆ دەگرێت و هێزی کارکردنی ورد دەدات. پەنجەی گەورە تایبەتییە بە شادیارەکان.',
             system: 'ماسولکە و ئێسکی',
             functions: ['کۆنترۆڵی ورد', 'گرتن و کارکردن', 'هەستی پێوەبەستن']
+        }
+    },
+    'Hip': {
+        en: {
+            title: 'Hip Joint',
+            description: 'The hip is a ball-and-socket joint connecting the femur to the pelvis. It is one of the most stable joints in the body.',
+            system: 'Musculoskeletal',
+            functions: ['Weight bearing', 'Walking and running', 'Leg rotation']
+        },
+        ku: {
+            title: 'جومگەی لانک',
+            description: 'لانک جومگەیەکی تۆپ و کاسەییە کە ڕان بە لانک دەبەستێتەوە. یەکێکە لە جێگیرترین جومگەکانی جەستە.',
+            system: 'ماسولکە و ئێسکی',
+            functions: ['هەڵگرتنی کێش', 'ڕۆیشتن و ڕاکردن', 'سوڕانەوەی لاق']
         }
     },
     'Left Upper Leg': {
@@ -236,6 +377,20 @@ const anatomyData: Record<string, {
             functions: ['هەڵگرتنی کێش', 'ڕۆیشتن و ڕاکردن', 'چەماندنی لانک']
         }
     },
+    'Knee': {
+        en: {
+            title: 'Knee Joint',
+            description: 'The knee is the largest joint in the body, connecting the femur to the tibia. It contains important ligaments (ACL, PCL, MCL, LCL) and menisci.',
+            system: 'Musculoskeletal',
+            functions: ['Leg flexion and extension', 'Weight bearing', 'Stability during movement']
+        },
+        ku: {
+            title: 'جومگەی ئەژنۆ',
+            description: 'ئەژنۆ گەورەترین جومگەی جەستەیە کە ڕان بە ساق دەبەستێتەوە. لیگامێنتە گرنگەکان (ACL، PCL، MCL، LCL) و مەنیسکەکان لەخۆ دەگرێت.',
+            system: 'ماسولکە و ئێسکی',
+            functions: ['چەماندن و ڕاستکردنەوەی لاق', 'هەڵگرتنی کێش', 'جێگیری لە کاتی جوڵاندا']
+        }
+    },
     'Left Lower Leg': {
         en: {
             title: 'Left Lower Leg (Crural Region)',
@@ -264,6 +419,20 @@ const anatomyData: Record<string, {
             functions: ['پاراستنی هاوسەنگی', 'جوڵەی قاپی پێ', 'هەڵکردن لە ڕۆیشتندا']
         }
     },
+    'Ankle': {
+        en: {
+            title: 'Ankle Joint',
+            description: 'The ankle connects the lower leg to the foot. It is a complex joint involving the tibia, fibula, and talus bones.',
+            system: 'Musculoskeletal',
+            functions: ['Foot movement', 'Balance', 'Weight transfer during walking']
+        },
+        ku: {
+            title: 'جومگەی قاپی پێ',
+            description: 'قاپی پێ ساق بە پێ دەبەستێتەوە. جومگەیەکی ئاڵۆزە کە ئێسکی تیبیا، فیبولا و تالەس تێیدا بەشداری دەکەن.',
+            system: 'ماسولکە و ئێسکی',
+            functions: ['جوڵەی پێ', 'هاوسەنگی', 'گواستنەوەی کێش لە کاتی ڕۆیشتندا']
+        }
+    },
     'Left Foot': {
         en: {
             title: 'Left Foot',
@@ -290,6 +459,48 @@ const anatomyData: Record<string, {
             description: 'پێ ٢٦ ئێسک لەخۆ دەگرێت کە بە شێوەی کەوانە ڕێکخراون. هاوسەنگی، پشتگیری و هەڵکردن لە جوڵەدا دابین دەکات.',
             system: 'ماسولکە و ئێسکی',
             functions: ['دابەشکردنی کێش', 'هاوسەنگی و جێگیری', 'هەڵکردن']
+        }
+    },
+    'Ribcage': {
+        en: {
+            title: 'Ribcage',
+            description: 'The ribcage consists of 12 pairs of ribs that protect the heart, lungs, and other vital organs. It also assists in breathing.',
+            system: 'Skeletal',
+            functions: ['Protects vital organs', 'Assists in breathing', 'Provides muscle attachment']
+        },
+        ku: {
+            title: 'قەفەزەی سنگ',
+            description: 'قەفەزەی سنگ پێکدێت لە ١٢ جوێت پاراسووک کە دڵ، سییەکان و ئەندامە گرنگەکانی تر دەپارێزن. هاوکاریی هەناسەدانیش دەکات.',
+            system: 'ئێسکی',
+            functions: ['پاراستنی ئەندامە گرنگەکان', 'هاوکاری لە هەناسەدان', 'شوێنی پەیوەستبوونی ماسولکە']
+        }
+    },
+    'Intestines': {
+        en: {
+            title: 'Intestines',
+            description: 'The intestines consist of the small and large intestine. The small intestine is about 6 meters long, while the large intestine is about 1.5 meters.',
+            system: 'Digestive',
+            functions: ['Nutrient absorption', 'Water absorption', 'Waste elimination']
+        },
+        ku: {
+            title: 'ڕیخۆڵە',
+            description: 'ڕیخۆڵە پێکدێت لە ڕیخۆڵەی بچووک و گەورە. ڕیخۆڵەی بچووک نزیکەی ٦ مەتر درێژییە، ڕیخۆڵەی گەورەش نزیکەی ١.٥ مەتر.',
+            system: 'سیستەمی هەرسکردن',
+            functions: ['هەڵمژینی خواردن', 'هەڵمژینی ئاو', 'دەرکردنی پاشماوە']
+        }
+    },
+    'Bladder': {
+        en: {
+            title: 'Urinary Bladder',
+            description: 'The bladder is a muscular sac that stores urine. It can hold about 400-600 ml of urine and is controlled by sphincter muscles.',
+            system: 'Urinary',
+            functions: ['Stores urine', 'Controls urination', 'Maintains continence']
+        },
+        ku: {
+            title: 'گەردیلە',
+            description: 'گەردیلە گویزەیەکی ماسولکەییە کە میز پاشەکەوت دەکات. دەتوانێت نزیکەی ٤٠٠-٦٠٠ مل میز هەڵبگرێت و بە ماسولکەی سفینکتەر کۆنترۆڵ دەکرێت.',
+            system: 'سیستەمی میز',
+            functions: ['پاشەکەوتکردنی میز', 'کۆنترۆڵی میزکردن', 'پاراستنی گرتنەوەی میز']
         }
     },
     'Body': {
@@ -347,8 +558,20 @@ export default function AnatomyViewer() {
                 <Scene onPartSelect={setSelectedPart} onPartHover={setHoveredPart} />
             </div>
 
-            {/* Language Toggle */}
+            {/* Language Toggle & Atlas Button */}
             <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center gap-2">
+                {/* 2D Atlas Button */}
+                <Link to="/anatomy/atlas">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-cyan-500/20 gap-1 sm:gap-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-xl border border-cyan-500/30 px-2 sm:px-3 shadow-lg shadow-cyan-500/10"
+                    >
+                        <ImageIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">{lang === 'en' ? '2D Atlas' : 'ئەتلەسی 2D'}</span>
+                        <span className="sm:hidden">2D</span>
+                    </Button>
+                </Link>
                 <Button
                     variant="ghost"
                     size="sm"

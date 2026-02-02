@@ -342,3 +342,79 @@ export const isLessonBookmarked = query({
         return !!bookmark;
     },
 });
+
+// === QUIZZES ===
+export const getQuizzes = query({
+    args: {},
+    handler: async (ctx) => {
+        const quizzes = await ctx.db.query("quizzes").collect();
+        return await Promise.all(quizzes.map(async (quiz) => {
+            const lesson = await ctx.db.get(quiz.lessonId);
+            const questionsCount = (await ctx.db.query("quiz_questions")
+                .withIndex("by_quiz", (q) => q.eq("quizId", quiz._id))
+                .collect()).length;
+            return { ...quiz, lesson, questionsCount };
+        }));
+    },
+});
+
+export const getQuizById = query({
+    args: { id: v.id("quizzes") },
+    handler: async (ctx, args) => {
+        const quiz = await ctx.db.get(args.id);
+        if (!quiz) return null;
+        const questions = await ctx.db.query("quiz_questions")
+            .withIndex("by_quiz", (q) => q.eq("quizId", args.id))
+            .collect();
+        const lesson = await ctx.db.get(quiz.lessonId);
+        return { ...quiz, questions: questions.sort((a, b) => a.orderIndex - b.orderIndex), lesson };
+    },
+});
+
+export const getQuizzesByLesson = query({
+    args: { lessonId: v.id("lessons") },
+    handler: async (ctx, args) => {
+        return await ctx.db.query("quizzes")
+            .withIndex("by_lesson", (q) => q.eq("lessonId", args.lessonId))
+            .collect();
+    },
+});
+
+// === COURSE QUERIES ===
+export const getCourseById = query({
+    args: { id: v.id("courses") },
+    handler: async (ctx, args) => {
+        const course = await ctx.db.get(args.id);
+        if (!course) return null;
+
+        const courseLessons = await ctx.db.query("course_lessons")
+            .withIndex("by_course", (q) => q.eq("courseId", args.id))
+            .collect();
+
+        const lessons = await Promise.all(
+            courseLessons.sort((a, b) => a.orderIndex - b.orderIndex).map(async (cl) => {
+                const lesson = await ctx.db.get(cl.lessonId);
+                return { ...cl, lesson };
+            })
+        );
+
+        return { ...course, lessons };
+    },
+});
+
+export const getCourseLessons = query({
+    args: { courseId: v.id("courses") },
+    handler: async (ctx, args) => {
+        const courseLessons = await ctx.db.query("course_lessons")
+            .withIndex("by_course", (q) => q.eq("courseId", args.courseId))
+            .collect();
+
+        return await Promise.all(
+            courseLessons.sort((a, b) => a.orderIndex - b.orderIndex).map(async (cl) => {
+                const lesson = await ctx.db.get(cl.lessonId);
+                return { ...cl, lesson };
+            })
+        );
+    },
+});
+

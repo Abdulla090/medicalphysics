@@ -3,9 +3,11 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { fetchCategories, fetchCategoryLessonCounts } from '@/lib/api';
+
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Categories = () => {
+  const { t } = useLanguage();
   /*
   const { data: categories, isLoading } = useQuery({
     queryKey: ['categories'],
@@ -32,8 +34,8 @@ const Categories = () => {
       <section className="py-16">
         <div className="container">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">بەشەکانی وێنەگرتن</h1>
-            <p className="text-lg text-muted-foreground">هەموو جۆرەکانی وێنەگرتنی پزیشکی</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">{t('categories.pageTitle')}</h1>
+            <p className="text-lg text-muted-foreground">{t('categories.pageSubtitle')}</p>
           </div>
 
           {isLoading ? (

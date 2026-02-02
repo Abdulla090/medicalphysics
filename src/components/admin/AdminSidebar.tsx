@@ -1,8 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  FolderOpen, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  FolderOpen,
   LogOut,
   Home,
   Menu,
@@ -34,6 +34,7 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
     { path: '/admin/categories', icon: FolderOpen, label: 'بەشەکان' },
     { path: '/admin/quizzes', icon: BookOpen, label: 'تاقیکردنەوەکان' },
     { path: '/admin/courses', icon: BookOpen, label: 'کۆرسەکان' },
+    { path: '/admin/anatomy', icon: BookOpen, label: 'ئەتلەسی ئەناتۆمی' },
   ];
 
   const isActive = (path: string) => {
@@ -81,8 +82,8 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
             گەڕانەوە بۆ ماڵەوە
           </Button>
         </Link>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="w-full justify-start gap-3 text-destructive hover:text-destructive"
           onClick={handleSignOut}
         >

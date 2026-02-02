@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+// Type definitions for the application
+// Note: Data fetching now uses Convex directly in components
 
 export type CategoryType = 'xray' | 'ct' | 'mri' | 'ultrasound' | 'nuclear';
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
@@ -9,8 +10,8 @@ export interface Category {
   english_name: string;
   description: string;
   icon: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Lesson {
@@ -28,8 +29,8 @@ export interface Lesson {
   content: string;
   tags: string[];
   is_published: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LessonWithCategory extends Lesson {
@@ -46,145 +47,56 @@ export const getDifficultyName = (difficulty: DifficultyLevel): string => {
   return difficultyNames[difficulty];
 };
 
-// Categories API
+// Legacy exports for backward compatibility - these are now empty functions
+// Components should use Convex hooks directly instead
 export const fetchCategories = async (): Promise<Category[]> => {
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('name');
-  
-  if (error) throw error;
-  return (data || []) as Category[];
+  console.warn('fetchCategories is deprecated. Use Convex useQuery instead.');
+  return [];
 };
 
 export const fetchCategoryById = async (id: CategoryType): Promise<Category | null> => {
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  return data as Category | null;
+  console.warn('fetchCategoryById is deprecated. Use Convex useQuery instead.');
+  return null;
 };
 
 export const updateCategory = async (id: CategoryType, updates: Partial<Category>): Promise<void> => {
-  const { error } = await supabase
-    .from('categories')
-    .update(updates)
-    .eq('id', id);
-  
-  if (error) throw error;
+  console.warn('updateCategory is deprecated. Use Convex useMutation instead.');
 };
 
-// Lessons API
 export const fetchLessons = async (publishedOnly = true): Promise<LessonWithCategory[]> => {
-  let query = supabase
-    .from('lessons')
-    .select('*, categories(*)')
-    .order('publish_date', { ascending: false });
-  
-  if (publishedOnly) {
-    query = query.eq('is_published', true);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return (data || []) as LessonWithCategory[];
+  console.warn('fetchLessons is deprecated. Use Convex useQuery instead.');
+  return [];
 };
 
 export const fetchLessonBySlug = async (slug: string): Promise<LessonWithCategory | null> => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*, categories(*)')
-    .eq('slug', slug)
-    .maybeSingle();
-  
-  if (error) throw error;
-  return data as LessonWithCategory | null;
+  console.warn('fetchLessonBySlug is deprecated. Use Convex useQuery instead.');
+  return null;
 };
 
 export const fetchLessonsByCategory = async (categoryId: CategoryType, publishedOnly = true): Promise<LessonWithCategory[]> => {
-  let query = supabase
-    .from('lessons')
-    .select('*, categories(*)')
-    .eq('category', categoryId)
-    .order('publish_date', { ascending: false });
-  if (publishedOnly) {
-    query = query.eq('is_published', true);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return (data || []) as LessonWithCategory[];
+  console.warn('fetchLessonsByCategory is deprecated. Use Convex useQuery instead.');
+  return [];
 };
 
 export const createLesson = async (lesson: Omit<Lesson, 'id' | 'created_at' | 'updated_at'>): Promise<Lesson> => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .insert(lesson)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as Lesson;
+  console.warn('createLesson is deprecated. Use Convex useMutation instead.');
+  throw new Error('Use Convex useMutation instead');
 };
 
 export const updateLesson = async (id: string, updates: Partial<Lesson>): Promise<void> => {
-  const { error } = await supabase
-    .from('lessons')
-    .update(updates)
-    .eq('id', id);
-  
-  if (error) throw error;
+  console.warn('updateLesson is deprecated. Use Convex useMutation instead.');
 };
 
 export const deleteLesson = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('lessons')
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
+  console.warn('deleteLesson is deprecated. Use Convex useMutation instead.');
 };
 
-// Stats
 export const fetchStats = async () => {
-  const { count: lessonsCount } = await supabase
-    .from('lessons')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_published', true);
-
-  const { count: categoriesCount } = await supabase
-    .from('categories')
-    .select('*', { count: 'exact', head: true });
-
-  return {
-    lessonsCount: lessonsCount || 0,
-    categoriesCount: categoriesCount || 0,
-  };
+  console.warn('fetchStats is deprecated. Use Convex useQuery instead.');
+  return { lessonsCount: 0, categoriesCount: 0 };
 };
 
 export const fetchCategoryLessonCounts = async (): Promise<Record<CategoryType, number>> => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('category')
-    .eq('is_published', true);
-  
-  if (error) throw error;
-  
-  const counts: Record<CategoryType, number> = {
-    xray: 0,
-    ct: 0,
-    mri: 0,
-    ultrasound: 0,
-    nuclear: 0,
-  };
-  
-  data?.forEach((lesson: { category: CategoryType }) => {
-    counts[lesson.category]++;
-  });
-  
-  return counts;
+  console.warn('fetchCategoryLessonCounts is deprecated. Use Convex useQuery instead.');
+  return { xray: 0, ct: 0, mri: 0, ultrasound: 0, nuclear: 0 };
 };

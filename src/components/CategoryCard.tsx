@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Atom, Activity, Scan, Waves, Zap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Atom, Activity, Scan, Waves, Zap, Bone, FileImage } from 'lucide-react';
 import type { Category, CategoryType } from '@/lib/api';
 
 interface CategoryCardProps {
@@ -10,11 +10,35 @@ interface CategoryCardProps {
 
 // Map IDs to Lucide icons for a more professional look
 const iconMap: Record<string, any> = {
+  // X-ray / Radiography
   xray: Atom,
+  'x-ray': Atom,
+  radiography: Atom,
+  'general-radiography': Atom,
+
+  // CT
   ct: Scan,
+  'computed-tomography': Scan,
+
+  // MRI
   mri: Activity,
+  'magnetic-resonance': Activity,
+
+  // Ultrasound
   ultrasound: Waves,
+  us: Waves,
+
+  // Nuclear Medicine
   nuclear: Zap,
+  nm: Zap,
+
+  // DEXA
+  dexa: Bone,
+  dxa: Bone,
+  'bone-densitometry': Bone,
+
+  // Mammography
+  mammography: FileImage,
 };
 
 const CategoryCard = ({ category, variant = 'default', index = 0 }: CategoryCardProps) => {

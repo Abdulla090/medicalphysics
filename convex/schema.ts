@@ -116,4 +116,34 @@ export default defineSchema({
         createdAt: v.string(),
     }).index("by_user", ["userId"])
         .index("by_user_lesson", ["userId", "lessonId"]),
+
+    // Anatomy Atlas - Imaging Devices
+    anatomy_devices: defineTable({
+        deviceId: v.string(), // xray, ct, mri, ultrasound
+        title: v.string(),
+        titleKu: v.string(),
+        description: v.string(),
+        descriptionKu: v.string(),
+        icon: v.string(), // scan, layers, magnet, activity
+        color: v.string(), // gradient class
+        orderIndex: v.number(),
+        isPublished: v.boolean(),
+    }).index("by_deviceId", ["deviceId"]),
+
+    // Anatomy Atlas - Parts within devices
+    anatomy_parts: defineTable({
+        deviceId: v.string(), // references anatomy_devices.deviceId
+        partId: v.string(), // unique identifier
+        title: v.string(),
+        titleKu: v.string(),
+        description: v.string(),
+        descriptionKu: v.string(),
+        imageStorageId: v.optional(v.id("_storage")),
+        imageUrl: v.optional(v.string()),
+        keyStructures: v.array(v.object({ en: v.string(), ku: v.string() })),
+        clinicalNotes: v.array(v.object({ en: v.string(), ku: v.string() })),
+        orderIndex: v.number(),
+        isPublished: v.boolean(),
+    }).index("by_deviceId", ["deviceId"])
+        .index("by_partId", ["partId"]),
 });
