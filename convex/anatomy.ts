@@ -102,9 +102,24 @@ export const getAnatomyPartsByDevice = query({
         // Resolve storage URLs
         return await Promise.all(parts.map(async (p) => {
             let imageUrl = p.imageUrl;
-            if (!imageUrl && p.imageStorageId) {
+
+            // If imageStorageId exists, resolve it
+            if (p.imageStorageId) {
                 imageUrl = await ctx.storage.getUrl(p.imageStorageId) || "";
             }
+            // If imageUrl exists but doesn't look like a URL (backwards compatibility - old data stored storage ID in imageUrl)
+            else if (imageUrl && !imageUrl.startsWith("http")) {
+                try {
+                    // Try to resolve it as a storage ID
+                    const resolvedUrl = await ctx.storage.getUrl(imageUrl as any);
+                    if (resolvedUrl) {
+                        imageUrl = resolvedUrl;
+                    }
+                } catch {
+                    // If it fails, keep the original value
+                }
+            }
+
             return { ...p, imageUrl };
         }));
     },
@@ -122,9 +137,23 @@ export const getPublishedAnatomyPartsByDevice = query({
 
         return await Promise.all(publishedParts.map(async (p) => {
             let imageUrl = p.imageUrl;
-            if (!imageUrl && p.imageStorageId) {
+
+            // If imageStorageId exists, resolve it
+            if (p.imageStorageId) {
                 imageUrl = await ctx.storage.getUrl(p.imageStorageId) || "";
             }
+            // Backwards compatibility - old data stored storage ID in imageUrl
+            else if (imageUrl && !imageUrl.startsWith("http")) {
+                try {
+                    const resolvedUrl = await ctx.storage.getUrl(imageUrl as any);
+                    if (resolvedUrl) {
+                        imageUrl = resolvedUrl;
+                    }
+                } catch {
+                    // If it fails, keep the original value
+                }
+            }
+
             return { ...p, imageUrl };
         }));
     },
@@ -141,9 +170,23 @@ export const getAnatomyPartById = query({
         if (!part) return null;
 
         let imageUrl = part.imageUrl;
-        if (!imageUrl && part.imageStorageId) {
+
+        // If imageStorageId exists, resolve it
+        if (part.imageStorageId) {
             imageUrl = await ctx.storage.getUrl(part.imageStorageId) || "";
         }
+        // Backwards compatibility - old data stored storage ID in imageUrl
+        else if (imageUrl && !imageUrl.startsWith("http")) {
+            try {
+                const resolvedUrl = await ctx.storage.getUrl(imageUrl as any);
+                if (resolvedUrl) {
+                    imageUrl = resolvedUrl;
+                }
+            } catch {
+                // If it fails, keep the original value
+            }
+        }
+
         return { ...part, imageUrl };
     },
 });

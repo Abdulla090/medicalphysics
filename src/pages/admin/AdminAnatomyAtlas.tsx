@@ -269,18 +269,20 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPart, setEditingPart] = useState<any>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
     const [partForm, setPartForm] = useState({
         partId: '', title: '', titleKu: '', description: '', descriptionKu: '',
-        imageUrl: '', keyStructures: [{ en: '', ku: '' }], clinicalNotes: [{ en: '', ku: '' }],
+        imageUrl: '', imageStorageId: '', keyStructures: [{ en: '', ku: '' }], clinicalNotes: [{ en: '', ku: '' }],
         orderIndex: 0, isPublished: false
     });
 
     const resetForm = () => {
         setPartForm({
             partId: '', title: '', titleKu: '', description: '', descriptionKu: '',
-            imageUrl: '', keyStructures: [{ en: '', ku: '' }], clinicalNotes: [{ en: '', ku: '' }],
+            imageUrl: '', imageStorageId: '', keyStructures: [{ en: '', ku: '' }], clinicalNotes: [{ en: '', ku: '' }],
             orderIndex: 0, isPublished: false
         });
+        setImagePreviewUrl('');
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,12 +293,21 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
             const uploadUrl = await generateUploadUrl();
             const result = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
             const { storageId } = await result.json();
-            setPartForm({ ...partForm, imageUrl: storageId });
+            // Store as imageStorageId, not imageUrl
+            setPartForm({ ...partForm, imageStorageId: storageId, imageUrl: '' });
+            // Create a local preview URL
+            setImagePreviewUrl(URL.createObjectURL(file));
             toast.success('Image uploaded');
         } catch (error) {
             toast.error('Failed to upload image');
         }
         setIsUploading(false);
+    };
+
+    const handleUrlChange = (url: string) => {
+        // If user pastes a URL, clear the storage ID and use imageUrl
+        setPartForm({ ...partForm, imageUrl: url, imageStorageId: '' });
+        setImagePreviewUrl(url);
     };
 
     const handleCreate = async () => {
@@ -310,6 +321,7 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
                 titleKu: partForm.titleKu,
                 description: partForm.description,
                 descriptionKu: partForm.descriptionKu,
+                imageStorageId: partForm.imageStorageId ? partForm.imageStorageId as Id<"_storage"> : undefined,
                 imageUrl: partForm.imageUrl || undefined,
                 keyStructures: cleanStructures.length ? cleanStructures : [{ en: '', ku: '' }],
                 clinicalNotes: cleanNotes.length ? cleanNotes : [{ en: '', ku: '' }],
@@ -335,6 +347,7 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
                 titleKu: partForm.titleKu,
                 description: partForm.description,
                 descriptionKu: partForm.descriptionKu,
+                imageStorageId: partForm.imageStorageId ? partForm.imageStorageId as Id<"_storage"> : undefined,
                 imageUrl: partForm.imageUrl || undefined,
                 keyStructures: cleanStructures,
                 clinicalNotes: cleanNotes,
@@ -365,9 +378,12 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
         setPartForm({
             partId: part.partId, title: part.title, titleKu: part.titleKu,
             description: part.description, descriptionKu: part.descriptionKu,
-            imageUrl: part.imageUrl || '', keyStructures: part.keyStructures || [{ en: '', ku: '' }],
+            imageUrl: part.imageUrl || '', imageStorageId: part.imageStorageId || '',
+            keyStructures: part.keyStructures || [{ en: '', ku: '' }],
             clinicalNotes: part.clinicalNotes || [{ en: '', ku: '' }], orderIndex: part.orderIndex, isPublished: part.isPublished
         });
+        // Set preview URL from existing imageUrl (already resolved by backend)
+        setImagePreviewUrl(part.imageUrl || '');
         setIsDialogOpen(true);
     };
 
@@ -407,12 +423,37 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
                                         <div><Label>Description (EN)</Label><Textarea value={partForm.description} onChange={(e) => setPartForm({ ...partForm, description: e.target.value })} /></div>
                                         <div><Label>Description (KU)</Label><Textarea value={partForm.descriptionKu} onChange={(e) => setPartForm({ ...partForm, descriptionKu: e.target.value })} dir="rtl" /></div>
                                     </div>
-                                    <div>
+                                    <div className="space-y-3">
                                         <Label>Image</Label>
-                                        <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
-                                        {partForm.imageUrl && <p className="text-xs text-muted-foreground mt-1">Image uploaded ✓</p>}
-                                        <p className="text-xs text-muted-foreground">Or paste URL:</p>
-                                        <Input value={partForm.imageUrl} onChange={(e) => setPartForm({ ...partForm, imageUrl: e.target.value })} placeholder="https://..." className="mt-1" />
+
+                                        {/* Image Preview */}
+                                        {imagePreviewUrl && (
+                                            <div className="relative w-full h-40 bg-muted rounded-lg overflow-hidden">
+                                                <img
+                                                    src={imagePreviewUrl}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-contain"
+                                                    onError={() => setImagePreviewUrl('')}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Upload Section */}
+                                        <div className="flex items-center gap-2">
+                                            <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="flex-1" />
+                                            {isUploading && <span className="text-xs text-muted-foreground">Uploading...</span>}
+                                        </div>
+                                        {partForm.imageStorageId && <p className="text-xs text-green-600">✓ Image uploaded to storage</p>}
+
+                                        {/* URL Input */}
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Or paste external URL:</p>
+                                            <Input
+                                                value={partForm.imageUrl}
+                                                onChange={(e) => handleUrlChange(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <div className="flex items-center justify-between mb-2"><Label>Key Structures</Label><Button type="button" variant="outline" size="sm" onClick={addStructure}>+ Add</Button></div>
