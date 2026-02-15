@@ -38,11 +38,21 @@ export const ListBlock = ({ block, onChange }: ListBlockProps) => {
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       addItem(index);
     }
     if (e.key === 'Backspace' && items[index] === '' && items.length > 1) {
       e.preventDefault();
+      e.stopPropagation();
       removeItem(index);
+    }
+  };
+
+  // Prevent Enter from submitting parent form
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -50,6 +60,7 @@ export const ListBlock = ({ block, onChange }: ListBlockProps) => {
     <div className="space-y-2">
       <div className="flex gap-2 mb-3">
         <Button
+          type="button"
           variant={listType === 'bullet' ? 'default' : 'outline'}
           size="sm"
           onClick={() => onChange(block.content, { ...block.meta, listType: 'bullet' })}
@@ -59,6 +70,7 @@ export const ListBlock = ({ block, onChange }: ListBlockProps) => {
           خاڵ
         </Button>
         <Button
+          type="button"
           variant={listType === 'numbered' ? 'default' : 'outline'}
           size="sm"
           onClick={() => onChange(block.content, { ...block.meta, listType: 'numbered' })}
@@ -79,10 +91,12 @@ export const ListBlock = ({ block, onChange }: ListBlockProps) => {
               value={item}
               onChange={(e) => updateItem(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, index)}
+              onKeyPress={handleKeyPress}
               placeholder="بڕگە..."
               className="flex-1"
             />
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive"
@@ -95,7 +109,7 @@ export const ListBlock = ({ block, onChange }: ListBlockProps) => {
         ))}
       </div>
 
-      <Button variant="outline" size="sm" onClick={() => addItem()} className="gap-1">
+      <Button type="button" variant="outline" size="sm" onClick={() => addItem()} className="gap-1">
         <Plus className="h-3 w-3" />
         بڕگەی نوێ
       </Button>

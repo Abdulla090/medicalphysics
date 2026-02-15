@@ -39,6 +39,7 @@ const Navbar = () => {
     { name: t('nav.categories'), path: '/categories', icon: Grid3X3 },
     { name: t('nav.tools'), path: '/tools', icon: Wrench },
     { name: t('nav.courses'), path: '/courses', icon: GraduationCap },
+    { name: 'زانیاری ', path: '/articles', icon: FileText },
   ];
 
   // Tools dropdown items

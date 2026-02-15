@@ -26,6 +26,7 @@ export const CalloutBlock = ({ block, onChange }: CalloutBlockProps) => {
       <div className="flex gap-1">
         {calloutTypes.map((type) => (
           <Button
+            type="button"
             key={type.type}
             variant={calloutType === type.type ? 'default' : 'outline'}
             size="sm"

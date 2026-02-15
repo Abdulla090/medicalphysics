@@ -19,19 +19,24 @@ export const getStats = query({
 export const getRecentLessons = query({
     args: {},
     handler: async (ctx) => {
-        // Convex queries are naturally ordered by creation time if no index specified? 
-        // Actually default order is creation time ascending. We want descending.
-        // We can use .order("desc") if we had an index, or just reverse in memory for small datasets.
         const lessons = await ctx.db.query("lessons").collect();
 
-        // Enrich with category name
+        // Enrich with category name and resolve storage URLs
         const lessonsWithCategory = await Promise.all(
             lessons.map(async (l) => {
                 const category = await ctx.db.query("categories")
                     .withIndex("by_category_id", q => q.eq("id", l.category))
                     .first();
+
+                // Resolve image storage URL if imageStorageId exists
+                let imageUrl = l.imageUrl;
+                if (!imageUrl && l.imageStorageId) {
+                    imageUrl = await ctx.storage.getUrl(l.imageStorageId) || "";
+                }
+
                 return {
                     ...l,
+                    imageUrl,
                     categoryName: category?.name
                 };
             })

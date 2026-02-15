@@ -287,3 +287,56 @@ export const deleteCategory = mutation({
     },
 });
 
+// === ARTICLES (Blog) ===
+export const createArticle = mutation({
+    args: {
+        title: v.string(),
+        slug: v.string(),
+        description: v.string(),
+        content: v.string(),
+        coverImageUrl: v.optional(v.string()),
+        coverImageStorageId: v.optional(v.id("_storage")),
+        category: v.string(),
+        author: v.string(),
+        isPublished: v.boolean(),
+        publishDate: v.optional(v.string()),
+        tags: v.optional(v.array(v.string())),
+    },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db.query("articles")
+            .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+            .first();
+        if (existing) throw new Error("Duplicate slug");
+        return await ctx.db.insert("articles", args);
+    },
+});
+
+export const updateArticle = mutation({
+    args: {
+        id: v.id("articles"),
+        title: v.string(),
+        slug: v.string(),
+        description: v.string(),
+        content: v.string(),
+        coverImageUrl: v.optional(v.string()),
+        coverImageStorageId: v.optional(v.id("_storage")),
+        category: v.string(),
+        author: v.string(),
+        isPublished: v.boolean(),
+        publishDate: v.optional(v.string()),
+        tags: v.optional(v.array(v.string())),
+    },
+    handler: async (ctx, args) => {
+        const { id, ...updates } = args;
+        return await ctx.db.patch(id, updates);
+    },
+});
+
+export const deleteArticle = mutation({
+    args: { id: v.id("articles") },
+    handler: async (ctx, args) => {
+        await ctx.db.delete(args.id);
+    },
+});
+
+

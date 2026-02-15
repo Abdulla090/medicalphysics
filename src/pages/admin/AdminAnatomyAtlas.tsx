@@ -288,18 +288,46 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select a valid image file');
+            return;
+        }
+
         setIsUploading(true);
         try {
+            console.log('Generating upload URL...');
             const uploadUrl = await generateUploadUrl();
-            const result = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
-            const { storageId } = await result.json();
+            console.log('Upload URL generated:', uploadUrl);
+
+            console.log('Uploading file:', file.name, file.type, file.size);
+            const result = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file
+            });
+
+            if (!result.ok) {
+                throw new Error(`Upload failed with status: ${result.status}`);
+            }
+
+            const responseData = await result.json();
+            console.log('Upload response:', responseData);
+
+            const { storageId } = responseData;
+            if (!storageId) {
+                throw new Error('No storageId returned from upload');
+            }
+
             // Store as imageStorageId, not imageUrl
-            setPartForm({ ...partForm, imageStorageId: storageId, imageUrl: '' });
+            setPartForm(prev => ({ ...prev, imageStorageId: storageId, imageUrl: '' }));
             // Create a local preview URL
             setImagePreviewUrl(URL.createObjectURL(file));
-            toast.success('Image uploaded');
+            toast.success('Image uploaded successfully');
         } catch (error) {
-            toast.error('Failed to upload image');
+            console.error('Failed to upload image:', error);
+            toast.error('Failed to upload image. Please try again.');
         }
         setIsUploading(false);
     };
@@ -314,6 +342,14 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
         const cleanStructures = partForm.keyStructures.filter(s => s.en || s.ku);
         const cleanNotes = partForm.clinicalNotes.filter(n => n.en || n.ku);
         try {
+            // Properly validate imageStorageId - it must be a valid storage ID or undefined
+            const validStorageId = partForm.imageStorageId && partForm.imageStorageId.trim() !== ''
+                ? partForm.imageStorageId as Id<"_storage">
+                : undefined;
+            const validImageUrl = partForm.imageUrl && partForm.imageUrl.trim() !== ''
+                ? partForm.imageUrl
+                : undefined;
+
             await createPart({
                 deviceId,
                 partId: partForm.partId,
@@ -321,8 +357,8 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
                 titleKu: partForm.titleKu,
                 description: partForm.description,
                 descriptionKu: partForm.descriptionKu,
-                imageStorageId: partForm.imageStorageId ? partForm.imageStorageId as Id<"_storage"> : undefined,
-                imageUrl: partForm.imageUrl || undefined,
+                imageStorageId: validStorageId,
+                imageUrl: validImageUrl,
                 keyStructures: cleanStructures.length ? cleanStructures : [{ en: '', ku: '' }],
                 clinicalNotes: cleanNotes.length ? cleanNotes : [{ en: '', ku: '' }],
                 orderIndex: partForm.orderIndex,
@@ -332,6 +368,7 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
             setIsDialogOpen(false);
             resetForm();
         } catch (error) {
+            console.error('Failed to create part:', error);
             toast.error('Failed to create part');
         }
     };
@@ -341,14 +378,22 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
         const cleanStructures = partForm.keyStructures.filter(s => s.en || s.ku);
         const cleanNotes = partForm.clinicalNotes.filter(n => n.en || n.ku);
         try {
+            // Properly validate imageStorageId - it must be a valid storage ID or undefined
+            const validStorageId = partForm.imageStorageId && partForm.imageStorageId.trim() !== ''
+                ? partForm.imageStorageId as Id<"_storage">
+                : undefined;
+            const validImageUrl = partForm.imageUrl && partForm.imageUrl.trim() !== ''
+                ? partForm.imageUrl
+                : undefined;
+
             await updatePart({
                 id: editingPart._id,
                 title: partForm.title,
                 titleKu: partForm.titleKu,
                 description: partForm.description,
                 descriptionKu: partForm.descriptionKu,
-                imageStorageId: partForm.imageStorageId ? partForm.imageStorageId as Id<"_storage"> : undefined,
-                imageUrl: partForm.imageUrl || undefined,
+                imageStorageId: validStorageId,
+                imageUrl: validImageUrl,
                 keyStructures: cleanStructures,
                 clinicalNotes: cleanNotes,
                 orderIndex: partForm.orderIndex,
@@ -359,6 +404,7 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
             setEditingPart(null);
             resetForm();
         } catch (error) {
+            console.error('Failed to update part:', error);
             toast.error('Failed to update part');
         }
     };

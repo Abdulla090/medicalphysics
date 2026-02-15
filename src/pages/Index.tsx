@@ -1,20 +1,22 @@
 import { Link } from 'react-router-dom';
-// import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import LessonCard from '@/components/LessonCard';
 import CategoryCard from '@/components/CategoryCard';
 import StatCard from '@/components/StatCard';
 import { LessonCardSkeleton, CategoryCardSkeleton, StatCardSkeleton } from '@/components/Skeletons';
-// import { fetchCategories, fetchLessons, fetchStats, fetchCategoryLessonCounts } from '@/lib/api';
+import { Clock, User, FileText } from 'lucide-react';
 
 const Index = () => {
   // Use Convex queries
   const categories = useQuery(api.api.getCategories);
   const lessons = useQuery(api.api.getAllLessons);
+  const articles = useQuery(api.api.getArticles);
 
   // Calculate stats and counts on the client for now (or create a dedicated query)
   const stats = useMemo(() => {
@@ -37,11 +39,27 @@ const Index = () => {
   // Ideally, valid lessons have a _creationTime from Convex
   const recentLessons = useMemo(() => {
     if (!lessons) return [];
-    // Sort by _creationTime descending (newest first)
     return [...lessons]
       .sort((a: any, b: any) => b._creationTime - a._creationTime)
       .slice(0, 4);
   }, [lessons]);
+
+  const recentArticles = useMemo(() => {
+    if (!articles) return [];
+    return [...articles]
+      .sort((a: any, b: any) => b._creationTime - a._creationTime)
+      .slice(0, 3);
+  }, [articles]);
+
+  const categoryColors: Record<string, string> = {
+    'CT': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    'MRI': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    'X-Ray': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    'Ultrasound': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+    'Nuclear Medicine': 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+    'Radiation Therapy': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    'General': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,6 +185,82 @@ const Index = () => {
           <div className="mt-12 text-center md:hidden">
             <Link to="/search">
               <Button variant="outline" className="w-full">هەموو وانەکان</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent Articles Section */}
+      <section className="py-24 bg-muted/30">
+        <div className="container">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">تازەترین زانیاری</h2>
+              <p className="text-muted-foreground mt-2 text-lg">نوێترین بابەتە ئەکادیمییەکان لە بواری ڕادیۆلۆجیدا</p>
+            </div>
+            <Link to="/articles">
+              <Button variant="ghost" className="hidden md:flex gap-2">
+                هەموو بابەتەکان <span className="text-xl">→</span>
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {articles === undefined ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <LessonCardSkeleton key={i} />
+              ))
+            ) : recentArticles.length > 0 ? (
+              recentArticles.map((article: any) => (
+                <Link key={article._id} to={`/articles/${article.slug}`}>
+                  <Card className="group h-full overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50">
+                    {article.coverImageUrl ? (
+                      <div className="aspect-[16/9] overflow-hidden">
+                        <img
+                          src={article.coverImageUrl}
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <FileText className="h-12 w-12 text-primary/30" />
+                      </div>
+                    )}
+                    <CardContent className="p-5">
+                      <Badge className={`mb-3 ${categoryColors[article.category] || categoryColors.General}`}>
+                        {article.category}
+                      </Badge>
+                      <h3 className="text-lg font-bold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {article.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{article.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {article.author}
+                        </div>
+                        {article.publishDate && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {article.publishDate}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 bg-muted/30 rounded-2xl border border-dashed">
+                <p className="text-muted-foreground">هیچ بابەتێک بەردەست نییە</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-12 text-center md:hidden">
+            <Link to="/articles">
+              <Button variant="outline" className="w-full">هەموو بابەتەکان</Button>
             </Link>
           </div>
         </div>

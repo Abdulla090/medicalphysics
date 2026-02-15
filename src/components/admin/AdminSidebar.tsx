@@ -6,7 +6,8 @@ import {
   LogOut,
   Home,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
     { path: '/admin/quizzes', icon: BookOpen, label: 'تاقیکردنەوەکان' },
     { path: '/admin/courses', icon: BookOpen, label: 'کۆرسەکان' },
     { path: '/admin/anatomy', icon: BookOpen, label: 'ئەتلەسی ئەناتۆمی' },
+    { path: '/admin/articles', icon: FileText, label: 'زانیاری' },
   ];
 
   const isActive = (path: string) => {

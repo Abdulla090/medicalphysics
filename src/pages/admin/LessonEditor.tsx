@@ -161,11 +161,15 @@ const LessonEditor = () => {
     const tagsArray = data.tags.split(',').map((t) => t.trim()).filter(Boolean);
 
     // Convert empty strings to undefined for optional fields
-    const imageUrl = data.image_url || undefined;
-    const videoId = data.video_id || undefined;
-    // Cast storage IDs to Id<"_storage"> or undefined
-    const imageStorageId = data.image_storage_id ? (data.image_storage_id as Id<"_storage">) : undefined;
-    const videoStorageId = data.video_storage_id ? (data.video_storage_id as Id<"_storage">) : undefined;
+    const imageUrl = data.image_url && data.image_url.trim() !== '' ? data.image_url : undefined;
+    const videoId = data.video_id && data.video_id.trim() !== '' ? data.video_id : undefined;
+    // Cast storage IDs to Id<"_storage"> or undefined - explicit empty string check
+    const imageStorageId = data.image_storage_id && data.image_storage_id.trim() !== ''
+      ? (data.image_storage_id as Id<"_storage">)
+      : undefined;
+    const videoStorageId = data.video_storage_id && data.video_storage_id.trim() !== ''
+      ? (data.video_storage_id as Id<"_storage">)
+      : undefined;
 
     const payload = {
       title: data.title,

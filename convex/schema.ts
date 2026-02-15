@@ -146,4 +146,20 @@ export default defineSchema({
         isPublished: v.boolean(),
     }).index("by_deviceId", ["deviceId"])
         .index("by_partId", ["partId"]),
+
+    // Academic Radiology Articles (Blog)
+    articles: defineTable({
+        title: v.string(),
+        slug: v.string(),
+        description: v.string(), // excerpt
+        content: v.string(), // markdown
+        coverImageUrl: v.optional(v.string()),
+        coverImageStorageId: v.optional(v.id("_storage")),
+        category: v.string(), // e.g. "CT", "MRI", "X-Ray", "Nuclear Medicine"
+        author: v.string(),
+        isPublished: v.boolean(),
+        publishDate: v.optional(v.string()),
+        tags: v.optional(v.array(v.string())),
+    }).index("by_slug", ["slug"])
+        .index("by_category", ["category"]),
 });

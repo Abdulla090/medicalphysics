@@ -31,6 +31,11 @@ import AnatomyAtlas from "./pages/AnatomyAtlas";
 import AnatomyAtlasDetail from "./pages/AnatomyAtlasDetail";
 import XrayCalculator from "./pages/XrayCalculator";
 import Tools from "./pages/Tools";
+import Articles from "./pages/Articles";
+import ArticleDetail from "./pages/ArticleDetail";
+import AdminArticles from "./pages/admin/AdminArticles";
+import ArticleEditor from "./pages/admin/ArticleEditor";
+import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => (
   <LanguageProvider>
@@ -40,6 +45,7 @@ const App = () => (
         <Sonner />
         <PWAInstallPrompt />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/categories" element={<Categories />} />
@@ -50,6 +56,10 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+
+            {/* Articles (Blog) */}
+            <Route path="/articles" element={<Articles />} />
+            <Route path="/articles/:slug" element={<ArticleDetail />} />
 
             {/* Demo Pages */}
             <Route path="/demo/image-viewer" element={<ImageViewerDemo />} />
@@ -78,6 +88,9 @@ const App = () => (
             <Route path="/admin/courses/new" element={<CourseEditor />} />
             <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
             <Route path="/admin/anatomy" element={<AdminAnatomyAtlas />} />
+            <Route path="/admin/articles" element={<AdminArticles />} />
+            <Route path="/admin/articles/new" element={<ArticleEditor />} />
+            <Route path="/admin/articles/:id/edit" element={<ArticleEditor />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

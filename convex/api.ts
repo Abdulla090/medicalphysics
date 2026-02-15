@@ -50,6 +50,13 @@ export const getCoursesByCategory = query({
 
 
 // === Lessons ===
+export const getLessons = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db.query("lessons").collect();
+    },
+});
+
 export const getLessonById = query({
     args: { id: v.id("lessons") },
     handler: async (ctx, args) => {
@@ -417,4 +424,77 @@ export const getCourseLessons = query({
         );
     },
 });
+
+// === ARTICLES (Blog) ===
+export const getArticles = query({
+    args: {},
+    handler: async (ctx) => {
+        const articles = await ctx.db.query("articles").collect();
+        const published = articles.filter(a => a.isPublished);
+        return await Promise.all(published.map(async (a) => {
+            let coverImageUrl = a.coverImageUrl;
+            if (!coverImageUrl && a.coverImageStorageId) {
+                coverImageUrl = await ctx.storage.getUrl(a.coverImageStorageId) || "";
+            }
+            return { ...a, coverImageUrl };
+        }));
+    },
+});
+
+export const getArticleBySlug = query({
+    args: { slug: v.string() },
+    handler: async (ctx, args) => {
+        const article = await ctx.db
+            .query("articles")
+            .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+            .first();
+        if (!article) return null;
+
+        let coverImageUrl = article.coverImageUrl;
+        if (!coverImageUrl && article.coverImageStorageId) {
+            coverImageUrl = await ctx.storage.getUrl(article.coverImageStorageId) || "";
+        }
+        return { ...article, coverImageUrl };
+    },
+});
+
+export const getArticlesByCategory = query({
+    args: { category: v.string() },
+    handler: async (ctx, args) => {
+        const articles = await ctx.db
+            .query("articles")
+            .withIndex("by_category", (q) => q.eq("category", args.category))
+            .collect();
+        const published = articles.filter(a => a.isPublished);
+        return await Promise.all(published.map(async (a) => {
+            let coverImageUrl = a.coverImageUrl;
+            if (!coverImageUrl && a.coverImageStorageId) {
+                coverImageUrl = await ctx.storage.getUrl(a.coverImageStorageId) || "";
+            }
+            return { ...a, coverImageUrl };
+        }));
+    },
+});
+
+export const getAllArticles = query({
+    args: {},
+    handler: async (ctx) => {
+        const articles = await ctx.db.query("articles").collect();
+        return await Promise.all(articles.map(async (a) => {
+            let coverImageUrl = a.coverImageUrl;
+            if (!coverImageUrl && a.coverImageStorageId) {
+                coverImageUrl = await ctx.storage.getUrl(a.coverImageStorageId) || "";
+            }
+            return { ...a, coverImageUrl };
+        }));
+    },
+});
+
+export const getArticleById = query({
+    args: { id: v.id("articles") },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.id);
+    },
+});
+
 

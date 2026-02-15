@@ -510,14 +510,537 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
         }
     }, [loadNiftiFile]);
 
-    // Handle file upload
-    const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+    // Load single DICOM file
+    const loadDicomFile = useCallback(async (arrayBuffer: ArrayBuffer, filename: string) => {
+        setIsLoading(true);
+        setError(null);
+        setLoadProgress(10);
 
+        try {
+            const view = new DataView(arrayBuffer);
+
+            // Check for DICOM magic number at offset 128
+            let startOffset = 0;
+            let isDicom = false;
+
+            if (arrayBuffer.byteLength > 132) {
+                const magic = String.fromCharCode(
+                    view.getUint8(128),
+                    view.getUint8(129),
+                    view.getUint8(130),
+                    view.getUint8(131)
+                );
+                if (magic === 'DICM') {
+                    isDicom = true;
+                    startOffset = 132;
+                }
+            }
+
+            // Try without preamble - check for group 0008 (common DICOM start)
+            if (!isDicom && arrayBuffer.byteLength > 8) {
+                const group = view.getUint16(0, true);
+                if (group === 0x0008 || group === 0x0002) {
+                    isDicom = true;
+                    startOffset = 0;
+                }
+            }
+
+            if (!isDicom) {
+                throw new Error('Invalid DICOM file: DICM magic number not found');
+            }
+
+            setLoadProgress(30);
+
+            // Parse DICOM header
+            let offset = startOffset;
+            let rows = 256, cols = 256;
+            let bitsAllocated = 16;
+            let bitsStored = 12;
+            let pixelRepresentation = 0;
+            let rescaleIntercept = 0;
+            let rescaleSlope = 1;
+            let pixelDataOffset = -1;
+            let isImplicitVR = false;
+
+            // First pass: try explicit VR
+            while (offset < Math.min(arrayBuffer.byteLength - 8, 50000)) {
+                const group = view.getUint16(offset, true);
+                const element = view.getUint16(offset + 2, true);
+
+                // Check for valid VR characters (uppercase letters)
+                const char1 = view.getUint8(offset + 4);
+                const char2 = view.getUint8(offset + 5);
+                const isValidVR = (char1 >= 65 && char1 <= 90) && (char2 >= 65 && char2 <= 90);
+
+                if (!isValidVR && offset === startOffset) {
+                    isImplicitVR = true;
+                    break;
+                }
+
+                const vr = String.fromCharCode(char1, char2);
+                let valueLength: number, headerLength: number;
+
+                if (['OB', 'OW', 'OF', 'SQ', 'UC', 'UR', 'UT', 'UN', 'OD', 'OL'].includes(vr)) {
+                    valueLength = view.getUint32(offset + 8, true);
+                    headerLength = 12;
+                } else {
+                    valueLength = view.getUint16(offset + 6, true);
+                    headerLength = 8;
+                }
+
+                // Rows (0028,0010)
+                if (group === 0x0028 && element === 0x0010) {
+                    rows = view.getUint16(offset + headerLength, true);
+                }
+                // Cols (0028,0011)
+                if (group === 0x0028 && element === 0x0011) {
+                    cols = view.getUint16(offset + headerLength, true);
+                }
+                // Bits Allocated (0028,0100)
+                if (group === 0x0028 && element === 0x0100) {
+                    bitsAllocated = view.getUint16(offset + headerLength, true);
+                }
+                // Bits Stored (0028,0101)
+                if (group === 0x0028 && element === 0x0101) {
+                    bitsStored = view.getUint16(offset + headerLength, true);
+                }
+                // Pixel Representation (0028,0103)
+                if (group === 0x0028 && element === 0x0103) {
+                    pixelRepresentation = view.getUint16(offset + headerLength, true);
+                }
+                // Rescale Intercept (0028,1052)
+                if (group === 0x0028 && element === 0x1052) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    rescaleIntercept = parseFloat(str) || 0;
+                }
+                // Rescale Slope (0028,1053)
+                if (group === 0x0028 && element === 0x1053) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    rescaleSlope = parseFloat(str) || 1;
+                }
+                // Pixel Data (7FE0,0010)
+                if (group === 0x7FE0 && element === 0x0010) {
+                    pixelDataOffset = offset + headerLength;
+                    break;
+                }
+
+                offset += headerLength + valueLength;
+                if (valueLength === 0xFFFFFFFF || valueLength > arrayBuffer.byteLength) break;
+            }
+
+            // If explicit VR didn't work, try implicit VR
+            if (pixelDataOffset < 0 && isImplicitVR) {
+                offset = startOffset;
+                while (offset < arrayBuffer.byteLength - 8) {
+                    const group = view.getUint16(offset, true);
+                    const element = view.getUint16(offset + 2, true);
+                    const valueLength = view.getUint32(offset + 4, true);
+                    const headerLength = 8;
+
+                    if (group === 0x0028 && element === 0x0010) rows = view.getUint16(offset + headerLength, true);
+                    if (group === 0x0028 && element === 0x0011) cols = view.getUint16(offset + headerLength, true);
+                    if (group === 0x0028 && element === 0x0100) bitsAllocated = view.getUint16(offset + headerLength, true);
+                    if (group === 0x7FE0 && element === 0x0010) {
+                        pixelDataOffset = offset + headerLength;
+                        break;
+                    }
+
+                    offset += headerLength + valueLength;
+                    if (valueLength > arrayBuffer.byteLength) break;
+                }
+            }
+
+            setLoadProgress(50);
+
+            // Fallback: calculate pixel data offset from expected size
+            if (pixelDataOffset < 0 && rows > 0 && cols > 0) {
+                const expectedPixelSize = rows * cols * (bitsAllocated / 8);
+                if (arrayBuffer.byteLength > expectedPixelSize + 100) {
+                    pixelDataOffset = arrayBuffer.byteLength - expectedPixelSize;
+                }
+            }
+
+            if (pixelDataOffset < 0 || pixelDataOffset >= arrayBuffer.byteLength) {
+                throw new Error('Could not locate pixel data in DICOM file');
+            }
+
+            console.log(`DICOM parsed: ${rows}x${cols}, ${bitsAllocated} bits, offset: ${pixelDataOffset}`);
+
+            // Read pixel data
+            const pixelCount = rows * cols;
+            const imageData = new Float32Array(pixelCount);
+            const bytesPerPixel = bitsAllocated / 8;
+
+            setLoadProgress(70);
+
+            for (let i = 0; i < pixelCount; i++) {
+                const byteOffset = pixelDataOffset + i * bytesPerPixel;
+                if (byteOffset >= arrayBuffer.byteLength - bytesPerPixel + 1) break;
+
+                let value: number;
+                if (bitsAllocated === 16) {
+                    if (pixelRepresentation === 1) {
+                        value = view.getInt16(byteOffset, true);
+                    } else {
+                        value = view.getUint16(byteOffset, true);
+                    }
+                } else if (bitsAllocated === 8) {
+                    value = view.getUint8(byteOffset);
+                } else if (bitsAllocated === 32) {
+                    value = view.getFloat32(byteOffset, true);
+                } else {
+                    value = view.getUint16(byteOffset, true);
+                }
+
+                // Apply rescale
+                imageData[i] = value * rescaleSlope + rescaleIntercept;
+            }
+
+            setLoadProgress(85);
+
+            // Normalize for display
+            let minVal = Infinity, maxVal = -Infinity;
+            for (let i = 0; i < imageData.length; i++) {
+                if (imageData[i] < minVal) minVal = imageData[i];
+                if (imageData[i] > maxVal) maxVal = imageData[i];
+            }
+
+            const normalizedData = new Float32Array(imageData.length);
+            const range = maxVal - minVal || 1;
+            for (let i = 0; i < imageData.length; i++) {
+                normalizedData[i] = ((imageData[i] - minVal) / range) * 255;
+            }
+
+            // Create a single-slice volume (2D image treated as 3D with depth 1)
+            const volume: VolumeData = {
+                dimensions: [cols, rows, 1],
+                spacing: [1, 1, 1],
+                origin: [0, 0, 0],
+                data: normalizedData,
+            };
+
+            setVolumeData(volume);
+            setAxialSlice(0);
+            setSagittalSlice(Math.floor(cols / 2));
+            setCoronalSlice(Math.floor(rows / 2));
+            setWindowLevel(128);
+            setWindowWidth(256);
+            setLoadProgress(100);
+            onLoad?.(volume);
+
+        } catch (err: any) {
+            console.error('Error loading DICOM file:', err);
+            setError(err.message || 'Failed to load DICOM file');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [onLoad]);
+
+    // Parse a single DICOM slice and return its data along with position info
+    const parseDicomSlice = useCallback(async (arrayBuffer: ArrayBuffer): Promise<{
+        data: Float32Array;
+        rows: number;
+        cols: number;
+        sliceLocation: number;
+        instanceNumber: number;
+    } | null> => {
+        try {
+            const view = new DataView(arrayBuffer);
+
+            // Check for DICOM magic number at offset 128
+            let startOffset = 0;
+            let isDicom = false;
+
+            if (arrayBuffer.byteLength > 132) {
+                const magic = String.fromCharCode(
+                    view.getUint8(128),
+                    view.getUint8(129),
+                    view.getUint8(130),
+                    view.getUint8(131)
+                );
+                if (magic === 'DICM') {
+                    isDicom = true;
+                    startOffset = 132;
+                }
+            }
+
+            if (!isDicom && arrayBuffer.byteLength > 8) {
+                const group = view.getUint16(0, true);
+                if (group === 0x0008 || group === 0x0002) {
+                    isDicom = true;
+                    startOffset = 0;
+                }
+            }
+
+            if (!isDicom) return null;
+
+            // Parse DICOM header
+            let offset = startOffset;
+            let rows = 256, cols = 256;
+            let bitsAllocated = 16;
+            let pixelRepresentation = 0;
+            let rescaleIntercept = 0;
+            let rescaleSlope = 1;
+            let sliceLocation = 0;
+            let instanceNumber = 0;
+            let pixelDataOffset = -1;
+            let isImplicitVR = false;
+
+            while (offset < Math.min(arrayBuffer.byteLength - 8, 50000)) {
+                const group = view.getUint16(offset, true);
+                const element = view.getUint16(offset + 2, true);
+
+                const char1 = view.getUint8(offset + 4);
+                const char2 = view.getUint8(offset + 5);
+                const isValidVR = (char1 >= 65 && char1 <= 90) && (char2 >= 65 && char2 <= 90);
+
+                if (!isValidVR && offset === startOffset) {
+                    isImplicitVR = true;
+                    break;
+                }
+
+                const vr = String.fromCharCode(char1, char2);
+                let valueLength: number, headerLength: number;
+
+                if (['OB', 'OW', 'OF', 'SQ', 'UC', 'UR', 'UT', 'UN', 'OD', 'OL'].includes(vr)) {
+                    valueLength = view.getUint32(offset + 8, true);
+                    headerLength = 12;
+                } else {
+                    valueLength = view.getUint16(offset + 6, true);
+                    headerLength = 8;
+                }
+
+                if (group === 0x0028 && element === 0x0010) rows = view.getUint16(offset + headerLength, true);
+                if (group === 0x0028 && element === 0x0011) cols = view.getUint16(offset + headerLength, true);
+                if (group === 0x0028 && element === 0x0100) bitsAllocated = view.getUint16(offset + headerLength, true);
+                if (group === 0x0028 && element === 0x0103) pixelRepresentation = view.getUint16(offset + headerLength, true);
+
+                // Slice Location (0020,1041)
+                if (group === 0x0020 && element === 0x1041) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    sliceLocation = parseFloat(str) || 0;
+                }
+                // Instance Number (0020,0013)
+                if (group === 0x0020 && element === 0x0013) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    instanceNumber = parseInt(str) || 0;
+                }
+                // Rescale Intercept (0028,1052)
+                if (group === 0x0028 && element === 0x1052) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    rescaleIntercept = parseFloat(str) || 0;
+                }
+                // Rescale Slope (0028,1053)
+                if (group === 0x0028 && element === 0x1053) {
+                    const str = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim();
+                    rescaleSlope = parseFloat(str) || 1;
+                }
+                // Pixel Data (7FE0,0010)
+                if (group === 0x7FE0 && element === 0x0010) {
+                    pixelDataOffset = offset + headerLength;
+                    break;
+                }
+
+                offset += headerLength + valueLength;
+                if (valueLength === 0xFFFFFFFF || valueLength > arrayBuffer.byteLength) break;
+            }
+
+            // Try implicit VR if explicit didn't work
+            if (pixelDataOffset < 0 && isImplicitVR) {
+                offset = startOffset;
+                while (offset < arrayBuffer.byteLength - 8) {
+                    const group = view.getUint16(offset, true);
+                    const element = view.getUint16(offset + 2, true);
+                    const valueLength = view.getUint32(offset + 4, true);
+                    const headerLength = 8;
+
+                    if (group === 0x0028 && element === 0x0010) rows = view.getUint16(offset + headerLength, true);
+                    if (group === 0x0028 && element === 0x0011) cols = view.getUint16(offset + headerLength, true);
+                    if (group === 0x0028 && element === 0x0100) bitsAllocated = view.getUint16(offset + headerLength, true);
+                    if (group === 0x0020 && element === 0x0013) instanceNumber = parseInt(new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + headerLength, valueLength)).trim()) || 0;
+                    if (group === 0x7FE0 && element === 0x0010) {
+                        pixelDataOffset = offset + headerLength;
+                        break;
+                    }
+
+                    offset += headerLength + valueLength;
+                    if (valueLength > arrayBuffer.byteLength) break;
+                }
+            }
+
+            if (pixelDataOffset < 0) {
+                const expectedPixelSize = rows * cols * (bitsAllocated / 8);
+                if (arrayBuffer.byteLength > expectedPixelSize + 100) {
+                    pixelDataOffset = arrayBuffer.byteLength - expectedPixelSize;
+                }
+            }
+
+            if (pixelDataOffset < 0 || pixelDataOffset >= arrayBuffer.byteLength) return null;
+
+            // Read pixel data
+            const pixelCount = rows * cols;
+            const imageData = new Float32Array(pixelCount);
+            const bytesPerPixel = bitsAllocated / 8;
+
+            for (let i = 0; i < pixelCount; i++) {
+                const byteOffset = pixelDataOffset + i * bytesPerPixel;
+                if (byteOffset >= arrayBuffer.byteLength - bytesPerPixel + 1) break;
+
+                let value: number;
+                if (bitsAllocated === 16) {
+                    value = pixelRepresentation === 1 ? view.getInt16(byteOffset, true) : view.getUint16(byteOffset, true);
+                } else if (bitsAllocated === 8) {
+                    value = view.getUint8(byteOffset);
+                } else {
+                    value = view.getUint16(byteOffset, true);
+                }
+
+                imageData[i] = value * rescaleSlope + rescaleIntercept;
+            }
+
+            return { data: imageData, rows, cols, sliceLocation, instanceNumber };
+        } catch {
+            return null;
+        }
+    }, []);
+
+    // Load multiple DICOM files as a 3D volume
+    const loadDicomSeries = useCallback(async (files: File[]) => {
+        setIsLoading(true);
+        setError(null);
+        setLoadProgress(5);
+
+        try {
+            const slices: { data: Float32Array; rows: number; cols: number; sliceLocation: number; instanceNumber: number }[] = [];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const arrayBuffer = await file.arrayBuffer();
+                const slice = await parseDicomSlice(arrayBuffer);
+
+                if (slice) {
+                    slices.push(slice);
+                }
+
+                setLoadProgress(Math.floor((i / files.length) * 70) + 10);
+            }
+
+            if (slices.length === 0) {
+                throw new Error('No valid DICOM slices found in selected files');
+            }
+
+            // Sort by slice location or instance number
+            slices.sort((a, b) => {
+                if (a.sliceLocation !== b.sliceLocation) return a.sliceLocation - b.sliceLocation;
+                return a.instanceNumber - b.instanceNumber;
+            });
+
+            console.log(`Loaded ${slices.length} DICOM slices`);
+
+            const { rows, cols } = slices[0];
+            const dimZ = slices.length;
+
+            // Combine into 3D volume
+            const volumeData = new Float32Array(cols * rows * dimZ);
+            for (let z = 0; z < dimZ; z++) {
+                const sliceData = slices[z].data;
+                for (let i = 0; i < sliceData.length && i < cols * rows; i++) {
+                    volumeData[i + z * cols * rows] = sliceData[i];
+                }
+            }
+
+            setLoadProgress(85);
+
+            // Normalize for display
+            let minVal = Infinity, maxVal = -Infinity;
+            for (let i = 0; i < volumeData.length; i++) {
+                if (volumeData[i] < minVal) minVal = volumeData[i];
+                if (volumeData[i] > maxVal) maxVal = volumeData[i];
+            }
+
+            const normalizedData = new Float32Array(volumeData.length);
+            const range = maxVal - minVal || 1;
+            for (let i = 0; i < volumeData.length; i++) {
+                normalizedData[i] = ((volumeData[i] - minVal) / range) * 255;
+            }
+
+            const volume: VolumeData = {
+                dimensions: [cols, rows, dimZ],
+                spacing: [1, 1, 1],
+                origin: [0, 0, 0],
+                data: normalizedData,
+            };
+
+            setVolumeData(volume);
+            setAxialSlice(Math.floor(dimZ / 2));
+            setSagittalSlice(Math.floor(cols / 2));
+            setCoronalSlice(Math.floor(rows / 2));
+            setWindowLevel(128);
+            setWindowWidth(256);
+            setLoadProgress(100);
+            onLoad?.(volume);
+
+        } catch (err: any) {
+            console.error('Error loading DICOM series:', err);
+            setError(err.message || 'Failed to load DICOM series');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [parseDicomSlice, onLoad]);
+
+    // Handle file upload - detect file type and route appropriately
+    const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        // If multiple DICOM files selected, load as series
+        if (files.length > 1) {
+            const fileArray = Array.from(files);
+            await loadDicomSeries(fileArray);
+            return;
+        }
+
+        // Single file upload
+        const file = files[0];
         const arrayBuffer = await file.arrayBuffer();
-        await loadNiftiFile(arrayBuffer, file.name);
-    }, [loadNiftiFile]);
+        const filename = file.name.toLowerCase();
+        const view = new DataView(arrayBuffer);
+
+        // Check for NIfTI: .nii, .nii.gz
+        const isNifti = filename.endsWith('.nii') || filename.endsWith('.nii.gz');
+
+        // Check for DICOM: .dcm extension or DICM magic at offset 128
+        const isDicomExt = filename.endsWith('.dcm');
+        let hasDicomMagic = false;
+        if (arrayBuffer.byteLength > 132) {
+            const magic = String.fromCharCode(
+                view.getUint8(128),
+                view.getUint8(129),
+                view.getUint8(130),
+                view.getUint8(131)
+            );
+            hasDicomMagic = magic === 'DICM';
+        }
+
+        // Check for DICOM without preamble
+        let hasDicomGroup = false;
+        if (arrayBuffer.byteLength > 8) {
+            const group = view.getUint16(0, true);
+            hasDicomGroup = group === 0x0008 || group === 0x0002;
+        }
+
+        if (isNifti) {
+            await loadNiftiFile(arrayBuffer, file.name);
+        } else if (isDicomExt || hasDicomMagic || hasDicomGroup) {
+            await loadDicomFile(arrayBuffer, file.name);
+        } else {
+            try {
+                await loadDicomFile(arrayBuffer, file.name);
+            } catch {
+                await loadNiftiFile(arrayBuffer, file.name);
+            }
+        }
+    }, [loadNiftiFile, loadDicomFile, loadDicomSeries]);
 
     // Load DICOM series from public folder
     const loadLocalDicomSeries = useCallback(async (seriesId: string) => {
@@ -756,6 +1279,7 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
                     ref={fileInputRef}
                     onChange={handleFileUpload}
                     accept=".nii,.nii.gz,.dcm"
+                    multiple
                     className="hidden"
                 />
 
@@ -771,7 +1295,10 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
                         <DropdownMenuLabel>بارکردن</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
                             <Upload className="h-4 w-4 mr-2" />
-                            بارکردنی لە کۆمپیوتەر
+                            <div className="flex flex-col items-start gap-0.5">
+                                <span>بارکردنی لە کۆمپیوتەر</span>
+                                <span className="text-xs text-muted-foreground">بۆ 3D: چەند فایلێک هەڵبژێرە</span>
+                            </div>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                             const url = prompt('URL ی فایل بنووسە:');
@@ -786,10 +1313,16 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
                             مێشکی نموونە
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => window.open('https://www.osirix-viewer.com/resources/dicom-image-library/', '_blank')}>
+                        <DropdownMenuItem onClick={() => window.open('https://www.rubomedical.com/dicom_files/', '_blank')}>
                             <div className="flex flex-col items-start gap-1">
-                                <span className="font-medium">OsiriX Library</span>
-                                <span className="text-xs text-muted-foreground">داتای تاقیکردنەوە</span>
+                                <span className="font-medium">Rubo Medical (بەخۆڕایی)</span>
+                                <span className="text-xs text-muted-foreground">نموونەی DICOM بەخۆڕایی</span>
+                            </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.open('https://www.cancerimagingarchive.net/', '_blank')}>
+                            <div className="flex flex-col items-start gap-1">
+                                <span className="font-medium">Cancer Imaging Archive</span>
+                                <span className="text-xs text-muted-foreground">ئەرشیفی وێنەی پزیشکی (بەخۆڕایی)</span>
                             </div>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

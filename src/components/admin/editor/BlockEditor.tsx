@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   GripVertical,
   Trash2,
@@ -8,7 +8,9 @@ import {
   Copy,
   Eye,
   Edit3,
-  Code
+  Code,
+  Upload,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -214,6 +216,22 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
 
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'markdown'>('editor');
   const [rawMarkdown, setRawMarkdown] = useState(value);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMarkdownFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setRawMarkdown(text);
+      onChange(text);
+      setBlocks(markdownToBlocks(text));
+    };
+    reader.readAsText(file);
+    // Reset file input so same file can be re-uploaded
+    e.target.value = '';
+  };
 
   // Sync raw markdown with blocks
   useEffect(() => {
@@ -288,7 +306,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6">
                           <Plus className="h-3 w-3" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -333,6 +351,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
+                      type="button"
                       variant="outline"
                       size="icon"
                       className="h-6 w-6 rounded-full bg-background shadow-md"
@@ -363,7 +382,31 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
         </Card>
       </TabsContent>
 
-      <TabsContent value="markdown" className="mt-0">
+      <TabsContent value="markdown" className="mt-0 space-y-3">
+        {/* Upload Markdown File Button */}
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.markdown,.txt"
+            className="hidden"
+            onChange={handleMarkdownFileUpload}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" />
+            بارکردنی فایلی Markdown
+          </Button>
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <FileText className="h-3 w-3" />
+            .md یان .txt فایل هەڵبژێرە
+          </span>
+        </div>
+
         <Textarea
           value={rawMarkdown}
           onChange={(e) => handleRawMarkdownChange(e.target.value)}
@@ -372,7 +415,7 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
           dir="auto"
         />
         <p className="text-xs text-muted-foreground mt-2">
-          دەتوانیت ڕاستەوخۆ Markdown بنووسیت. کاتێک بگەڕێیتەوە بۆ "دەستکاری"، گۆڕانکاری ڕەوانەکراو دەبن.
+          دەتوانیت ڕاستەوخۆ Markdown بنووسیت یان فایلی .md بارکەیت. کاتێک بگەڕێیتەوە بۆ "دەستکاری"، گۆڕانکاری ڕەوانەکراو دەبن.
         </p>
       </TabsContent>
     </Tabs>

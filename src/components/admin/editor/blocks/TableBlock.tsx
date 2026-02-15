@@ -61,6 +61,7 @@ export const TableBlock = ({ block, onChange }: TableBlockProps) => {
                 ))}
                 <td className="border-0 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive"
@@ -77,18 +78,19 @@ export const TableBlock = ({ block, onChange }: TableBlockProps) => {
       </div>
 
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={addRow} className="gap-1">
+        <Button type="button" variant="outline" size="sm" onClick={addRow} className="gap-1">
           <Plus className="h-3 w-3" />
           ڕیز
         </Button>
-        <Button variant="outline" size="sm" onClick={addColumn} className="gap-1">
+        <Button type="button" variant="outline" size="sm" onClick={addColumn} className="gap-1">
           <Plus className="h-3 w-3" />
           ستوون
         </Button>
         {(rows[0]?.length || 0) > 1 && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => removeColumn((rows[0]?.length || 1) - 1)}
             className="gap-1 text-destructive"
           >
