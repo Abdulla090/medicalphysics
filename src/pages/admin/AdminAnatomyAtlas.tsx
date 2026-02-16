@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, ScanLine, Layers, Magnet, Activity, Image, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, ScanLine, Layers, Magnet, Activity, Image, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 const iconOptions = [
@@ -489,7 +489,7 @@ function PartsManager({ deviceId, onClose }: { deviceId: string; onClose: () => 
                                             <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="flex-1" />
                                             {isUploading && <span className="text-xs text-muted-foreground">Uploading...</span>}
                                         </div>
-                                        {partForm.imageStorageId && <p className="text-xs text-green-600">✓ Image uploaded to storage</p>}
+                                        {partForm.imageStorageId && <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Image uploaded to storage</p>}
 
                                         {/* URL Input */}
                                         <div>

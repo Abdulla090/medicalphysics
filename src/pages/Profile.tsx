@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { BookOpen, CheckCircle, Trophy, Bookmark, Clock } from 'lucide-react';
+import { BookOpen, CheckCircle, Trophy, Bookmark, Clock, Check, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,10 +29,9 @@ const Profile = () => {
 
   if (loading || allLessons === undefined) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout>
         <div className="container py-16 text-center">بارکردن...</div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -51,8 +50,7 @@ const Profile = () => {
   const bookmarkedLessons = userBookmarks?.map(b => b.lesson).filter(Boolean) ?? [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-8">
         <div className="container">
@@ -167,8 +165,8 @@ const Profile = () => {
                               <p className="font-medium">{lesson.title}</p>
                               <p className="text-sm text-muted-foreground">{lesson.categoryName}</p>
                             </div>
-                            <Badge variant="outline" className="text-green-600 border-green-500 bg-green-500/10">
-                              ✓ تەواوکراوە
+                            <Badge variant="outline" className="text-green-600 border-green-500 bg-green-500/10 flex items-center gap-1">
+                              <Check className="w-3 h-3" /> تەواوکراوە
                             </Badge>
                           </div>
                         </Link>
@@ -202,8 +200,8 @@ const Profile = () => {
                               <p className="font-medium">{lesson.title}</p>
                               <p className="text-sm text-muted-foreground">{lesson.duration}</p>
                             </div>
-                            <Badge variant="outline" className="text-yellow-600 border-yellow-500 bg-yellow-500/10">
-                              ★ پاشەکەوتکراو
+                            <Badge variant="outline" className="text-yellow-600 border-yellow-500 bg-yellow-500/10 flex items-center gap-1">
+                              <Star className="w-3 h-3" /> پاشەکەوتکراو
                             </Badge>
                           </div>
                         </Link>
@@ -216,7 +214,7 @@ const Profile = () => {
           </Tabs>
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

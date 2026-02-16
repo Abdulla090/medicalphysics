@@ -15,36 +15,36 @@ interface PDFDownloadButtonProps {
 // Extract video/media information from content
 const extractMediaInfo = (content: string) => {
   const media: { type: string; url: string; id?: string }[] = [];
-  
+
   // YouTube embeds - {% youtube VIDEO_ID %}
   const youtubeMatches = content.matchAll(/\{% youtube ([^\s]+) %\}/g);
   for (const match of youtubeMatches) {
-    media.push({ 
-      type: 'youtube', 
-      id: match[1], 
-      url: `https://youtube.com/watch?v=${match[1]}` 
+    media.push({
+      type: 'youtube',
+      id: match[1],
+      url: `https://youtube.com/watch?v=${match[1]}`
     });
   }
-  
+
   // Google Drive embeds - {% drive FILE_ID %}
   const driveMatches = content.matchAll(/\{% drive ([^\s]+) %\}/g);
   for (const match of driveMatches) {
-    media.push({ 
-      type: 'drive', 
-      id: match[1], 
-      url: `https://drive.google.com/file/d/${match[1]}/view` 
+    media.push({
+      type: 'drive',
+      id: match[1],
+      url: `https://drive.google.com/file/d/${match[1]}/view`
     });
   }
-  
+
   // Direct image URLs
   const imageMatches = content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g);
   for (const match of imageMatches) {
-    media.push({ 
-      type: 'image', 
-      url: match[2] 
+    media.push({
+      type: 'image',
+      url: match[2]
     });
   }
-  
+
   return media;
 };
 
@@ -53,10 +53,10 @@ const PDFDownloadButton = ({ title, content, instructor, category, videoId }: PD
 
   const generatePDF = async () => {
     setGenerating(true);
-    
+
     try {
       const media = extractMediaInfo(content);
-      
+
       // Process content - convert markdown to HTML
       let htmlContent = content
         .replace(/^### (.*)$/gm, '<h3 style="font-size: 16px; font-weight: 600; margin: 16px 0 8px 0; color: #1f2937;">$1</h3>')
@@ -74,8 +74,8 @@ const PDFDownloadButton = ({ title, content, instructor, category, videoId }: PD
         .replace(/^[-*+]\s+(.*)$/gm, '<li style="margin: 6px 0; padding-right: 8px;">$1</li>')
         .replace(/(<li.*<\/li>\n?)+/g, '<ul style="list-style-type: disc; padding-right: 24px; margin: 12px 0;">$&</ul>')
         .replace(/^\d+\.\s+(.*)$/gm, '<li style="margin: 6px 0; padding-right: 8px;">$1</li>')
-        .replace(/\{% youtube ([^\s]+) %\}/g, '<div style="background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;"><p style="margin: 0; color: #374151;">🎬 ڤیدیۆی یوتیوب</p><a href="https://youtube.com/watch?v=$1" style="color: #2563eb; font-size: 14px;">https://youtube.com/watch?v=$1</a></div>')
-        .replace(/\{% drive ([^\s]+) %\}/g, '<div style="background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;"><p style="margin: 0; color: #374151;">📁 فایلی گووگڵ درایڤ</p><a href="https://drive.google.com/file/d/$1/view" style="color: #2563eb; font-size: 14px;">https://drive.google.com/file/d/$1/view</a></div>')
+        .replace(/\{% youtube ([^\s]+) %\}/g, '<div style="background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;"><p style="margin: 0; color: #374151;">&#9654; ڤیدیۆی یوتیوب</p><a href="https://youtube.com/watch?v=$1" style="color: #2563eb; font-size: 14px;">https://youtube.com/watch?v=$1</a></div>')
+        .replace(/\{% drive ([^\s]+) %\}/g, '<div style="background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;"><p style="margin: 0; color: #374151;">&#128193; فایلی گووگڵ درایڤ</p><a href="https://drive.google.com/file/d/$1/view" style="color: #2563eb; font-size: 14px;">https://drive.google.com/file/d/$1/view</a></div>')
         .replace(/\n\n/g, '</p><p style="margin: 12px 0; line-height: 1.8;">')
         .replace(/\n/g, '<br>');
 
@@ -89,13 +89,13 @@ const PDFDownloadButton = ({ title, content, instructor, category, videoId }: PD
       if (videoId || media.length > 0) {
         mediaSection = `
           <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1f2937;">📎 سەرچاوەکانی مەڵتیمیدیا</h3>
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1f2937;">&#128206; سەرچاوەکانی مەڵتیمیدیا</h3>
             <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
         `;
-        
+
         if (videoId) {
           const isYouTube = videoId.length === 11;
-          const videoUrl = isYouTube 
+          const videoUrl = isYouTube
             ? `https://youtube.com/watch?v=${videoId}`
             : `https://drive.google.com/file/d/${videoId}/view`;
           mediaSection += `
@@ -105,25 +105,25 @@ const PDFDownloadButton = ({ title, content, instructor, category, videoId }: PD
             </div>
           `;
         }
-        
+
         media.forEach((item, index) => {
           if (item.type === 'youtube') {
             mediaSection += `
               <div style="margin-bottom: 8px;">
-                <span style="color: #374151;">🎬 ڤیدیۆ ${index + 1}:</span>
+                <span style="color: #374151;">&#9654; ڤیدیۆ ${index + 1}:</span>
                 <a href="${item.url}" style="color: #2563eb; font-size: 14px; margin-right: 8px;">${item.url}</a>
               </div>
             `;
           } else if (item.type === 'drive') {
             mediaSection += `
               <div style="margin-bottom: 8px;">
-                <span style="color: #374151;">📁 فایل ${index + 1}:</span>
+                <span style="color: #374151;">&#128193; فایل ${index + 1}:</span>
                 <a href="${item.url}" style="color: #2563eb; font-size: 14px; margin-right: 8px;">${item.url}</a>
               </div>
             `;
           }
         });
-        
+
         mediaSection += `</div></div>`;
       }
 
@@ -155,22 +155,22 @@ const PDFDownloadButton = ({ title, content, instructor, category, videoId }: PD
         margin: [15, 15, 20, 15] as [number, number, number, number],
         filename: `${title.replace(/[^a-zA-Z0-9\u0600-\u06FF\u0750-\u077F]/g, '_')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
+        html2canvas: {
           scale: 2,
           useCORS: true,
           letterRendering: true,
           allowTaint: true,
         },
-        jsPDF: { 
-          unit: 'mm' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const 
+        jsPDF: {
+          unit: 'mm' as const,
+          format: 'a4' as const,
+          orientation: 'portrait' as const
         },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(container).save();
-      
+
       toast.success('PDF دروستکرا!');
     } catch (error) {
       console.error('PDF generation error:', error);

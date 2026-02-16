@@ -2,10 +2,10 @@ import { useParams, Link } from 'react-router-dom';
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { ChevronLeft, Clock, Calendar, User } from 'lucide-react';
+import { ChevronLeft, Clock, Calendar, User, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import ProgressButton from '@/components/ProgressButton';
 import QuizCard from '@/components/QuizCard';
 import PDFDownloadButton from '@/components/PDFDownloadButton';
@@ -137,30 +137,27 @@ const Lesson = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout showReadingProgress={true}>
         <div className="container py-16 text-center">بارکردن...</div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!lesson) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout showReadingProgress={true}>
         <div className="container py-16 text-center">
           <h1 className="text-2xl font-bold">وانە نەدۆزرایەوە</h1>
           <Link to="/search" className="text-primary hover:underline mt-4 inline-block">
             گەڕانەوە بۆ وانەکان
           </Link>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout showReadingProgress={true}>
 
       <section className="py-8">
         <div className="container">
@@ -190,8 +187,8 @@ const Lesson = () => {
                     {getDifficultyName(lesson.difficulty)}
                   </Badge>
                   {completed && (
-                    <Badge className="bg-green-100 text-green-700">
-                      ✓ تەواوکراوە
+                    <Badge className="bg-green-100 text-green-700 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> تەواوکراوە
                     </Badge>
                   )}
                 </div>
@@ -373,7 +370,7 @@ const Lesson = () => {
           </div>
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

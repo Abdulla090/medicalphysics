@@ -4,7 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { ChevronLeft, Clock, User, Tag, ArrowLeft, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { MarkdownPreview } from '@/components/admin/editor/MarkdownPreview';
 
 const categoryColors: Record<string, string> = {
@@ -30,30 +30,27 @@ const ArticleDetail = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background">
-                <Navbar />
+            <PageLayout showReadingProgress={true}>
                 <div className="container py-16 text-center">بارکردن...</div>
-            </div>
+            </PageLayout>
         );
     }
 
     if (!article) {
         return (
-            <div className="min-h-screen bg-background">
-                <Navbar />
+            <PageLayout showReadingProgress={true}>
                 <div className="container py-16 text-center">
                     <h1 className="text-2xl font-bold">بابەت نەدۆزرایەوە</h1>
                     <Link to="/articles" className="text-primary hover:underline mt-4 inline-block">
                         گەڕانەوە بۆ بابەتەکان
                     </Link>
                 </div>
-            </div>
+            </PageLayout>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+        <PageLayout showReadingProgress={true}>
 
             {/* Hero with cover image */}
             {article.coverImageUrl && (
@@ -167,7 +164,7 @@ const ArticleDetail = () => {
                     </div>
                 </div>
             </section>
-        </div>
+        </PageLayout>
     );
 };
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Scene } from '../components/3d/Scene';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, Search, Menu, Activity, Heart, Brain, Bone, Wind, Utensils, Languages, Image as ImageIcon } from 'lucide-react';
+import { X, Info, Search, Menu, Activity, Heart, Brain, Bone, Wind, Utensils, Languages, Image as ImageIcon, Mouse, MousePointerClick, Move, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Language type
@@ -775,10 +775,10 @@ export default function AnatomyViewer() {
                                 <div className="p-4 bg-white/5 rounded-xl border border-white/10">
                                     <h4 className="text-white font-medium mb-2 text-sm">{t.controls}</h4>
                                     <ul className="text-xs text-white/50 space-y-1">
-                                        <li>🖱️ <span className="text-white/70">{t.controlRotate}</span></li>
-                                        <li>🖱️ <span className="text-white/70">{t.controlZoom}</span></li>
-                                        <li>🖱️ <span className="text-white/70">{t.controlPan}</span></li>
-                                        <li>👆 <span className="text-white/70">{t.controlClick}</span></li>
+                                        <li className="flex items-center gap-2"><Mouse className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> <span className="text-white/70">{t.controlRotate}</span></li>
+                                        <li className="flex items-center gap-2"><ZoomIn className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> <span className="text-white/70">{t.controlZoom}</span></li>
+                                        <li className="flex items-center gap-2"><Move className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> <span className="text-white/70">{t.controlPan}</span></li>
+                                        <li className="flex items-center gap-2"><MousePointerClick className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> <span className="text-white/70">{t.controlClick}</span></li>
                                     </ul>
                                 </div>
                             </div>

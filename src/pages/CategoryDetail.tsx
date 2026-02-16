@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { ChevronLeft } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import LessonCard from '@/components/LessonCard';
 
 const CategoryDetail = () => {
@@ -17,30 +17,27 @@ const CategoryDetail = () => {
 
   if (isLoadingCategory) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout>
         <div className="container py-16 text-center">بارکردن...</div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout>
         <div className="container py-16 text-center">
           <h1 className="text-2xl font-bold">بەش نەدۆزرایەوە</h1>
           <Link to="/categories" className="text-primary hover:underline mt-4 inline-block">
             گەڕانەوە بۆ بەشەکان
           </Link>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-16">
         <div className="container">
@@ -73,7 +70,7 @@ const CategoryDetail = () => {
           )}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

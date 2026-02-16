@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { Input } from '@/components/ui/input';
 import {
     ArrowLeft, Search, ScanLine, Layers, Magnet, Activity,
@@ -42,9 +42,8 @@ const deviceIconMap: Record<string, LucideIcon> = {
     magnet: Activity,// mapped to Activity for consistency with MRI
     activity: Waves, // mapped to Waves for Ultrasound (if static data uses 'activity' for US)
 
-    // In case of emoji or other fallbacks
-    '🦴': Bone,
 };
+
 
 // ... uiText remains mostly same ...
 const uiText = {
@@ -108,8 +107,7 @@ export default function AnatomyAtlas() {
     });
 
     return (
-        <div className={`min-h-screen bg-background text-foreground ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-            <Navbar />
+        <PageLayout className={`text-foreground ${isRTL ? 'rtl' : 'ltr'}`}>
 
             <main className="container px-4 py-8 md:py-16 mx-auto">
                 {/* Header */}
@@ -220,6 +218,6 @@ export default function AnatomyAtlas() {
                     </motion.div>
                 )}
             </main>
-        </div>
+        </PageLayout>
     );
 }

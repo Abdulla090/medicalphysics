@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 
 const emailSchema = z.string().email('ئیمەیڵی نادروست');
 const passwordSchema = z.string().min(6, 'وشەی نهێنی دەبێت لانیکەم ٦ پیت بێت');
@@ -81,8 +81,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout showBreadcrumbs={false}>
       <div className="container flex items-center justify-center py-16">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -173,7 +172,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

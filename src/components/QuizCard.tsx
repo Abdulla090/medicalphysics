@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpCircle, CheckCircle, XCircle, Award, RotateCcw } from 'lucide-react';
+import { HelpCircle, CheckCircle, XCircle, Award, RotateCcw, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -53,9 +53,9 @@ const QuizCard = ({ lessonId }: QuizCardProps) => {
         totalQuestions: res.totalQuestions,
       });
       setShowResults(true);
-      
+
       if (res.passed) {
-        toast.success('پیرۆزە! تاقیکردنەوەکەت سەرکەوتوو بوو! 🎉');
+        toast.success('پیرۆزە! تاقیکردنەوەکەت سەرکەوتوو بوو!');
       } else {
         toast.info('هەوڵی دووبارە بدە!');
       }
@@ -90,7 +90,7 @@ const QuizCard = ({ lessonId }: QuizCardProps) => {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {result.passed ? 'سەرکەوتن! 🎉' : 'هەوڵی دووبارە بدە'}
+            {result.passed ? <span className="flex items-center justify-center gap-2">سەرکەوتن! <PartyPopper className="w-5 h-5 text-yellow-500" /></span> : 'هەوڵی دووبارە بدە'}
           </CardTitle>
           <CardDescription>
             {result.correctCount} لە {result.totalQuestions} پرسیار ڕاست بوو
@@ -146,7 +146,7 @@ const QuizCard = ({ lessonId }: QuizCardProps) => {
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">{question.question_text}</h3>
-          
+
           <RadioGroup
             value={answers[question.id] || ''}
             onValueChange={(value) => handleAnswer(question.id, value)}
@@ -154,11 +154,10 @@ const QuizCard = ({ lessonId }: QuizCardProps) => {
             {question.options.map((option, index) => (
               <div
                 key={index}
-                className={`flex items-center space-x-2 space-x-reverse p-3 rounded-lg border transition-colors ${
-                  answers[question.id] === option
+                className={`flex items-center space-x-2 space-x-reverse p-3 rounded-lg border transition-colors ${answers[question.id] === option
                     ? 'border-primary bg-primary/5'
                     : 'hover:bg-muted/50'
-                }`}
+                  }`}
               >
                 <RadioGroupItem value={option} id={`option-${index}`} />
                 <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
@@ -177,7 +176,7 @@ const QuizCard = ({ lessonId }: QuizCardProps) => {
           >
             پێشوو
           </Button>
-          
+
           {currentQuestion < questions.length - 1 ? (
             <Button
               onClick={() => setCurrentQuestion(prev => prev + 1)}

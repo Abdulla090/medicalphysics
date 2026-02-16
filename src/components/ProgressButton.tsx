@@ -11,7 +11,7 @@ interface ProgressButtonProps {
 const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
   const { user } = useAuth();
   const { isLessonCompleted, markComplete } = useProgress();
-  
+
   const completed = isLessonCompleted(lessonId);
 
   const handleMarkComplete = () => {
@@ -19,10 +19,10 @@ const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
       toast.error('تکایە سەرەتا بچۆ ژوورەوە');
       return;
     }
-    
+
     markComplete.mutate(lessonId, {
       onSuccess: () => {
-        toast.success('وانە تەواوکرا! 🎉');
+        toast.success('وانە تەواوکرا!');
       },
       onError: () => {
         toast.error('هەڵەیەک ڕوویدا');
@@ -32,8 +32,8 @@ const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
 
   if (completed) {
     return (
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="gap-2 border-green-500 text-green-600 hover:bg-green-50"
         disabled
       >
@@ -44,7 +44,7 @@ const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
   }
 
   return (
-    <Button 
+    <Button
       onClick={handleMarkComplete}
       disabled={markComplete.isPending || !user}
       className="gap-2"

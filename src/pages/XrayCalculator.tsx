@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -177,8 +178,7 @@ export default function XrayCalculator() {
     };
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-            <Navbar />
+        <PageLayout className={`bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} showBreadcrumbs={false}>
 
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-yellow-500/10 rounded-full blur-[120px]" />
@@ -440,7 +440,7 @@ export default function XrayCalculator() {
                                             <td className="py-2 px-2 text-center text-yellow-400">{val.baseKvp}</td>
                                             <td className="py-2 px-2 text-center text-cyan-400">{val.baseMas}</td>
                                             <td className="py-2 px-2 text-center text-white/70">{val.sid}</td>
-                                            <td className="py-2 px-2 text-center">{val.grid ? '✓' : '—'}</td>
+                                            <td className="py-2 px-2 text-center">{val.grid ? <Check className="w-4 h-4 inline-block text-green-400" /> : '—'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -449,6 +449,6 @@ export default function XrayCalculator() {
                     </CardContent>
                 </Card>
             </main>
-        </div>
+        </PageLayout>
     );
 }

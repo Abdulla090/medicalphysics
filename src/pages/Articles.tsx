@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 
 const CATEGORIES = ['All', 'CT', 'MRI', 'X-Ray', 'Ultrasound', 'Nuclear Medicine', 'Radiation Therapy', 'General'];
 
@@ -44,8 +44,7 @@ const Articles = () => {
     });
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+        <PageLayout>
 
             {/* Hero */}
             <section className="relative overflow-hidden py-16 md:py-24">
@@ -171,7 +170,7 @@ const Articles = () => {
                     </div>
                 )}
             </section>
-        </div>
+        </PageLayout>
     );
 };
 

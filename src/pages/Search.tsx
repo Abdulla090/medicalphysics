@@ -5,7 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import LessonCard from '@/components/LessonCard';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { CategoryType, DifficultyLevel } from '@/lib/api';
@@ -87,8 +87,7 @@ const Search = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-16">
         <div className="container">
@@ -256,7 +255,7 @@ const Search = () => {
           )}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

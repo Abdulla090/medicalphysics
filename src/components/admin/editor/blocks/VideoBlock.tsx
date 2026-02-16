@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Video, Upload, Link as LinkIcon, HardDrive, Loader2, X } from 'lucide-react';
+import { Video, Upload, Link as LinkIcon, HardDrive, Loader2, X, MonitorPlay, FolderOpen, Film } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,7 +18,7 @@ const extractYouTubeId = (url: string): string | null => {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /^[a-zA-Z0-9_-]{11}$/,
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) return match[1] || url;
@@ -32,7 +32,7 @@ const extractGoogleDriveId = (url: string): string | null => {
     /drive\.google\.com\/open\?id=([^&]+)/,
     /docs\.google\.com\/file\/d\/([^\/]+)/,
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) return match[1];
@@ -49,28 +49,28 @@ type VideoSource = 'youtube' | 'drive' | 'vimeo' | 'direct' | 'upload';
 
 const detectVideoSource = (url: string): { source: VideoSource; id: string | null } => {
   if (!url) return { source: 'youtube', id: null };
-  
+
   const youtubeId = extractYouTubeId(url);
   if (youtubeId) return { source: 'youtube', id: youtubeId };
-  
+
   const driveId = extractGoogleDriveId(url);
   if (driveId) return { source: 'drive', id: driveId };
-  
+
   const vimeoId = extractVimeoId(url);
   if (vimeoId) return { source: 'vimeo', id: vimeoId };
-  
+
   // Direct video URL
   if (url.match(/\.(mp4|webm|ogg)$/i)) {
     return { source: 'direct', id: url };
   }
-  
+
   return { source: 'youtube', id: null };
 };
 
 export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const videoUrl = block.meta?.url || block.content || '';
   const uploadSource = block.meta?.uploadSource || 'embed'; // embed, upload, drive
   const { source, id } = detectVideoSource(videoUrl);
@@ -107,11 +107,11 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
         .from('lesson-content')
         .getPublicUrl(filePath);
 
-      onChange(publicUrl, { 
-        ...block.meta, 
-        url: publicUrl, 
+      onChange(publicUrl, {
+        ...block.meta,
+        url: publicUrl,
         uploadSource: 'upload',
-        fileName: file.name 
+        fileName: file.name
       });
       toast.success('ڤیدیۆ بارکرا!');
     } catch (error) {
@@ -153,7 +153,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
         >
           <X className="h-4 w-4" />
         </Button>
-        
+
         {source === 'youtube' && (
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30">
             <iframe
@@ -164,7 +164,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             />
           </div>
         )}
-        
+
         {source === 'drive' && (
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30">
             <iframe
@@ -175,7 +175,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             />
           </div>
         )}
-        
+
         {source === 'vimeo' && (
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30">
             <iframe
@@ -186,7 +186,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             />
           </div>
         )}
-        
+
         {(source === 'direct' || uploadSource === 'upload') && (
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/30">
             <video
@@ -198,10 +198,10 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
         )}
 
         <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 rounded text-xs">
-          {source === 'youtube' && '📺 YouTube'}
-          {source === 'drive' && '📁 Google Drive'}
-          {source === 'vimeo' && '🎬 Vimeo'}
-          {(source === 'direct' || uploadSource === 'upload') && '🎥 ڤیدیۆی بارکراو'}
+          {source === 'youtube' && <span className="flex items-center gap-1"><MonitorPlay className="w-3 h-3" /> YouTube</span>}
+          {source === 'drive' && <span className="flex items-center gap-1"><FolderOpen className="w-3 h-3" /> Google Drive</span>}
+          {source === 'vimeo' && <span className="flex items-center gap-1"><Film className="w-3 h-3" /> Vimeo</span>}
+          {(source === 'direct' || uploadSource === 'upload') && <span className="flex items-center gap-1"><Video className="w-3 h-3" /> ڤیدیۆی بارکراو</span>}
         </div>
       </div>
     );
@@ -224,7 +224,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             گووگڵ درایڤ
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="embed" className="space-y-3 mt-3">
           <div className="grid gap-2">
             <Label className="text-xs text-muted-foreground">
@@ -243,7 +243,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             </p>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="upload" className="space-y-3 mt-3">
           <input
             ref={fileInputRef}
@@ -275,7 +275,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
             فۆرماتەکان: MP4, WebM, OGG (زۆرترین: ١٠٠MB)
           </p>
         </TabsContent>
-        
+
         <TabsContent value="drive" className="space-y-3 mt-3">
           <div className="grid gap-2">
             <Label className="text-xs text-muted-foreground">

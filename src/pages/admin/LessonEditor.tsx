@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { ArrowRight, Loader2, Upload, Link as LinkIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { ArrowRight, Loader2, Upload, Link as LinkIcon, Image as ImageIcon, Video as VideoIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -416,7 +416,7 @@ const LessonEditor = () => {
                         />
                         {isUploadingImage && <Loader2 className="animate-spin" />}
                       </div>
-                      {form.watch("image_storage_id") && <p className="text-sm text-green-600">✓ وێنە هەڵبژێردراوە (Storage ID)</p>}
+                      {form.watch("image_storage_id") && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> وێنە هەڵبژێردراوە (Storage ID)</p>}
                     </TabsContent>
                     <TabsContent value="link">
                       <FormField
@@ -465,7 +465,7 @@ const LessonEditor = () => {
                         />
                         {isUploadingVideo && <Loader2 className="animate-spin" />}
                       </div>
-                      {form.watch("video_storage_id") && <p className="text-sm text-green-600">✓ ڤیدیۆ هەڵبژێردراوە (Storage ID)</p>}
+                      {form.watch("video_storage_id") && <p className="text-sm text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> ڤیدیۆ هەڵبژێردراوە (Storage ID)</p>}
                     </TabsContent>
                     <TabsContent value="link">
                       <FormField

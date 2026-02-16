@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { Loader2, Upload, Layers3, RotateCw, ZoomIn, ZoomOut, Box, Grid3X3, Maximize2, Download, ChevronDown, Brain } from 'lucide-react';
+import { Loader2, Upload, Layers3, RotateCw, ZoomIn, ZoomOut, Box, Grid3X3, Maximize2, Download, ChevronDown, Brain, FlaskConical, Scan, CircleDot, Hospital } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1423,28 +1423,28 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
 
                             {/* Test Volumes - No Download Required */}
                             <div className="mb-6">
-                                <p className="text-sm font-medium mb-3 text-center">🧪 داتای تاقیکردنەوە (بەبێ داگرتن):</p>
+                                <p className="text-sm font-medium mb-3 text-center flex items-center justify-center gap-1.5"><FlaskConical className="w-4 h-4 text-primary" /> داتای تاقیکردنەوە (بەبێ داگرتن):</p>
                                 <div className="flex flex-wrap gap-2 justify-center">
                                     <Button
                                         onClick={() => generateSyntheticVolume('brain')}
                                         variant="default"
                                         className="gap-2"
                                     >
-                                        🧠 مێشکی نموونە
+                                        <Brain className="w-4 h-4" /> مێشکی نموونە
                                     </Button>
                                     <Button
                                         onClick={() => generateSyntheticVolume('phantom')}
                                         variant="secondary"
                                         className="gap-2"
                                     >
-                                        👻 فانتۆم (CT)
+                                        <Scan className="w-4 h-4" /> فانتۆم (CT)
                                     </Button>
                                     <Button
                                         onClick={() => generateSyntheticVolume('sphere')}
                                         variant="outline"
                                         className="gap-2"
                                     >
-                                        ⚪ گۆی سادە
+                                        <CircleDot className="w-4 h-4" /> گۆی سادە
                                     </Button>
                                 </div>
                             </div>
@@ -1453,7 +1453,7 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
 
                             {/* Real DICOM Data from Public Folder */}
                             <div className="mb-6">
-                                <p className="text-sm font-medium mb-3 text-center">🏥 داتای DICOM ی ڕاستەقینە (MRI):</p>
+                                <p className="text-sm font-medium mb-3 text-center flex items-center justify-center gap-1.5"><Hospital className="w-4 h-4 text-primary" /> داتای DICOM ی ڕاستەقینە (MRI):</p>
                                 <div className="flex flex-wrap gap-2 justify-center">
                                     {LOCAL_DICOM_SERIES.series.map((series) => (
                                         <Button
@@ -1463,7 +1463,7 @@ const DicomViewer3D: React.FC<DicomViewer3DProps> = ({ className, onLoad }) => {
                                             size="sm"
                                             className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 w-full sm:w-auto text-xs sm:text-sm"
                                         >
-                                            🧠 {series.name} ({series.count})
+                                            <Brain className="w-4 h-4" /> {series.name} ({series.count})
                                         </Button>
                                     ))}
                                 </div>

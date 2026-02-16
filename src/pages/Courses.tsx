@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import CourseCard from '@/components/CourseCard';
 import { useCourses } from '@/hooks/useCourses';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,8 +10,7 @@ const Courses = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-16">
         <div className="container">
@@ -43,7 +42,7 @@ const Courses = () => {
           )}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

@@ -1,12 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { ChevronLeft, Clock, BookOpen, Trophy, CheckCircle, Lock } from 'lucide-react';
+import { ChevronLeft, Clock, BookOpen, Trophy, CheckCircle, Lock, PartyPopper } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/hooks/useProgress';
 import { getDifficultyName, DifficultyLevel } from '@/lib/api';
@@ -44,30 +44,27 @@ const CourseDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout>
         <div className="container py-16 text-center">بارکردن...</div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <PageLayout>
         <div className="container py-16 text-center">
           <h1 className="text-2xl font-bold">کۆرس نەدۆزرایەوە</h1>
           <Link to="/courses" className="text-primary hover:underline mt-4 inline-block">
             گەڕانەوە بۆ کۆرسەکان
           </Link>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-8">
         <div className="container">
@@ -130,8 +127,8 @@ const CourseDetail = () => {
                         <Card className={`hover:shadow-md transition-all ${completed ? 'border-green-200 bg-green-50/50' : ''}`}>
                           <CardContent className="p-4 flex items-center gap-4">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${completed
-                                ? 'bg-green-100 text-green-600'
-                                : 'bg-muted text-muted-foreground'
+                              ? 'bg-green-100 text-green-600'
+                              : 'bg-muted text-muted-foreground'
                               }`}>
                               {completed ? (
                                 <CheckCircle className="h-5 w-5" />
@@ -180,7 +177,7 @@ const CourseDetail = () => {
                     {isCompleted ? (
                       <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                         <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
-                        <h3 className="font-bold text-green-800">پیرۆزە! 🎉</h3>
+                        <h3 className="font-bold text-green-800 flex items-center justify-center gap-2">پیرۆزە! <PartyPopper className="w-5 h-5 text-yellow-500" /></h3>
                         <p className="text-sm text-green-700 mb-3">
                           کۆرسەکەت تەواوکرد
                         </p>
@@ -221,7 +218,7 @@ const CourseDetail = () => {
           </div>
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

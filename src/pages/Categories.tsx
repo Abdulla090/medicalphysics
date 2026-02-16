@@ -1,7 +1,7 @@
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import CategoryCard from '@/components/CategoryCard';
 
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,8 +28,7 @@ const Categories = () => {
   const lessonCounts = lessonCountsQuery || {};
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout>
 
       <section className="py-16">
         <div className="container">
@@ -53,7 +52,7 @@ const Categories = () => {
           )}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 };
 

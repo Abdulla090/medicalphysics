@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { ArrowRight, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Loader2, Upload, Image as ImageIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -341,7 +341,7 @@ const ArticleEditor = () => {
                                             {isUploadingImage && <Loader2 className="animate-spin" />}
                                         </div>
                                         {form.watch("cover_image_storage_id") && (
-                                            <p className="text-sm text-green-600">✓ وێنە هەڵبژێردراوە (Storage ID)</p>
+                                            <p className="text-sm text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> وێنە هەڵبژێردراوە (Storage ID)</p>
                                         )}
                                     </TabsContent>
                                     <TabsContent value="link">

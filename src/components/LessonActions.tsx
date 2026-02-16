@@ -150,7 +150,7 @@ const LessonActions = ({ lessonId, variant = "full", className }: LessonActionsP
                 ) : (
                     <Check className="h-4 w-4" />
                 )}
-                {isCompleted ? "تەواوکراوە ✓" : "وەک تەواوکراو نیشانبکە"}
+                {isCompleted ? "تەواوکراوە" : "وەک تەواوکراو نیشانبکە"}
             </Button>
         </div>
     );

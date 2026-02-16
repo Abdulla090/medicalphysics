@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { ArrowLeft, Zap, Image as ImageIcon, ScanLine, Box, Calculator, Activity, Brain } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -138,8 +138,7 @@ export default function Tools() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+        <PageLayout>
 
             <section className="py-16">
                 <div className="container">
@@ -155,6 +154,6 @@ export default function Tools() {
                     </div>
                 </div>
             </section>
-        </div>
+        </PageLayout>
     );
 }

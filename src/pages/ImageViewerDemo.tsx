@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import MedicalImageViewer from '@/components/MedicalImageViewer';
 import DicomViewer3D from '@/components/DicomViewer3D';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Info, Lightbulb, Layers3, Image as ImageIcon, Stethoscope } from 'lucide-react';
+import { ArrowLeft, Info, Lightbulb, Layers3, Image as ImageIcon, Stethoscope, Wrench } from 'lucide-react';
 
 // ============================================
 // SAMPLE MEDICAL IMAGES (Public Domain / Educational)
@@ -127,8 +127,7 @@ const ImageViewerDemo = () => {
     const [viewerTab, setViewerTab] = useState<'2d' | '3d'>('2d');
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+        <PageLayout>
 
             <div className="container py-8">
                 {/* Header */}
@@ -154,7 +153,7 @@ const ImageViewerDemo = () => {
                                 onClick={() => setIsAdminMode(!isAdminMode)}
                                 className="gap-2"
                             >
-                                {isAdminMode ? '🛠️ مۆدی ئەدمین چالاکە' : 'چالاککردنی مۆدی ئەدمین'}
+                                {isAdminMode ? <><Wrench className="w-4 h-4" /> مۆدی ئەدمین چالاکە</> : 'چالاککردنی مۆدی ئەدمین'}
                             </Button>
                         </div>
                     </div>
@@ -368,7 +367,7 @@ const ImageViewerDemo = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </PageLayout>
     );
 };
 

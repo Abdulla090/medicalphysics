@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -173,8 +173,7 @@ export default function AnatomyAtlasDetail() {
     const nextPart = currentIndex < parts.length - 1 ? parts[currentIndex + 1] : null;
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-            <Navbar />
+        <PageLayout className={`bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} showBreadcrumbs={false}>
 
             {/* Background Effects */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -467,6 +466,6 @@ export default function AnatomyAtlasDetail() {
                     </div>
                 </div>
             </main>
-        </div>
+        </PageLayout>
     );
 }

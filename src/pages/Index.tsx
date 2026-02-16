@@ -5,12 +5,12 @@ import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/PageLayout';
 import LessonCard from '@/components/LessonCard';
 import CategoryCard from '@/components/CategoryCard';
 import StatCard from '@/components/StatCard';
 import { LessonCardSkeleton, CategoryCardSkeleton, StatCardSkeleton } from '@/components/Skeletons';
-import { Clock, User, FileText } from 'lucide-react';
+import { Clock, User, FileText, ArrowLeft } from 'lucide-react';
 
 const Index = () => {
   // Use Convex queries
@@ -41,14 +41,14 @@ const Index = () => {
     if (!lessons) return [];
     return [...lessons]
       .sort((a: any, b: any) => b._creationTime - a._creationTime)
-      .slice(0, 4);
+      .slice(0, 3);
   }, [lessons]);
 
   const recentArticles = useMemo(() => {
     if (!articles) return [];
     return [...articles]
       .sort((a: any, b: any) => b._creationTime - a._creationTime)
-      .slice(0, 3);
+      .slice(0, 2);
   }, [articles]);
 
   const categoryColors: Record<string, string> = {
@@ -62,8 +62,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <PageLayout showBreadcrumbs={false}>
 
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden">
@@ -119,7 +118,7 @@ const Index = () => {
             </div>
             <Link to="/categories">
               <Button variant="ghost" className="hidden md:flex gap-2">
-                هەموو بەشەکان <span className="text-xl">→</span>
+                هەموو بەشەکان <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
           </div>
@@ -160,15 +159,15 @@ const Index = () => {
             </div>
             <Link to="/search">
               <Button variant="ghost" className="hidden md:flex gap-2">
-                هەموو وانەکان <span className="text-xl">→</span>
+                هەموو وانەکان <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {lessons === undefined ? (
               // Show skeletons while loading
-              Array.from({ length: 4 }).map((_, i) => (
+              Array.from({ length: 3 }).map((_, i) => (
                 <LessonCardSkeleton key={i} />
               ))
             ) : recentLessons.length > 0 ? (
@@ -200,14 +199,14 @@ const Index = () => {
             </div>
             <Link to="/articles">
               <Button variant="ghost" className="hidden md:flex gap-2">
-                هەموو بابەتەکان <span className="text-xl">→</span>
+                هەموو بابەتەکان <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {articles === undefined ? (
-              Array.from({ length: 3 }).map((_, i) => (
+              Array.from({ length: 2 }).map((_, i) => (
                 <LessonCardSkeleton key={i} />
               ))
             ) : recentArticles.length > 0 ? (
@@ -284,7 +283,8 @@ const Index = () => {
           </Link>
         </div>
       </section>
-    </div>
+
+    </PageLayout>
   );
 };
 
