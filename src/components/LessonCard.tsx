@@ -15,7 +15,7 @@ const difficultyNames: Record<string, string> = {
 };
 
 const LessonCard = ({ lesson }: LessonCardProps) => {
-  // Support both snake_case (Supabase) and camelCase (Convex)
+  // Support both snake_case (legacy) and camelCase (Convex)
   const imageUrl = (lesson as any).imageUrl || lesson.image_url;
   const categoryName = (lesson as any).categoryName || lesson.categories?.name;
   const publishDate = (lesson as any).publishDate || lesson.publish_date; // if needed

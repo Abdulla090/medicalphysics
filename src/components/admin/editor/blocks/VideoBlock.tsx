@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Video, Upload, Link as LinkIcon, HardDrive, Loader2, X, MonitorPlay, FolderOpen, Film } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useMutation } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
 import { toast } from 'sonner';
 
 interface VideoBlockProps {
@@ -70,6 +71,7 @@ const detectVideoSource = (url: string): { source: VideoSource; id: string | nul
 export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generateUploadUrl = useMutation(api.admin_actions.generateUploadUrl);
 
   const videoUrl = block.meta?.url || block.content || '';
   const uploadSource = block.meta?.uploadSource || 'embed'; // embed, upload, drive
@@ -93,19 +95,17 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `videos/${fileName}`;
+      const postUrl = await generateUploadUrl();
+      const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from('lesson-content')
-        .upload(filePath, file);
+      if (!result.ok) throw new Error("Upload failed");
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('lesson-content')
-        .getPublicUrl(filePath);
+      const { storageId } = await result.json();
+      const publicUrl = `${import.meta.env.VITE_CONVEX_URL}/api/storage/${storageId}`;
 
       onChange(publicUrl, {
         ...block.meta,

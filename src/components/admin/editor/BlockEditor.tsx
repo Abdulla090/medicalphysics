@@ -297,20 +297,20 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
               )}
             >
               <Card className="p-4 transition-shadow hover:shadow-md">
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full">
                   {/* Drag handle & actions */}
-                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
-                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col gap-1 items-center justify-start lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded text-muted-foreground">
+                      <GripVertical className="h-4 w-4" />
                     </div>
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6">
-                          <Plus className="h-3 w-3" />
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 relative overflow-visible">
+                          <Edit3 className="h-3 w-3" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
+                      <DropdownMenuContent align="start" className="w-48">
                         <DropdownMenuItem onClick={() => moveBlock(block.id, 'up')} disabled={index === 0}>
                           <ChevronUp className="h-4 w-4 ml-2" />
                           بردن بۆ سەرەوە
@@ -327,19 +327,28 @@ export const BlockEditor = ({ value, onChange }: BlockEditorProps) => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => deleteBlock(block.id)}
-                          className="text-destructive"
+                          className="text-destructive focus:bg-destructive focus:text-destructive-foreground cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4 ml-2" />
-                          سڕینەوە
+                          سڕینەوەی ئەم بەشە
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
                   {/* Block content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                      {BLOCK_LABELS[block.type]}
+                  <div className="flex-1 min-w-0 pr-2 border-r border-border/40">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex justify-between items-center">
+                      <span>{BLOCK_LABELS[block.type]}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive lg:opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => deleteBlock(block.id)}
+                        title="سڕینەوە"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                     {renderBlock(block)}
                   </div>
