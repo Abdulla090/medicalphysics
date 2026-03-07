@@ -88,7 +88,7 @@ const Index = () => {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link to="/categories">
+            <Link to="/explore">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-primary/25 hover:-translate-y-1 transition-all duration-300">
                 دەستپێکردن بەخۆڕایی
               </Button>
@@ -276,7 +276,7 @@ const Index = () => {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             هەموو وانەکان بەخۆڕایی و بە کوردی سۆرانین. ئێستا دەستپێبکە بە گەشەکردنی زانستت لە بواری ڕادیۆلۆجیدا.
           </p>
-          <Link to="/categories">
+          <Link to="/explore">
             <Button size="lg" className="h-14 px-10 text-lg rounded-full shadow-xl hover:shadow-primary/20 hover:-translate-y-1 transition-all">
               دەستپێکردن بەخۆڕایی
             </Button>

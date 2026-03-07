@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ImageIcon, Upload, Loader2, X } from 'lucide-react';
-import { useMutation } from "convex/react";
+import { useMutation, useConvex } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useToast } from '@/hooks/use-toast';
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 interface ImageBlockProps {
   block: ContentBlock;
@@ -19,6 +20,7 @@ export const ImageBlock = ({ block, onChange }: ImageBlockProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const generateUploadUrl = useMutation(api.admin_actions.generateUploadUrl);
+  const convex = useConvex();
 
   const updateMeta = (updates: Partial<ContentBlock['meta']>) => {
     onChange(block.content, { ...block.meta, ...updates });
@@ -61,7 +63,13 @@ export const ImageBlock = ({ block, onChange }: ImageBlockProps) => {
       if (!result.ok) throw new Error("Upload failed");
 
       const { storageId } = await result.json();
-      const publicUrl = `${import.meta.env.VITE_CONVEX_URL}/api/storage/${storageId}`;
+
+      // Use Convex's getFileUrl to get the proper CDN-backed URL
+      const publicUrl = await convex.query(api.api.getFileUrl, {
+        storageId: storageId as Id<"_storage">
+      });
+
+      if (!publicUrl) throw new Error("Failed to get file URL");
 
       updateMeta({ url: publicUrl, alt: file.name.split('.')[0] });
 

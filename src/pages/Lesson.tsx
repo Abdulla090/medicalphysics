@@ -105,7 +105,6 @@ const difficultyStyles: Record<string, string> = {
   advanced: 'difficulty-advanced',
 };
 
-import MedicalImageViewer from '@/components/MedicalImageViewer';
 import LessonActions from '@/components/LessonActions';
 import { useState } from 'react';
 
@@ -113,7 +112,6 @@ const Lesson = () => {
   const { id } = useParams<{ id: string }>(); // 'id' here is actually the slug based on route /lesson/:slug
   const { user } = useAuth();
   const { isLessonCompleted } = useProgress();
-  const [activeMedia, setActiveMedia] = useState<'video' | 'image' | null>(null);
 
   // Convex Migration
   // Note: Route is /lesson/:id but conventionally we used slug. 
@@ -230,27 +228,10 @@ const Lesson = () => {
                 </div>
               </div>
 
-              {/* Media Section: Tabs for Video/Image */}
+              {/* Media Section */}
               <div className="mb-8">
-                {(lesson.videoId && lesson.imageUrl) ? (
-                  <div className="flex gap-4 mb-4 border-b">
-                    <button
-                      className={`pb-2 px-4 font-medium ${!activeMedia || activeMedia === 'video' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
-                      onClick={() => setActiveMedia('video')}
-                    >
-                      ڤیدیۆ
-                    </button>
-                    <button
-                      className={`pb-2 px-4 font-medium ${activeMedia === 'image' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
-                      onClick={() => setActiveMedia('image')}
-                    >
-                      وێنەی پزیشکی (Advanced Viewer)
-                    </button>
-                  </div>
-                ) : null}
-
-                {/* Video Player */}
-                {(!activeMedia || activeMedia === 'video') && lesson.videoId && (() => {
+                {/* Video Player or Cover Image */}
+                {lesson.videoId ? (() => {
                   const { source, id } = detectVideoSource(lesson.videoId);
                   return (
                     <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
@@ -293,21 +274,15 @@ const Lesson = () => {
                       )}
                     </div>
                   );
-                })()}
-
-                {/* Medical Image Viewer */}
-                {(activeMedia === 'image' || (!lesson.videoId && lesson.imageUrl)) && lesson.imageUrl && (
-                  <div className="w-full">
-                    <MedicalImageViewer
+                })() : lesson.imageUrl ? (
+                  <div className="aspect-video rounded-2xl overflow-hidden shadow-lg relative bg-muted">
+                    <img
                       src={lesson.imageUrl}
                       alt={lesson.title}
-                      className="aspect-video md:aspect-[16/9] w-full h-[500px]"
+                      className="w-full h-full object-cover"
                     />
-                    <p className="text-sm text-center text-muted-foreground mt-2">
-                      دەتوانێت وێنەکە نزیک بکەیتەوە (Zoom) و مۆدەکانی Contrast بەکاربهێنیت
-                    </p>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Content */}

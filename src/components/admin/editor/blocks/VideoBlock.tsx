@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Video, Upload, Link as LinkIcon, HardDrive, Loader2, X, MonitorPlay, FolderOpen, Film } from 'lucide-react';
-import { useMutation } from "convex/react";
+import { useMutation, useConvex } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { toast } from 'sonner';
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 interface VideoBlockProps {
   block: ContentBlock;
@@ -72,6 +73,7 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const generateUploadUrl = useMutation(api.admin_actions.generateUploadUrl);
+  const convex = useConvex();
 
   const videoUrl = block.meta?.url || block.content || '';
   const uploadSource = block.meta?.uploadSource || 'embed'; // embed, upload, drive
@@ -105,7 +107,13 @@ export const VideoBlock = ({ block, onChange }: VideoBlockProps) => {
       if (!result.ok) throw new Error("Upload failed");
 
       const { storageId } = await result.json();
-      const publicUrl = `${import.meta.env.VITE_CONVEX_URL}/api/storage/${storageId}`;
+
+      // Use Convex's getFileUrl to get the proper CDN-backed URL
+      const publicUrl = await convex.query(api.api.getFileUrl, {
+        storageId: storageId as Id<"_storage">
+      });
+
+      if (!publicUrl) throw new Error("Failed to get file URL");
 
       onChange(publicUrl, {
         ...block.meta,

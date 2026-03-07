@@ -41,6 +41,7 @@ import ArticleDetail from "./pages/ArticleDetail";
 import AdminArticles from "./pages/admin/AdminArticles";
 import ArticleEditor from "./pages/admin/ArticleEditor";
 import ScrollToTop from "./components/ScrollToTop";
+import Explore from "./pages/Explore";
 
 const App = () => {
   const [splashDone, setSplashDone] = useState(
@@ -69,6 +70,7 @@ const App = () => {
               <BackToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/explore" element={<Explore />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/category/:id" element={<CategoryDetail />} />
                 <Route path="/search" element={<Search />} />
