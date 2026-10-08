@@ -1,0 +1,73 @@
+# Radiography simulator: model and validation boundary
+
+This implementation is an interactive teaching and engineering simulator. It has not been clinically validated, calibrated against a real radiography system, or approved for diagnosis, dose assessment, clinical technique selection, or certification of operator competence. Numerical tests cover its implemented physics laws; that does not establish clinical accuracy of the complete simulation. Browser validation of the current room workflow is running, and its final results have not yet been recorded here.
+
+## Implemented model
+
+- **Shared anatomy:** an original analytic anthropomorphic phantom defines torso, limbs, lungs, heart, trachea, abdominal structures, skull, vertebrae, ribs, scapulae, clavicles, pelvis and long bones. These same bone/organ primitives drive the THREE scene and radiographic projection. Units are centimetres, feet at y=0, anterior at +z and the patient's left at +x. Its ellipsoids and density assignments approximate adult anatomy; this is not a CT segmentation, organ atlas, paediatric model or pathology model.
+- **Patient surface and original assets:** connected procedural skin surfaces provide face, neck, chest, limbs, hands, fingers and feet, with original skin color/pores/roughness, iris, cropped-hair and woven-fabric textures generated in code. Shorts have a joined crotch/seat surface, hems and seams. The room, table, tube, receptor and console assets are also procedural. Skin sculpting, facial features, hair and clothing are visual surfaces; they do not add patient-specific tissue structure or replace the analytic attenuation phantom. The visible cranium shows the shared skull's outer ellipsoid surface, while the projection model subtracts its inner shell volume to approximate a cortical wall. It is not a detailed segmented facial skeleton.
+- **Projection:** exact finite ray/rotated ellipsoid intersections are integrated from the point source to each detector pixel. The source diverges, and every pixel has its own ray. A sorted interval sweep replaces underlying tissue with lung/air/heart/bone and unions overlapping shapes so overlap does not multiply the tissue path length. Hollow cortical structures subtract the inner ellipsoid. Patient rotation, displacement, arm pose, tube angulation, detector field and source distance change the actual ray geometry.
+- **Attenuation:** primary transmission is `Σ w(E) exp[-(μ/ρ)tissue(E)·massPathTissue − (μ/ρ)bone(E)·massPathBone]`. Mass paths are in g/cm²; mass attenuation coefficients are in cm²/g. Diagnostic values from the NIST ICRU-44 soft-tissue and cortical-bone tables at 15, 20, 30, 40, 50, 60, 80, 100 and 150 keV are reproduced in source and interpolated in log–log space. Lungs use reduced-density soft tissue; gas is treated as negligibly attenuating. Cortical coefficients with varying equivalent density approximate trabecular-rich bones.
+- **Spectrum:** twelve energy bins use an explicitly approximate filtered Kramers-shaped spectrum. The dimensionless low-energy filter is heuristic. No tungsten characteristic lines, measured filtration, anode angle, heel effect, generator waveform or manufacturer output calibration is represented. kVp is the endpoint potential, not the single photon energy.
+- **Exposure:** `mAs = mA × milliseconds / 1000`. The dimensionless relative detector air-fluence proxy follows mAs, an approximate kVp² output relation and the inverse square of source-to-detector distance. Per-pixel distance variation is included. The count calibration is arbitrary and is chosen to make quantum noise visible; it is not an exposure index, dose, air kerma, DAP, effective dose or detector dose.
+- **Image formation:** seeded small-mean Poisson noise and a large-mean normal approximation are applied to expected photon counts. Grid primary transmission and the scatter veil are explicit heuristics, not a scatter transport calculation. Geometric unsharpness follows `Ug = focalSpot × OID / (SID − OID)` in millimetres. A small assumed detector blur and exposure-time-dependent free-breathing blur are approximations. Held breathing enlarges the analytic lungs and lowers their assigned density. These controls do not model cardiac cycles or patient-specific motion.
+- **Display:** the unsigned 16-bit buffer contains normalized log attenuation, with greater attenuation rendered white. Digital flat-field normalization means mAs chiefly changes noise; it is not used as an arbitrary brightness knob. Window/level and invert operate only on presentation. Pixels outside the collimated field are always zero, including after blur. Outputs are synthetic PNGs/arrays, not DICOM studies or diagnostic images.
+- **Room geometry:** the reference midbody OID changes with phantom girth: 11 × girth + 1.5 cm erect frontal, 17 × girth + 1.5 cm erect lateral, and 11 × girth + 4.5 cm supine. This keeps the unrotated phantom surface near the rendered receptor or tabletop. SID is the actual source-to-receptor-center distance under tube angulation; the reference beam-path OID is divided by the cosine of the angle when calculating magnification and unsharpness. The apparatus and projection engine share these transforms. Magnification is reported at that reference plane, not at every organ. No automatic exposure control, real detector calibration, grid cutoff, full articulated equipment/patient collision solver, patient monitoring or equipment communication exists.
+- **Walking and collision boundaries:** the default is a first-person room, with walking, crouching, aim-based controls and nearby apparatus manipulation. The observer has a 20 cm ground-plane radius. Swept movement resolves simplified boxes/circles for the table, counter, stand, console, chair, closed barrier, erect patient and a lowered tube; room walls clamp the observer center to x = −3.20…3.20 m and z = −3.05…3.05 m. These footprint colliders support walking and sliding around corners; they are not a full three-dimensional body, equipment-joint or patient-contact simulation.
+- **Reach and barrier occlusion:** interactions require aiming at a defined target sphere within 1.8 m of its near surface. Grabbing moves the patient/table position or tube geometry; Shift-grabbing rotates. A closed barrier blocks target rays crossing its rectangular plane at z = −1.75 m, x = 1.75…2.95 m and y = 0…2.17 m before reaching the target surface. Rays around its side and access from behind remain available. This is explicit barrier occlusion, not complete arbitrary scene-mesh occlusion or a radiation transport/shielding calculation.
+- **Interlocks and protected zone:** in first-person mode, operator protection follows the actual camera position and closed barrier. The protected observer zone is x > 1.65 and ≤ 3.20 m, z < −1.94 and ≥ −3.05 m, y = 0…3.45 m. Closing the barrier alone does not permit acquisition from elsewhere in the room. Captures are blocked outside that simulated protected zone, with an unarmed detector, or with unsupported/nonfinite numeric settings. The inspection console retains an explicit simulated protection control. Alignment, field coverage, arm clearance and breath checks are educational heuristics. The protected-zone flag is an interaction interlock, not a measured radiation-protection assessment.
+- **Render strategy:** the THREE canvas uses demand rendering and invalidates while walking, looking, manipulating or changing scene state. The environment-lighting component is memoized and its environment map is rendered once. Shadow maps have automatic updates disabled and refresh when scene settings or the barrier change. Shared patient materials/textures and instanced bone/organ batches reduce repeated allocations and draw calls; assets are disposed on unmount. These implementation choices are not a measured performance guarantee on hospital hardware.
+
+## Room controls
+
+The room opens in first-person mode. Focus the room canvas or enter mouse look; keyboard actions apply to the highlighted nearby target. Positioning or technique changes invalidate a prepared exposure. Acquisition follows the room sequence: position patient and tube, arm the receptor, walk around the barrier's left edge into the protected console area, then prepare and acquire at the console.
+
+| Control | Action |
+| --- | --- |
+| W/A/S/D or arrow keys | Walk relative to the current view. |
+| Hold Shift / C | Move faster while walking / toggle crouch. |
+| Right-drag / double-click | Look around without pointer lock / request continuous mouse look. Esc releases mouse look or closes image review. |
+| Hold left button and drag | Grab a nearby patient or tube; drag the table to position a supine patient. |
+| Shift + left-drag | Rotate the patient or angle the tube. |
+| E | Use the aimed object: cycle patient arm pose, toggle tube light field, arm/disarm receptor, select table/wall positioning, operate barrier, or prepare then acquire at the console. |
+| R / B, aimed at patient | Cycle arm pose / change the held-breath instruction. |
+| T / wheel, aimed at tube or console | Select a technique dial / adjust that dial within supported limits. |
+| N, aimed at table, receptor/stand or console | Cycle the examinations appropriate to that station. |
+| V, with a nearby target aimed | Review the latest acquired image, when available. |
+| L / G / X / [ and ] | Light field / grid at tube, receptor or console / focal spot at tube or console / patient girth when aimed at patient. |
+
+## Automated evidence
+
+Verified on 8 October 2026: simulator TypeScript and ESLint checks, the production build, and **40 numerical tests pass**: 14 physics, 3 scene geometry, 11 world interaction and 12 room movement. Five browser checks pass across acquisition/export, exposure interlocks, anatomy/cameras/visible walking/context recovery, mobile layout, and accessibility. The additional continuous room walkthrough remains pending; software-renderer input timing has prevented a completed run.
+
+`src/simulator/physics.test.ts` checks the actual production engine, including:
+
+1. NIST table nodes and log interpolation; analytic Beer–Lambert half-value transmission.
+2. Exact ellipsoid chords, misses, rotated geometry, finite detector clipping and source-inside geometry; organ air cavities replacing tissue independently of primitive order while preserving bone.
+3. mAs, inverse-square distance, reference-plane magnification and focal-spot unsharpness.
+4. Finite normalized multi-energy spectra and statistical mean/variance of seeded quantum counts.
+5. Shared left/right anatomy, valid dimensions, breathing geometry/density and arm poses.
+6. Exposure interlocks and deliberate nonblocking setup warnings.
+7. Nonblank anatomy-varied images for chest PA, chest AP, chest left lateral, abdomen AP and pelvis AP.
+8. Field closure, seed repeatability and observable changes from patient displacement, rotation, tube angle and lateral arm superimposition.
+9. A full 384 × 472 production capture within a bounded runtime. Hardware and browser runtimes will vary.
+
+`sceneGeometry.test.ts` also checks source-to-detector distance and the scene/engine coordinate transforms for every projection, patient displacement, and positive/negative tube angles. `worldInteraction.test.ts` covers aim/reach selection, closed-barrier ray occlusion, apparatus manipulation and the bounded protected zone. `RoomMovement.test.ts` covers observer/equipment footprints, the closed barrier and access corridor, room bounds, collision sliding and movement near the patient/tube.
+
+The additional room walkthrough targets first-person entry, aiming, grabbing, patient pose/breath controls, technique dials, detector arming, protected console preparation/acquisition, and image review. Its completion is recorded separately from the five passing browser checks. Numerical tests verify manipulation, collision and protection geometry; they do not establish the usability of the complete room workflow on hospital hardware.
+
+The extended walkthrough timed out during real mouse input on the software renderer after reaching the detector stage. It is opt-in with `XRAY_ROOM_WALKTHROUGH=1`; the normal browser suite runs five checks and explicitly skips this pending scenario. This skip is not a passing full-workflow result.
+
+Run `npm run typecheck:simulator`, `npm run lint:simulator`, `npm run test:simulator`, `npm run test:simulator:browser`, and `npm run build` from the app directory. A successful run is numerical/software evidence only. Clinical validation, assessment by assistive-technology users, and performance on hospital hardware remain separate requirements.
+
+For a separately served production build, set `XRAY_TEST_BASE_URL` to the preview URL before running the browser suite. The default starts or reuses the Vite development server on port 5174. Browser checks use Chromium's software WebGL renderer so they do not depend on an attached GPU.
+
+## Required before hospital use
+
+Clinical validation remains outstanding: approved intended use and hazard analysis; review by qualified diagnostic medical physicists and radiographers; anatomically verified reference phantoms; measured spectra/output/filtration and detector response; scatter and grid validation; resolution/noise/contrast and positioning comparisons against known phantom acquisitions; documented tolerances and traceable test data; usability assessment; accessibility review; and any applicable medical-device/regulatory requirements. No claim of 100% accuracy is justified by procedural visuals or by passing software tests.
+
+## Primary references
+
+- NIST, [X-Ray Mass Attenuation Coefficients — Soft Tissue (ICRU-44)](https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/tissue.html). Diagnostic-energy `μ/ρ` values, not `μen/ρ`, are used for primary attenuation. Source tables were checked on 8 October 2026.
+- NIST, [X-Ray Mass Attenuation Coefficients — Cortical Bone (ICRU-44)](https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/bone.html). Source tables were checked on 8 October 2026.
+- IAEA, [Diagnostic Radiology Physics: A Handbook for Teachers and Students (2014)](https://www-pub.iaea.org/mtcd/publications/pdf/pub1564webnew-74666420.pdf). Reference for projection-radiography geometry, attenuation, image-quality principles and the distinction between physical image formation and clinical performance. This implementation is not endorsed or validated by IAEA or NIST.

@@ -29,3 +29,6 @@ node_modules/
 .env*
 .convex/
 .vercel
+test-results/
+playwright-report/
+artifacts/simulator/

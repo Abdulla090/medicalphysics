@@ -45,6 +45,13 @@ const Navbar = () => {
   // Tools dropdown items
   const toolItems = [
     {
+      name: language === 'ku' ? 'سیمیولەیتەری تیشکی X' : 'Radiography Studio',
+      path: '/tools/xray-simulator',
+      icon: Box,
+      description: language === 'ku' ? 'ژووری 3D و وێنەگرتنی سیمیولەیشن' : '3D positioning and synthetic acquisition',
+      highlight: true
+    },
+    {
       name: t('tools.anatomyAtlas'),
       path: '/anatomy/atlas',
       icon: ImageIcon,

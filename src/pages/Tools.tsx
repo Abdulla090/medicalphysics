@@ -18,6 +18,17 @@ interface Tool {
 
 const tools: Tool[] = [
     {
+        id: 'xray-simulator',
+        name: 'Radiography Studio',
+        nameKu: 'سیمیولەیتەری تیشکی X',
+        description: 'An interactive 3D radiography room with patient positioning and synthetic image acquisition.',
+        descriptionKu: 'ژووری تیشکی X بە سێ ڕەهەند، ڕێکخستنی نەخۆش و دروستکردنی وێنەی سیمیولەیشن.',
+        icon: Box,
+        path: '/tools/xray-simulator',
+        category: 'education',
+        badge: 'New'
+    },
+    {
         id: 'xray-calculator',
         name: 'X-ray Calculator',
         nameKu: 'حیسابکەری X-ray',

@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { BookmarkProvider } from "@/contexts/BookmarkContext";
@@ -29,9 +29,7 @@ import QuizEditor from "./pages/admin/QuizEditor";
 import AdminCourses from "./pages/admin/AdminCourses";
 import CourseEditor from "./pages/admin/CourseEditor";
 import AdminAnatomyAtlas from "./pages/admin/AdminAnatomyAtlas";
-import ImageViewerDemo from "./pages/ImageViewerDemo";
 import NotFound from "./pages/NotFound";
-import AnatomyViewer from "./pages/AnatomyViewer";
 import AnatomyAtlas from "./pages/AnatomyAtlas";
 import AnatomyAtlasDetail from "./pages/AnatomyAtlasDetail";
 import XrayCalculator from "./pages/XrayCalculator";
@@ -42,6 +40,16 @@ import AdminArticles from "./pages/admin/AdminArticles";
 import ArticleEditor from "./pages/admin/ArticleEditor";
 import ScrollToTop from "./components/ScrollToTop";
 import Explore from "./pages/Explore";
+
+const XraySimulator = lazy(() => import('./pages/XraySimulator'));
+const ImageViewerDemo = lazy(() => import('./pages/ImageViewerDemo'));
+const AnatomyViewer = lazy(() => import('./pages/AnatomyViewer'));
+
+function WorkspaceExtras() {
+  const { pathname } = useLocation();
+  if (pathname === '/tools/xray-simulator') return null;
+  return <><PWAInstallPrompt /><BackToTop /></>;
+}
 
 const App = () => {
   const [splashDone, setSplashDone] = useState(
@@ -59,7 +67,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PWAInstallPrompt />
 
             {/* Splash Screen */}
             {!splashDone && <SplashScreen onFinished={handleSplashFinished} />}
@@ -67,7 +74,8 @@ const App = () => {
             <BrowserRouter>
               <ScrollToTop />
               <KeyboardShortcuts />
-              <BackToTop />
+              <WorkspaceExtras />
+              <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center text-muted-foreground text-sm">Loading workspace…</div>}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/explore" element={<Explore />} />
@@ -95,6 +103,7 @@ const App = () => {
                 {/* Tools */}
                 <Route path="/tools" element={<Tools />} />
                 <Route path="/tools/xray-calculator" element={<XrayCalculator />} />
+                <Route path="/tools/xray-simulator" element={<Suspense fallback={<div dir="ltr" className="min-h-[100dvh] flex items-center justify-center bg-[#f4f6f3] text-[#647264] text-sm">Opening radiography studio…</div>}><XraySimulator /></Suspense>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -117,6 +126,7 @@ const App = () => {
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </BookmarkProvider>

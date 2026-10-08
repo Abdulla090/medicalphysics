@@ -80,6 +80,7 @@ const MobileNav = () => {
   ];
 
   const toolItems = [
+    { path: '/tools/xray-simulator', label: language === 'ku' ? 'سیمیولەیتەری تیشکی X' : 'Radiography Studio', icon: Box },
     { path: '/tools/xray-calculator', label: t('tools.xrayCalculator'), icon: Zap },
     { path: '/anatomy/atlas', label: t('tools.anatomyAtlas'), icon: ImageIcon },
     { path: '/demo/image-viewer', label: t('tools.imageViewer'), icon: ScanLine },
