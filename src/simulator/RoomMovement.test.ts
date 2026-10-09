@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STATE } from './protocols';
 import { getSceneGeometry } from './sceneGeometry';
-import { getRoomColliders, moveObserver, OBSERVER_RADIUS, type RoomCollider } from './RoomMovement';
+import { getRoomColliders, getWorldZone, integrateWalking, moveObserver, OBSERVER_RADIUS, type RoomCollider } from './RoomMovement';
 
 describe('first person room movement', () => {
+  it('travels the same distance at 30 and 120 fps with smooth acceleration and release', () => {
+    const travel = (fps: number) => {
+      let velocity = { x: 0, z: 0 }, distance = 0;
+      for (let frame = 0; frame < fps * 2; frame++) {
+        const step = integrateWalking(velocity, { x: frame < fps ? 1.7 : 0, z: 0 }, 1 / fps);
+        velocity = step.velocity;
+        distance += step.displacement.x;
+      }
+      return { distance, velocity };
+    };
+    expect(travel(30).distance).toBeCloseTo(travel(120).distance, 10);
+    expect(travel(30).distance).toBeCloseTo(1.7, 6);
+    expect(travel(30).velocity.x).toBeLessThan(0.00001);
+  });
+
+  it('removes acceleration drift when reduced motion is preferred', () => {
+    expect(integrateWalking({ x: 1, z: 0 }, { x: 0, z: 0 }, 0.1, true)).toEqual({ velocity: { x: 0, z: 0 }, displacement: { x: 0, z: 0 } });
+  });
   it('moves freely by the requested distance without changing direction', () => {
     const destination = moveObserver({ x: 2, z: 2 }, { x: -0.20, z: -0.40 }, []);
     expect(destination.x).toBeCloseTo(1.8, 10);
@@ -34,26 +52,33 @@ describe('first person room movement', () => {
     expect(destination.z).toBeCloseTo(expected.z, 9);
   });
 
-  it('blocks the closed lead barrier and allows passage when opened', () => {
-    const start = { x: 2.25, z: -1.20 };
-    const displacement = { x: 0, z: -1.15 };
-    const closed = moveObserver(start, displacement, getRoomColliders(DEFAULT_STATE, 1.62, true));
-    const open = moveObserver(start, displacement, getRoomColliders(DEFAULT_STATE, 1.62, false));
-    expect(closed.z).toBeGreaterThanOrEqual(-1.53 - 1e-8);
-    expect(open.z).toBeCloseTo(-2.35, 9);
+  it('blocks entry across the lead control-room door until it is opened', () => {
+    const start = { x: 5.12, z: 4.05 };
+    const closed = moveObserver(start, { x: 0, z: -1.8 }, getRoomColliders(DEFAULT_STATE, 1.62, true));
+    const open = moveObserver(start, { x: 0, z: -1.8 }, getRoomColliders(DEFAULT_STATE, 1.62, false));
+    expect(closed.z).toBeGreaterThanOrEqual(3.45 - 1e-8);
+    expect(open.z).toBeCloseTo(2.25, 8);
+    expect(getWorldZone(open)).toBe('Radiographer control room');
   });
 
-  it('lets an operator walk around the barrier through the left corridor and reach the console', () => {
-    const room = getRoomColliders(DEFAULT_STATE, 1.62, true);
-    const corridor = moveObserver({ x: 2.13, z: 2.30 }, { x: -0.68, z: 0 }, room);
-    const behindBarrier = moveObserver(corridor, { x: 0, z: -4.65 }, room);
-    expect(behindBarrier.x).toBeCloseTo(1.45, 8);
-    expect(behindBarrier.z).toBeCloseTo(-2.35, 8);
-    const consolePosition = moveObserver(behindBarrier, { x: 0.80, z: 0 }, room);
-    expect(consolePosition.x).toBeCloseTo(2.25, 8);
-    expect(consolePosition.z).toBeCloseTo(-2.35, 8);
-    // The safe operator position can be occupied without touching the desk or screen.
-    expect(moveObserver(consolePosition, { x: 0, z: 0 }, room)).toEqual(consolePosition);
+  it('enters the control room from the corridor and reaches the protected console', () => {
+    const room = getRoomColliders(DEFAULT_STATE, 1.62, false);
+    const start = { x: 5.12, z: 4.05 };
+    const inside = moveObserver(start, { x: 0, z: -2.2 }, room);
+    expect(inside.z).toBeCloseTo(1.85, 8);
+    const console = moveObserver(inside, { x: 0, z: -2.2 }, room);
+    expect(console.z).toBeGreaterThan(-0.55);
+    expect(console.z).toBeLessThan(-0.2);
+    expect(moveObserver(console, { x: 0, z: 0 }, room)).toEqual(console);
+  });
+
+  it('requires the changing-room privacy door to open for a patient-preparation visit', () => {
+    const start = { x: -2.45, z: 4.85 };
+    const closed = moveObserver(start, { x: -2.0, z: 0 }, getRoomColliders(DEFAULT_STATE, 1.62, false, true));
+    const open = moveObserver(start, { x: -2.0, z: 0 }, getRoomColliders(DEFAULT_STATE, 1.62, false, false));
+    expect(closed.x).toBeGreaterThanOrEqual(-3.14 - 1e-8);
+    expect(open.x).toBeCloseTo(-4.45, 8);
+    expect(getWorldZone(open)).toBe('Patient changing room');
   });
 
   it('moves patient collision bounds with patient positioning and body size', () => {
@@ -80,5 +105,38 @@ describe('first person room movement', () => {
     const patient: RoomCollider[] = [{ kind: 'circle', x: 0.65, z: -1.9, radius: 0.30 }];
     const destination = moveObserver({ x: 0.65, z: -1.9 }, { x: 0, z: 0 }, patient);
     expect(Math.hypot(destination.x - 0.65, destination.z + 1.9)).toBeCloseTo(0.30 + OBSERVER_RADIUS, 10);
+  });
+
+  it('walks through the real imaging-room doorway and returns without teleporting', () => {
+    const room = getRoomColliders(DEFAULT_STATE);
+    const corridor = moveObserver({ x: 2.1, z: 2.3 }, { x: 0, z: 2.5 }, room);
+    expect(corridor).toEqual({ x: 2.1, z: expect.closeTo(4.8, 8) });
+    expect(getWorldZone(corridor)).toBe('Clinical corridor');
+    const back = moveObserver(corridor, { x: 0, z: -2.5 }, room);
+    expect(back.z).toBeCloseTo(2.3, 8);
+    expect(getWorldZone(back)).toBe('Imaging room');
+  });
+
+  it('connects the corridor, learning gallery and courtyard through their openings', () => {
+    const room = getRoomColliders(DEFAULT_STATE);
+    let point = { x: 2.1, z: 4.8 };
+    point = moveObserver(point, { x: -4, z: 0 }, room);
+    point = moveObserver(point, { x: 0, z: 3.7 }, room);
+    expect(point.x).toBeCloseTo(-1.9, 8);
+    expect(point.z).toBeCloseTo(8.5, 8);
+    expect(getWorldZone(point)).toBe('Learning gallery');
+    point = moveObserver(point, { x: 3.4, z: 0 }, room);
+    expect(point.x).toBeCloseTo(1.5, 8);
+    expect(getWorldZone(point)).toBe('Courtyard');
+  });
+
+  it('prevents tunnelling through gallery glazing and the garden planter', () => {
+    const room = getRoomColliders(DEFAULT_STATE);
+    const glass = moveObserver({ x: 2.1, z: 4.8 }, { x: 0, z: 6 }, room);
+    expect(glass.z).toBeCloseTo(6.05, 8);
+    const planter = moveObserver({ x: 5.5, z: 7 }, { x: 0, z: 6 }, room);
+    expect(planter.z).toBeCloseTo(9, 8);
+    const boundary = moveObserver({ x: 7.8, z: 7 }, { x: 0, z: 10 }, room);
+    expect(boundary.z).toBeCloseTo(12.05, 8);
   });
 });

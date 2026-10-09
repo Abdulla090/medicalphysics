@@ -16,7 +16,10 @@ export default defineConfig({
     reducedMotion: 'reduce',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+    launchOptions: {
+      executablePath: process.env.XRAY_TEST_CHROME_PATH || undefined,
+      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    },
   },
   webServer: externalBaseURL ? undefined : {
     command: 'npm run dev -- --host 127.0.0.1 --port 5174 --strictPort',

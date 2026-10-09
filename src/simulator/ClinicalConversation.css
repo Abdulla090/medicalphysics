@@ -1,0 +1,130 @@
+/* Patient dialogue: calm, compact, keyboard-accessible educational workstation. */
+.game-conversation { width: min(570px, 100%); }
+.game-conversation-content { padding: 23px 29px 32px; }
+.game-conversation-heading { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.game-conversation-heading h2 { margin: 9px 0 10px; font-size: 29px; }
+.game-conversation .game-conversation-heading p { margin: 0 0 17px; font-size: 12px; line-height: 1.5; }
+.game-conversation-stage { flex-shrink: 0; padding: 7px 9px; border: 1px solid #a8bdac; color: #477254; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .6px; }
+.game-conversation-patient { display: flex; align-items: center; gap: 13px; padding: 13px 0 14px; border-block: 1px solid #bfccbe; }
+.game-conversation-monogram { width: 41px; height: 41px; display: grid; place-items: center; flex: 0 0 41px; border-radius: 50%; background: #d9e7da; color: #3d7052; }
+.game-conversation-monogram svg { width: 20px; height: 20px; }
+.game-conversation-patient > div { min-width: 0; flex: 1; }
+.game-conversation-patient small { display: block; color: #6b8370; font: 9px 'IBM Plex Mono', monospace; letter-spacing: .4px; }
+.game-conversation-patient strong { display: block; margin: 4px 0 3px; font-size: 15px; color: #213c2d; }
+.game-conversation-patient > div > span { display: block; color: #607567; font-size: 11px; line-height: 1.4; }
+.game-conversation-patient > b { flex: 0 0 auto; align-self: flex-start; color: #396e50; font: 600 9px 'IBM Plex Mono', monospace; }
+.game-conversation-case-picker { display: flex; align-items: center; justify-content: space-between; gap: 13px; margin: 4px 0 17px; }
+.game-conversation-case-picker label { color: #647f6b; font: 600 9px 'IBM Plex Mono', monospace; }
+.game-conversation-case-picker select { width: min(290px, 65%); min-height: 38px; padding: 7px; border: 1px solid #a6baa9; background: #f7faf2; color: #234b37; font-size: 11px; }
+.game-conversation-chart { background: #e5ece1; padding: 12px 14px; border-bottom: 1px solid #bfd2c1; }
+.game-conversation-chart > span, .game-conversation-section-label { display: block; color: #51725e; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .7px; }
+.game-conversation-chart > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0 4px; }
+.game-conversation-chart b { font-size: 12px; color: #244b36; }
+.game-conversation-chart b + b { font: 600 12px 'IBM Plex Mono', monospace; }
+.game-conversation-chart > small { color: #728574; font-size: 10px; }
+.game-conversation-progress { display: flex; justify-content: space-between; gap: 10px; margin: 18px 0 8px; color: #64816b; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .4px; }
+.game-conversation-progress strong { color: #2a6644; }
+.game-conversation-bar { height: 4px; background: #c9d4c8; overflow: hidden; }
+.game-conversation-bar span { display: block; height: 100%; background: #387a50; transition: width 200ms ease; }
+.game-conversation-log-label { display: flex; justify-content: space-between; gap: 8px; margin: 20px 0 9px; color: #50755d; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+.game-conversation-log-label small { font: inherit; font-size: 8px; font-weight: 400; color: #87988b; }
+.game-conversation-transcript { height: clamp(130px, 20vh, 190px); overflow: auto; display: flex; flex-direction: column; gap: 11px; padding: 14px; margin: 0 0 16px; list-style: none; background: #dfe6dd; border: 1px solid #c9d7c9; scrollbar-color: #99b4a1 transparent; }
+.game-conversation-turn { max-width: 88%; padding: 8px 11px 10px; background: #f2f5ed; border-left: 2px solid #729a7a; border-radius: 1px 7px 7px 7px; }
+.game-conversation-turn.is-student { align-self: flex-end; background: #cde3d1; border-left: 0; border-right: 2px solid #538762; border-radius: 7px 1px 7px 7px; }
+.game-conversation-turn.is-system { max-width: 100%; align-self: center; background: #e8e9dc; border-color: #b59969; }
+.game-conversation-turn.is-clinician { max-width: 100%; background: #d1e0db; border-color: #4a7c7f; }
+.game-conversation-turn > span { color: #55745a; font: 600 8px 'IBM Plex Mono', monospace; letter-spacing: .3px; }
+.game-conversation .game-conversation-turn p { margin: 5px 0 0; line-height: 1.5; color: #234032; font-size: 11px; overflow-wrap: anywhere; }
+.game-conversation-announce { position: absolute; height: 1px; width: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.game-conversation-options { padding-top: 1px; }
+.game-conversation-options-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+.game-conversation-options-grid button, .game-conversation-respond button { min-height: 39px; border: 1px solid #b9ccbb; background: #e7eee4; color: #315943; text-align: left; display: flex; align-items: center; gap: 6px; justify-content: space-between; padding: 9px 11px; cursor: pointer; font-size: 11px; line-height: 1.4; border-radius: 2px; }
+.game-conversation-options-grid button:hover, .game-conversation-respond button:hover { background: #d5e5d7; border-color: #76a180; }
+.game-conversation-options-grid button.is-asked { background: #e1ede0; border-color: #c2d5c6; }
+.game-conversation-options-grid button svg, .game-conversation-respond button svg { width: 13px; height: 13px; flex-shrink: 0; color: #39704f; }
+.game-conversation-record, .game-conversation-respond { margin-top: 19px; border-top: 1px solid #c6d2c5; padding-top: 15px; }
+.game-conversation-record > div { display: grid; gap: 12px; margin-top: 12px; }
+.game-conversation-record form > label { display: block; font-size: 11px; color: #46654e; margin-bottom: 5px; }
+.game-conversation-record form > div { display: flex; align-items: stretch; }
+.game-conversation-record input { width: 100%; min-width: 0; height: 38px; border: 1px solid #abc0b0; background: white; padding: 7px 10px; color: #263e31; font-size: 12px; }
+.game-conversation-record input:disabled { background: #e7eae3; color: #899b8c; }
+.game-conversation-record form button { min-width: 71px; border: 0; background: #2b6343; color: #fff; font: 600 9px 'IBM Plex Mono', monospace; cursor: pointer; }
+.game-conversation-record form button:disabled { background: #bccabb; cursor: default; }
+.game-conversation-record form svg { width: 17px; height: 17px; }
+.game-conversation-respond > div { display: grid; gap: 7px; margin: 10px 0 0; }
+.game-conversation-respond button.is-escalation { background: #f3e5ce; color: #79552b; border-color: #c8ac7f; }
+.game-conversation-training-choice { margin-top: 12px; font-size: 11px; color: #7a8067; }
+.game-conversation-training-choice summary { cursor: pointer; }
+.game-conversation-training-choice button { margin-top: 8px; width: 100%; background: #f0ded6; border-color: #d8b1a1; color: #7b483f; }
+.game-conversation-training-choice small { display: block; margin-top: 5px; font-size: 10px; }
+.game-conversation-safety { padding: 13px 14px; margin-top: 16px; background: #f3e3cf; border-left: 3px solid #b17a37; color: #704f2e; }
+.game-conversation-safety strong { font: 600 10px 'IBM Plex Mono', monospace; }
+.game-conversation .game-conversation-safety p { margin: 5px 0 0; color: #765c41; font-size: 11px; line-height: 1.5; }
+.game-conversation-footer { margin-top: 20px; border-top: 2px solid #326545; padding-top: 15px; }
+.game-conversation .game-conversation-footer p { font-size: 12px; margin: 7px 0 0; line-height: 1.55; min-height: 18px; }
+.game-conversation-footer .game-primary { margin-top: 15px; }
+.game-conversation-footer > small { display: block; margin: 10px 0 0; font-size: 10px; color: #809185; text-align: center; }
+@media (max-width: 720px) {
+  .game-conversation-content { padding: 18px 17px 26px; }
+  .game-conversation-heading h2 { font-size: 25px; }
+  .game-conversation-stage { font-size: 8px; }
+  .game-conversation-patient > b { font-size: 8px; }
+  .game-conversation-transcript { height: clamp(135px, 23vh, 195px); }
+  .game-conversation-options-grid { gap: 6px; }
+  .game-conversation-options-grid button { padding: 8px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .game-conversation-bar span { transition: none; } }
+
+/* Conversation is a step-by-step patient encounter, with explicit learner feedback. */
+.game-conversation-stage { font-size: 10px; line-height: 1.4; }
+.game-conversation-patient small { font-size: 11px; }
+.game-conversation-patient > div > span { font-size: 12px; }
+.game-conversation-patient > b { max-width: 122px; font-size: 10px; text-align: right; line-height: 1.5; }
+.game-conversation-case-picker label, .game-conversation-chart > span, .game-conversation-section-label,
+.game-conversation-progress, .game-conversation-log-label { font-size: 11px; }
+.game-conversation-case-picker select { font-size: 12px; min-height: 44px; }
+.game-conversation-chart b { font-size: 13px; }
+.game-conversation-chart > small { font-size: 11px; }
+.game-conversation-progress { align-items: baseline; }
+.game-conversation-progress strong { font-weight: 700; text-align: right; }
+.game-conversation-log-label small { font-size: 10px; }
+.game-conversation-turn { max-width: 94%; padding: 11px 13px; }
+.game-conversation-turn > span { font-size: 10px; }
+.game-conversation .game-conversation-turn p { font-size: 13px; line-height: 1.6; }
+.game-conversation-options-grid button, .game-conversation-respond button { min-height: 48px; font-size: 12px; padding: 11px 12px; gap: 9px; }
+.game-conversation-options-grid button.is-asked { color: #41694d; }
+.game-conversation-asked { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 600 10px 'IBM Plex Mono', monospace; color: #2f7948; }
+.game-conversation-options-grid .game-conversation-asked svg { width: 13px; height: 13px; }
+.game-conversation-record form > label { font-size: 12px; font-weight: 600; }
+.game-conversation-record input { min-height: 44px; height: 44px; font-size: 13px; }
+.game-conversation-record input[aria-invalid='true'] { border-color: #b0774a; background: #fffaf6; }
+.game-conversation-record input:disabled { color: #4b6b54; }
+.game-conversation-record form button { min-width: 80px; font-size: 11px; }
+.game-conversation-record form button:disabled { color: #335a42; background: #c5dac9; }
+.game-conversation-record form > small { display: block; margin-top: 6px; color: #69816e; font-size: 11px; line-height: 1.5; }
+.game-conversation-record form > small.is-matched { color: #2c7350; font-weight: 600; }
+.game-conversation-record form > small.is-mismatch { color: #9a522f; font-weight: 600; }
+.game-conversation-training-choice { color: #5c6c5a; font-size: 12px; }
+.game-conversation-training-choice summary { padding: 10px 0; }
+.game-conversation-training-choice small { font-size: 11px; }
+.game-conversation-safety strong { font-size: 11px; }
+.game-conversation .game-conversation-safety p { font-size: 12px; }
+.game-conversation .game-conversation-footer p { font-size: 13px; color: #395a45; }
+.game-conversation-footer > small { font-size: 11px; }
+@media (max-width: 720px) {
+  .game-conversation-content { padding: 18px 17px 28px; }
+  .game-conversation-options-grid button { font-size: 12px; padding: 10px 11px; }
+  .game-conversation-patient > b { font-size: 10px; }
+}
+@media (max-width: 420px) {
+  .game-conversation-heading { gap: 10px; }
+  .game-conversation-heading h2 { font-size: 24px; }
+  .game-conversation-stage { font-size: 9px; }
+  .game-conversation-case-picker { flex-direction: column; align-items: stretch; }
+  .game-conversation-case-picker select { width: 100%; }
+  .game-conversation-patient { flex-wrap: wrap; }
+  .game-conversation-patient > b { max-width: none; margin-left: 54px; text-align: left; }
+  .game-conversation-chart > div { flex-wrap: wrap; }
+  .game-conversation-options-grid { grid-template-columns: 1fr; }
+  .game-conversation-transcript { height: clamp(160px, 27dvh, 240px); }
+}

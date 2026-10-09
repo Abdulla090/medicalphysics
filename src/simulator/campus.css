@@ -1,0 +1,164 @@
+/* The world remains the primary workspace; dark instruments stay legible over it. */
+.sim-app { background: #f4f5f5; }
+.sim-topbar { height: 56px; background: #fff; }
+.sim-brand-symbol { background: #e7eeeb; }
+.sim-titlebar { padding-top: 14px; padding-bottom: 14px; gap: 20px; }
+.sim-titlebar h1 { font-size: 24px; letter-spacing: -.8px; color: #253738; }
+.sim-mode-switch { display: flex; padding: 4px; gap: 3px; background: #e8eceb; border: 1px solid #d9e0de; border-radius: 8px; margin-left: auto; }
+.sim-mode-switch button { display: flex; align-items: center; gap: 7px; border: 0; border-radius: 5px; padding: 8px 12px; background: transparent; color: #576964; font-size: 11px; }
+.sim-mode-switch button.is-active { background: #fff; color: #273e36; box-shadow: 0 1px 3px #18392c12; }
+.sim-mode-switch svg { width: 14px; }
+.sim-app.is-immersive .sim-workspace { position: relative; grid-template-columns: minmax(0,1fr); height: max(694px, calc(100dvh - 172px)); max-height: none; padding: 0 18px 12px; }
+.sim-app.is-immersive .sim-main { gap: 10px; }
+.sim-app.is-immersive .sim-exam-panel, .sim-app.is-immersive .sim-console, .sim-app.is-immersive .sim-mobile-protocol { display: none; }
+.sim-app.is-immersive.is-console-open .sim-console { display: flex; position: absolute; top: 14px; right: 76px; bottom: 106px; width: 306px; z-index: 5; box-shadow: 0 15px 50px #13292440; border-color: #aebfb7; }
+.sim-app.is-immersive .sim-viewport { min-height: 570px; border-radius: 10px; border-color: #bac6c3; background: #e4e8e9; }
+.sim-app.is-immersive.is-console-open .sim-viewport { isolation: auto; }
+.sim-app.is-immersive .sim-acquisitions { height: 80px; padding: 9px 16px; border-color: #d9e0dd; background: #fff; }
+.sim-app.is-immersive .sim-acquisition-heading { height: 15px; }
+.sim-app.is-immersive .sim-filmstrip { padding-top: 6px; height: 40px; }
+.sim-app.is-immersive .sim-filmstrip.is-empty { height: 39px; }
+.sim-app.is-immersive .sim-empty-film { width: 25px; height: 28px; border-style: solid; background: #edf1ef; }
+.sim-app.is-immersive .sim-empty-acquisitions { gap: 12px; }
+.sim-app.is-immersive .sim-empty-acquisitions small { display: inline; margin-left: 10px; }
+.sim-app.is-immersive .sim-film-thumbnail { height: 38px; min-width: 180px; }
+.sim-app.is-immersive .sim-film-thumbnail img { height: 32px; }
+.sim-app.is-immersive .sim-scene-head { top: 20px; left: 22px; right: 22px; }
+.sim-app.is-immersive .sim-scene-head > div { padding: 8px 11px; border-radius: 6px; background: #152728ee; border: 1px solid #ffffff25; }
+.sim-app.is-immersive .sim-scene-overline { color: #b4cbc5; font-size: 8px; }
+.sim-app.is-immersive .sim-room-label { color: #f5faf7; font-size: 12px; }
+.sim-app.is-immersive .sim-room-label > span { color: #b4cbc5; }
+.sim-app.is-immersive .sim-scene-status { background: #152728ee; color: #d5e7de; border-color: #ffffff30; padding: 7px 9px; }
+.sim-app.is-immersive .sim-scene-status > span { background: #a8d8b9; }
+.sim-app.is-immersive .sim-scene-side { right: 20px; top: 65px; }
+.sim-app.is-immersive .sim-scene-icon { height: 34px; width: 34px; background: #152728ed; border-color: #ffffff30; color: #dfebe6; }
+.sim-app.is-immersive .sim-anatomy-selector { top: 89px; left: 22px; padding: 3px; border-radius: 5px; background: #152728ee; border: 1px solid #ffffff25; }
+.sim-app.is-immersive .sim-anatomy-selector button { color: #c5d6d0; background: transparent; padding: 5px 7px; font-size: 9px !important; }
+.sim-app.is-immersive .sim-anatomy-selector button.is-active { background: #dceee4; color: #213b32; border-color: transparent; }
+.sim-learning { position: absolute; top: 139px; left: 22px; width: 236px; padding: 15px; max-height: calc(100% - 232px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #647d73 transparent; background: #142627f2; color: #f3f7f4; border: 1px solid #ffffff30; border-radius: 8px; box-shadow: 0 8px 28px #172b2220, inset 0 1px #ffffff09; }
+.sim-learning-heading { display: flex; align-items: center; justify-content: space-between; color: #a7c2b9; font: 8px 'IBM Plex Mono', monospace; letter-spacing: 1.2px; }
+.sim-learning-heading button { display: grid; place-items: center; background: transparent; color: #cfe0d9; border: 0; padding: 3px; }
+.sim-learning-heading button svg { width: 13px; height: 13px; transform: rotate(-90deg); }
+.sim-learning.is-expanded .sim-learning-heading button svg { transform: none; }
+.sim-learning select { display: block; width: 100%; background: transparent; color: #f0f7f2; font-size: 21px; font-weight: 500; letter-spacing: -.5px; border: 0; padding: 6px 0 4px; outline-offset: 1px; }
+.sim-learning select option { background: #193031; color: #f0f7f2; font-size: 14px; }
+.sim-learning-subtitle { font-size: 10px; color: #b2c5bd; }
+.sim-learning-subtitle > span { margin: 0 4px; }
+.sim-learning-progress { display: flex; justify-content: space-between; border-top: 1px solid #ffffff20; padding-top: 15px; margin-top: 17px; font: 8px 'IBM Plex Mono', monospace; letter-spacing: .8px; color: #bad0c5; }
+.sim-learning ol { display: flex; flex-direction: column; gap: 15px; list-style: none; margin: 15px 0 18px; padding: 0; }
+.sim-learning li { display: flex; gap: 10px; align-items: flex-start; }
+.sim-learning li > span { flex: 0 0 21px; height: 21px; display: grid; place-items: center; border: 1px solid #7a938960; border-radius: 50%; font: 8px 'IBM Plex Mono', monospace; color: #b5c8bf; }
+.sim-learning li.is-complete > span { border-color: #9cbeae40; color: #b1dec5; background: #b1dec510; }
+.sim-learning li.is-current > span { background: #c1e6d2; color: #203b2f; border-color: #c1e6d2; }
+.sim-learning li svg { width: 12px; height: 12px; }
+.sim-learning li strong { display: block; padding-top: 2px; font-size: 11px; font-weight: 500; color: #c2d1ca; }
+.sim-learning li.is-current strong { color: #f1f7f3; }
+.sim-learning li p, .sim-explore-copy { font-size: 10px; line-height: 1.7; margin: 6px 0 0; color: #b4c8bf; }
+.sim-explore-copy { border-top: 1px solid #ffffff20; margin-top: 14px; padding-top: 12px; }
+.sim-learning-guide, .sim-learning-review { display: flex; align-items: center; gap: 7px; width: 100%; border: 1px solid #ffffff24; border-radius: 4px; padding: 9px; color: #d3e5dc; background: #ffffff08; font-size: 10px !important; text-align: left; }
+.sim-learning-guide svg { width: 12px; }
+.sim-learning-guide svg:last-child, .sim-learning-review svg { margin-left: auto; }
+.sim-learning-review { background: #cee8d9; color: #1f3f2f; margin-bottom: 7px; }
+.sim-learning-physics { padding: 10px; margin-bottom: 12px; border: 1px solid #aec5b330; background: #d0e3d609; border-radius: 5px; }
+.sim-learning-physics > .sim-section-label { display: block; color: #b5cdbd; font-size: 8px; letter-spacing: .5px; }
+.sim-learning-focus { display: flex; gap: 3px; margin: 10px 0; padding: 3px; border: 1px solid #ffffff20; border-radius: 5px; }
+.sim-learning-focus button { min-width: 0; flex: 1; padding: 6px 3px; border: 0; border-radius: 3px; background: transparent; color: #b3cabd; font-size: 9px; cursor: pointer; text-transform: capitalize; }
+.sim-learning-focus button[aria-pressed="true"] { background: #c7e6d4; color: #233e32; }
+.sim-learning-metric { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 9px; color: #bed2c4; }
+.sim-learning-metric strong { color: #e4f7e9; font: 600 15px 'IBM Plex Mono', monospace; white-space: nowrap; }
+.sim-learning-physics p { color: #b4c8bf; margin: 8px 0 0; font-size: 10px; line-height: 1.6; }
+.sim-campus-map { position: absolute; top: 114px; right: 68px; width: 160px; background: #142627ed; color: #dcebe3; border: 1px solid #ffffff30; border-radius: 7px; overflow: hidden; }
+.sim-map-heading { display: flex; align-items: center; gap: 7px; width: 100%; padding: 10px; background: transparent; border: 0; color: inherit; text-align: left; font-size: 10px !important; }
+.sim-map-heading svg { width: 12px; height: 12px; }
+.sim-map-heading > svg:last-child { margin-left: auto; }
+.sim-map-drawing { display: none; padding: 0 7px 10px; }
+.sim-campus-map.is-expanded .sim-map-drawing { display: block; }
+.sim-app:fullscreen { overflow-y: auto; }
+.sim-campus-map .sim-map-drawing > svg { width: 100%; height: auto; display: block; }
+.sim-map-drawing text { fill: #bfcdc6; font: 6px 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+.sim-map-caption { display: flex; align-items: center; gap: 4px; font: 7px 'IBM Plex Mono', monospace; color: #b9cdc2; padding: 3px 8px; }
+.sim-map-caption > span { margin-left: auto; }
+.sim-map-caption i { display: block; width: 4px; height: 4px; border-radius: 50%; background: #c1f5db; }
+.sim-crosshair { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px; border: 1px solid #fff; border-radius: 50%; background: #fff8; box-shadow: 0 0 0 2px #182e2850; pointer-events: none; }
+.sim-crosshair.is-targeted { width: 18px; height: 18px; margin: -9px; border: 2px solid #dcffe8; background: #26493540; }
+.sim-crosshair.is-holding { border-color: #f6dc9e; }
+.sim-world-brief { position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%); display: flex; align-items: center; gap: 20px; width: max-content; max-width: calc(100% - 560px); padding: 15px 18px; background: #142627ee; border: 1px solid #ffffff30; border-radius: 7px; color: #edf5ee; }
+.sim-world-brief strong { font-size: 13px; font-weight: 500; }
+.sim-world-brief p { font-size: 10px; color: #bdcfc6; margin: 4px 0 0; }
+.sim-world-brief button { white-space: nowrap; background: #d1e9db; border-color: #d1e9db; color: #244533; }
+.sim-world-target { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(460px, calc(100% - 560px)); background: #142627f0; color: #eef5ef; border: 1px solid #ffffff30; border-radius: 6px; text-align: center; padding: 10px 14px; pointer-events: none; }
+.sim-world-target > div { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.sim-world-target kbd { padding: 3px 5px; border: 1px solid #a0b8aa70; border-radius: 3px; font: 8px 'IBM Plex Mono', monospace; color: #cce3d4; }
+.sim-world-target strong { font-size: 11px; font-weight: 500; }
+.sim-world-target p { color: #bbcec2; font-size: 9px; line-height: 1.6; margin: 5px 0 0; }
+.sim-world-target:not(.is-within-reach) p { display: none; }
+.sim-world-target.is-within-reach { border-color: #b0d5bc; }
+.sim-world-dial { display: flex; gap: 16px; align-items: center; justify-content: space-between; margin-top: 7px; padding-top: 7px; border-top: 1px solid #ffffff25; font-size: 9px; color: #c4dbcc; }
+.sim-world-dial b { color: #e3f7ea; font: 15px 'IBM Plex Mono', monospace; }
+.sim-world-dial small { font-size: 9px; }
+.sim-world-safety { position: absolute; left: 50%; top: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: #142627ed; color: #e1e9df; border: 1px solid #ffffff30; border-radius: 5px; white-space: nowrap; font-size: 9px; }
+.sim-world-safety > span { width: 5px; height: 5px; background: #d8bb80; border-radius: 50%; }
+.sim-world-safety > span.is-safe { background: #b1dfbc; }
+.sim-world-safety b { border-left: 1px solid #ffffff35; padding-left: 10px; margin-left: 5px; font: 9px 'IBM Plex Mono', monospace; color: #bed9c9; }
+.sim-world-console-toggle { position: absolute; z-index: 7; top: 65px; right: 68px; background: #142627ed; border: 1px solid #ffffff30; color: #e2eee6; padding: 9px 12px; }
+.sim-app.is-immersive .sim-scene-bottom { bottom: 29px; left: 22px; right: 22px; }
+.sim-app.is-immersive .sim-camera-views { background: #142627f0; border-color: #ffffff30; padding: 5px; border-radius: 6px; }
+.sim-app.is-immersive .sim-camera-views button { color: #caddce; }
+.sim-app.is-immersive .sim-camera-views button.is-active { color: #243f30; background: #d4e9d9; }
+.sim-app.is-immersive .sim-camera-views button:hover:not(.is-active) { background: #ffffff15; }
+.sim-app.is-immersive .sim-camera-divider { background: #ffffff25; }
+.sim-app.is-immersive .sim-light-button { background: #142627f0; border-color: #ffffff30; color: #dcebdc; }
+.sim-app.is-immersive .sim-light-button.is-active { background: #dce8ca; color: #32462a; border-color: #aabc91; }
+.sim-app.is-immersive .sim-navigation-hint { bottom: 8px; left: 22px; color: #eff7ee; padding: 2px 5px; background: #142627e6; border-radius: 3px; font-size: 8px; }
+.sim-app.is-immersive .sim-walk-pad { right: 22px; bottom: 89px; grid-template-columns: repeat(3,34px); grid-template-rows: repeat(2,34px); }
+.sim-app.is-immersive .sim-walk-pad button { background: #142627ed; border-color: #ffffff30; color: #d6e9da; }
+.sim-app.is-immersive .sim-prepared-strip { bottom: 222px; z-index: 2; }
+.sim-app.is-immersive.is-console-open .sim-campus-map { visibility: hidden; }
+.sim-learning :focus-visible, .sim-campus-map :focus-visible, .sim-world-console-toggle:focus-visible { outline-color: #d4ffe4; }
+@media (hover:hover) and (pointer:fine) { .sim-learning-guide:hover, .sim-map-heading:hover, .sim-world-console-toggle:hover { background: #28433c; color: #fff; } }
+@media (min-width:1400px) { .sim-campus-map { width: 180px; } .sim-learning { width: 248px; padding: 18px; } }
+@media (max-width:1100px) { .sim-title-actions .sim-outline-button { padding: 8px; } .sim-title-actions span { display: none; } .sim-world-brief { flex-direction: column; gap: 10px; text-align: center; max-width: 250px; bottom: 147px; } .sim-world-safety b { display: none; } .sim-learning { width: 209px; padding: 12px; } .sim-campus-map { width: 145px; } .sim-world-target { max-width: calc(100% - 480px); } }
+@media (max-width:860px) { .sim-world-safety { left: auto; right: 22px; top: 20px; transform: none; } .sim-app.is-immersive .sim-scene-status { display: none; } .sim-campus-map { width: 148px; } .sim-map-drawing { display: none; } .sim-campus-map.is-expanded .sim-map-drawing { display: block; } .sim-world-target { max-width: calc(100% - 300px); } .sim-world-brief { left: auto; right: 68px; transform: none; bottom: auto; top: 165px; max-width: 200px; text-align: left; align-items: stretch; } .sim-mode-switch button { padding: 7px; } }
+@media (max-width:720px) {
+  .sim-topbar { padding: 0 14px; height: 52px; } .sim-top-actions { gap: 5px; }
+  .sim-titlebar { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; padding: 12px 14px; }
+  .sim-titlebar h1 { font-size: 22px; } .sim-breadcrumb { font-size: 9px; }
+  .sim-title-actions { grid-column: 2; grid-row: 1; } .sim-title-actions .sim-outline-button { width: 33px; height: 33px; }
+  .sim-mode-switch { grid-column: 1 / -1; width: 100%; margin: 0; }
+  .sim-mode-switch button { flex: 1; justify-content: center; padding: 8px 4px; }
+  .sim-app.is-immersive .sim-workspace { display: flex; height: auto; min-height: 0; padding: 0 8px 10px; }
+  .sim-app.is-immersive .sim-viewport { height: max(650px,calc(100dvh - 188px)); min-height: 650px; }
+  .sim-app.is-immersive .sim-scene-head { top: 12px; left: 12px; right: 12px; }
+  .sim-app.is-immersive .sim-scene-head > div { padding: 7px 9px; }
+  .sim-app.is-immersive .sim-scene-overline { font-size: 7px; letter-spacing: 1px; }
+  .sim-world-safety { top: 71px; left: 12px; right: auto; font-size: 8px; padding: 6px 7px; }
+  .sim-world-console-toggle { top: 12px; right: 12px; height: 43px; padding: 7px 9px; font-size: 9px !important; }
+  .sim-app.is-immersive .sim-scene-side { right: 12px; top: 67px; }
+  .sim-app.is-immersive .sim-scene-icon { width: 36px; height: 36px; }
+  .sim-app.is-immersive .sim-anatomy-selector { left: 12px; top: 110px; }
+  .sim-app.is-immersive .sim-anatomy-selector button { padding: 7px 6px; }
+  .sim-learning { top: 159px; left: 12px; width: 195px; max-height: calc(100% - 272px); padding: 10px 12px; }
+  .sim-learning select { font-size: 20px; }
+  .sim-learning-heading button { width: 26px; height: 26px; padding: 6px; }
+  .sim-learning li { gap: 8px; } .sim-learning ol { gap: 10px; margin: 12px 0; }
+  .sim-learning-progress { margin-top: 12px; padding-top: 10px; }
+  .sim-campus-map { top: auto; bottom: 204px; right: 12px; width: 146px; }
+  .sim-map-heading { min-height: 36px; padding: 8px; font-size: 9px !important; }
+  .sim-world-brief { top: auto; bottom: 253px; left: 12px; right: auto; max-width: 190px; padding: 12px; }
+  .sim-world-brief strong { font-size: 12px; } .sim-world-brief p { display: none; }
+  .sim-world-brief .sim-outline-button { padding: 9px; font-size: 10px !important; }
+  .sim-world-target { bottom: 100px; left: 12px; transform: none; max-width: calc(100% - 176px); padding: 9px 10px; text-align: left; }
+  .sim-world-target > div { justify-content: flex-start; gap: 6px; } .sim-world-target strong { font-size: 10px; }
+  .sim-world-target p { font-size: 9px; }
+  .sim-app.is-immersive .sim-walk-pad { bottom: 97px; right: 12px; grid-template-columns: repeat(3,44px); grid-template-rows: repeat(2,44px); }
+  .sim-app.is-immersive .sim-scene-bottom { left: 12px; right: 12px; bottom: 45px; }
+  .sim-app.is-immersive .sim-camera-views { padding: 4px; }
+  .sim-app.is-immersive .sim-camera-views button { min-height: 34px; padding: 7px; }
+  .sim-app.is-immersive .sim-light-button { min-height: 44px; padding: 8px; }
+  .sim-app.is-immersive .sim-light-button span { display: none; }
+  .sim-app.is-immersive .sim-navigation-hint { bottom: 12px; left: 12px; max-width: calc(100% - 24px); font-size: 8px; }
+  .sim-app.is-immersive .sim-prepared-strip { bottom: 205px; white-space: normal; width: calc(100% - 30px); }
+  .sim-app.is-immersive.is-console-open .sim-console { position: relative; inset: auto; width: 100%; max-height: none; min-height: 620px; }
+  .sim-app.is-immersive .sim-acquisitions { height: 90px; } .sim-app.is-immersive .sim-empty-acquisitions small { display: block; margin-left: 0; }
+}
+@media (prefers-reduced-motion:reduce) { .sim-mode-switch button { transition: color 100ms, background-color 100ms; } }

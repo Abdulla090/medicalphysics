@@ -1,7 +1,7 @@
-import { Component, memo, useEffect, useState, type ReactNode } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Component, memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Html, Lightformer } from '@react-three/drei';
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
+import { ACESFilmicToneMapping, Euler, Group, PCFSoftShadowMap, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import { RoomArchitecture } from './SceneAssets';
 import { CollimatorField, RadiographyTable, TubeAssembly, WallBucky, type SelectedPart } from './SceneEquipment';
 import { PatientModel } from './PatientModel';
@@ -10,6 +10,7 @@ import { getSceneGeometry } from './sceneGeometry';
 import type { CameraView, CapturedImage, SimulatorState } from './types';
 import { OperatorStation } from './OperatorStation';
 import { WorldInteractions, type WorldInteractionProps } from './WorldInteractions';
+import { HospitalWorld } from './HospitalWorld';
 
 interface XraySceneProps {
   state: SimulatorState;
@@ -20,6 +21,13 @@ interface XraySceneProps {
   onWalkChange?: (walking: boolean) => void;
   world: Omit<WorldInteractionProps, 'state' | 'enabled' | 'disabled'>;
   latestImage?: CapturedImage;
+  patientPrepared?: boolean;
+  registered?: boolean;
+  gownHanded?: boolean;
+  patientInRoom?: boolean;
+  patientAtImaging?: boolean;
+  changingDoorClosed?: boolean;
+  hygieneDone?: boolean;
 }
 
 class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void }, { failed: boolean }> {
@@ -41,9 +49,35 @@ function ContextWatcher({ onLost }: { onLost: () => void }) {
   return null;
 }
 
-const RoomPatient = memo(function RoomPatient({ state, onSelect }: Pick<XraySceneProps, 'state' | 'onSelect'>) {
+const RoomPatient = memo(function RoomPatient({ state, onSelect, animateArrival = false }: Pick<XraySceneProps, 'state' | 'onSelect'> & { animateArrival?: boolean }) {
   const geometry = getSceneGeometry(state);
-  return <group position={geometry.patientPosition} rotation={geometry.patientRotation} onClick={(event) => { event.stopPropagation(); if (event.delta < 5) onSelect('patient'); }}>
+  const body = useRef<Group>(null);
+  const arrivalStartedAt = useRef(performance.now());
+  const { invalidate } = useThree();
+  const fromPosition = useRef(new Vector3(
+    geometry.patientPosition[0] + (geometry.supine ? 0.42 : 0),
+    geometry.supine ? 0 : geometry.patientPosition[1],
+    geometry.patientPosition[2] + (geometry.supine ? 0.24 : 0.12),
+  ));
+  const initialRotation = useRef(new Quaternion().setFromEuler(new Euler(0, geometry.supine ? 0 : geometry.patientRotation[1] - 0.42, 0)));
+  useFrame(() => {
+    const group = body.current;
+    if (!group) return;
+    const targetPosition = new Vector3(...geometry.patientPosition);
+    const targetRotation = new Quaternion().setFromEuler(new Euler(...geometry.patientRotation));
+    if (animateArrival && performance.now() - arrivalStartedAt.current < (geometry.supine ? 1800 : 650)) {
+      const duration = geometry.supine ? 1.8 : 0.65;
+      const progress = Math.min(1, Math.max(0, (performance.now() - arrivalStartedAt.current) / 1000 / duration));
+      const eased = progress * progress * (3 - 2 * progress);
+      group.position.lerpVectors(fromPosition.current, targetPosition, eased);
+      group.quaternion.slerpQuaternions(initialRotation.current, targetRotation, eased);
+      invalidate();
+      return;
+    }
+    group.position.copy(targetPosition);
+    group.quaternion.copy(targetRotation);
+  });
+  return <group ref={body} position={animateArrival ? fromPosition.current : geometry.patientPosition} rotation={animateArrival ? [0, geometry.supine ? 0 : geometry.patientRotation[1] - 0.42, 0] : geometry.patientRotation} onClick={(event) => { event.stopPropagation(); if (event.delta < 5) onSelect('patient'); }}>
     <group rotation={[0, state.patientRotation * Math.PI / 180, 0]}><PatientModel state={state} /></group>
   </group>;
 });
@@ -59,9 +93,9 @@ function EquipmentLabels({ state }: { state: SimulatorState }) {
 
 const RoomLighting = memo(function RoomLighting() {
   return <Environment resolution={128} frames={1}>
-    <Lightformer form="rect" intensity={2.5} position={[0, 4, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[6, 4, 1]} color="#fffaf0" />
-    <Lightformer form="rect" intensity={1.5} position={[-4, 2, 0]} rotation={[0, Math.PI / 2, 0]} scale={[4, 3, 1]} color="#d9e9eb" />
-    <Lightformer form="rect" intensity={1} position={[3, 2, 2]} rotation={[0, -Math.PI / 3, 0]} scale={[3, 2, 1]} color="#eef1e6" />
+    <Lightformer form="rect" intensity={1.65} position={[0, 4, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[6, 4, 1]} color="#fff6e9" />
+    <Lightformer form="rect" intensity={1.5} position={[-4, 2, 0]} rotation={[0, Math.PI / 2, 0]} scale={[5, 4, 1]} color="#e7f4f5" />
+    <Lightformer form="rect" intensity={0.9} position={[3, 2, 2]} rotation={[0, -Math.PI / 3, 0]} scale={[5, 4, 1]} color="#ffffff" />
   </Environment>;
 });
 
@@ -69,21 +103,27 @@ function SceneContents(props: XraySceneProps & { onLost: () => void }) {
   const { gl, invalidate } = useThree();
   useEffect(() => { gl.shadowMap.needsUpdate = true; invalidate(); }, [gl, invalidate, props.state, props.world.barrierClosed]);
   return <>
-    <color attach="background" args={['#e1e5dc']} />
-    <ambientLight intensity={0.65} color="#f5f6ec" />
-    <hemisphereLight args={['#f6f8f1', '#a4b4a0', 0.85]} />
-    <directionalLight position={[-3.1, 6.5, 3.8]} intensity={1.35} color="#fff8e9" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0003} shadow-normalBias={0.025} shadow-camera-left={-5} shadow-camera-right={5} shadow-camera-top={5} shadow-camera-bottom={-5} shadow-camera-near={0.5} shadow-camera-far={18} shadow-radius={4} />
-    <directionalLight position={[3.3, 3.1, -1.8]} intensity={0.75} color="#dce8ef" />
+    <color attach="background" args={['#c6dae5']} />
+    <fog attach="fog" args={['#c6dae5', 24, 58]} />
+    {/* Broad fill lighting replaces the unnaturally hard sunlit-wall shadow. */}
+    <ambientLight intensity={0.63} color="#eff4f0" />
+    <hemisphereLight args={['#f7f7ef', '#899995', 0.87]} />
+    <directionalLight position={[-3.5, 8, 6]} intensity={1.06} color="#fff5e9" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0002} shadow-normalBias={0.03} shadow-camera-left={-10} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-10} shadow-camera-near={0.5} shadow-camera-far={30} shadow-radius={5} />
+    <directionalLight position={[3.3, 4.5, -1.8]} intensity={0.3} color="#e9f2f4" />
+    {/* Light sources are anchored to the reception and observation corridors. */}
+    <pointLight position={[6.45, 2.75, 4.7]} intensity={5.5} distance={5} decay={2} color="#fff6e7" />
+    <pointLight position={[-0.5, 2.8, 4.5]} intensity={4.4} distance={6} decay={2} color="#f2f7f1" />
     <RoomLighting />
-    <RoomArchitecture exposing={props.exposing} />
+    <RoomArchitecture exposing={props.exposing} hygieneDone={props.hygieneDone} />
+    <HospitalWorld barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} registered={props.registered ?? true} gownHanded={props.gownHanded ?? false} patientPrepared={props.patientPrepared} patientInRoom={props.patientInRoom ?? true} patientState={props.state} exposing={props.exposing} gameActive={props.view === 'first-person'} />
     <RadiographyTable {...props} />
     <WallBucky {...props} />
     <TubeAssembly {...props} />
-    <RoomPatient state={props.state} onSelect={props.onSelect} />
+    {(props.view !== 'first-person' || !!props.patientAtImaging) && <RoomPatient state={props.state} onSelect={props.onSelect} animateArrival={props.view === 'first-person'} />}
     <CollimatorField state={props.state} />
     <EquipmentLabels state={props.state} />
     <OperatorStation state={props.state} barrierClosed={props.world.barrierClosed} exposing={props.exposing} image={props.latestImage} />
-    <SceneControls state={props.state} view={props.view} cameraReset={props.cameraReset} onWalkChange={props.onWalkChange} barrierClosed={props.world.barrierClosed} paused={props.world.paused} />
+    <SceneControls state={props.state} view={props.view} cameraReset={props.cameraReset} onWalkChange={props.onWalkChange} barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} patientPrepared={props.view !== 'first-person' || !!props.patientPrepared} registered={props.view !== 'first-person' || (props.registered ?? true)} patientInRoom={props.view !== 'first-person' || !!props.patientAtImaging} paused={props.world.paused} />
     <WorldInteractions {...props.world} state={props.state} enabled={props.view === 'first-person'} disabled={props.exposing} />
     <ContextWatcher onLost={props.onLost} />
   </>;
@@ -99,9 +139,9 @@ export default function XrayScene(props: XraySceneProps) {
         shadows
         frameloop="demand"
         dpr={[1, props.view === 'first-person' ? 1.25 : 1.5]}
-        camera={{ position: [4.12, 2.57, 4.31], fov: 43, near: 0.025, far: 40 }}
+        camera={{ position: [4.12, 2.57, 4.31], fov: 43, near: 0.025, far: 70 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}
-        onCreated={({ gl }) => { gl.toneMappingExposure = 1.05; gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; }}
+        onCreated={({ gl }) => { gl.toneMappingExposure = 0.87; gl.shadowMap.type = PCFSoftShadowMap; gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; }}
         fallback={<div className="sim-webgl-fallback"><strong>WebGL is unavailable</strong><p>Enable browser hardware acceleration to enter the 3D room.</p></div>}
       ><SceneContents {...props} onLost={() => setLost(true)} /></Canvas>}
     </SceneBoundary>

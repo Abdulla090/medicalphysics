@@ -27,23 +27,20 @@ describe('room crosshair selection', () => {
     expect(getAimedTarget([0, 0, 0], [0, 0, -1], equal)?.id).toBe('table');
     expect(getAimedTarget([0, 0, 0], [0, 0, -1], equal.reverse())?.id).toBe('table');
   });
-  it('blocks the console through closed lead glass while allowing rear access and an open barrier', () => {
+  it('prevents operating the console through lead glass and permits reach from inside the protected room', () => {
     const console = getWorldTargets(DEFAULT_STATE).find((item) => item.id === 'console')!;
-    const front: [number, number, number] = [2.25, 1.62, -1.4];
-    const frontAim: [number, number, number] = [0, -0.57, -1.25];
+    const front: [number, number, number] = [3.15, 1.62, -1.1];
+    const frontAim: [number, number, number] = [1.9, -0.46, 0];
     expect(getAimedTarget(front, frontAim, [console], true)).toBeNull();
-    expect(getAimedTarget(front, frontAim, [console], false)?.id).toBe('console');
-    expect(getAimedTarget([2.25, 1.62, -2.2], [0, -0.57, -0.45], [console], true)?.id).toBe('console');
+    expect(getAimedTarget(front, frontAim, [console], false)).toBeNull();
+    expect(getAimedTarget([5.05, 1.62, 0.15], [0, -0.46, -1.25], [console], true)?.id).toBe('console');
   });
-  it('occludes only the ray segment to the near sphere surface and preserves side-edge/switch access', () => {
-    // The target's center is behind the barrier, but its selectable surface is in front.
-    const crossingSphere = target('console', [2.25, 1, -2], 0.4);
-    expect(getAimedTarget([2.25, 1, -1], [0, 0, -1], [crossingSphere], true)?.id).toBe('console');
-    // This off-center ray intersects the sphere around the left edge of the barrier.
-    const edgeSphere = target('console', [1.8, 1, -2.2], 0.3);
-    expect(getAimedTarget([1.6, 1, -1.4], [0, 0, -1], [edgeSphere], true)?.id).toBe('console');
-    const switchBehindPlane = target('barrier', [2.25, 1, -2], 0.13);
-    expect(getAimedTarget([2.25, 1, -1.4], [0, 0, -1], [switchBehindPlane], true)?.id).toBe('barrier');
+  it('lets a learner reach the two door switches and patient gown station', () => {
+    const targets = getWorldTargets(DEFAULT_STATE);
+    expect(getAimedTarget([-2.8, 1.62, 4.85], [-0.64, -0.38, 0], targets)?.id).toBe('changing-door');
+    expect(getAimedTarget([-4.45, 1.62, 4.63], [-0.6, -0.4, 0], targets)?.id).toBe('changing-booth');
+    expect(getAimedTarget([-3.1, 1.62, 4.63], [-1.95, -0.4, 0], targets)?.id).not.toBe('changing-booth');
+    expect(getAimedTarget([5.12, 1.62, 4], [0, -0.37, -0.78], targets)?.id).toBe('control-door');
   });
 });
 
@@ -86,6 +83,15 @@ describe('apparatus-aware hotspots', () => {
   });
 });
 
+describe('interactive physics gallery', () => {
+  it('opens each experiment from an actual point in front of its 3D exhibition board', () => {
+    const targets = getWorldTargets(DEFAULT_STATE);
+    expect(getAimedTarget([-1.2, 1.62, 9.20], [0, 0.11, 1.25], targets)?.id).toBe('physics-distance');
+    expect(getAimedTarget([-2.1, 1.62, 8.30], [-1.27, 0.13, 0], targets)?.id).toBe('physics-sharpness');
+    expect(getAimedTarget([3.5, 1.62, 11.0], [0, 0.11, 1.2], targets)?.id).toBe('physics-field');
+  });
+});
+
 describe('direct apparatus manipulation', () => {
   it('changes actual tube and patient state immutably with supported console limits', () => {
     const before = { ...DEFAULT_STATE };
@@ -106,7 +112,7 @@ describe('direct apparatus manipulation', () => {
     expect(manipulateTarget(before, 'patient', -1000, 0, 'rotate').patientRotation).toBe(-45);
   });
   it('does not toggle operator protection, detector readiness or other settings as a drag side effect', () => {
-    for (const id of ['console', 'barrier', 'detector', 'stand'] as const) expect(manipulateTarget(DEFAULT_STATE, id, 1, 1)).toBe(DEFAULT_STATE);
+    for (const id of ['console', 'barrier', 'detector', 'stand', 'changing-door', 'changing-booth', 'control-door'] as const) expect(manipulateTarget(DEFAULT_STATE, id, 1, 1)).toBe(DEFAULT_STATE);
     expect(manipulateTarget(DEFAULT_STATE, 'patient', NaN, 0)).toBe(DEFAULT_STATE);
     expect(manipulateTarget(DEFAULT_STATE, 'tube', 0, 0)).toBe(DEFAULT_STATE);
     expect(manipulateTarget(DEFAULT_STATE, 'patient', 0.2, 0.1)).toMatchObject({ shielded: DEFAULT_STATE.shielded, detectorReady: DEFAULT_STATE.detectorReady, kvp: DEFAULT_STATE.kvp });
@@ -114,17 +120,17 @@ describe('direct apparatus manipulation', () => {
 });
 
 describe('spatial operator protection', () => {
-  it('requires the closed barrier and an observer physically behind it inside the room', () => {
-    expect(isOperatorProtected([2.25, 1.62, -2.65], true)).toBe(true);
-    expect(isOperatorProtected([2.25, 1.62, -2.65], false)).toBe(false);
-    expect(isOperatorProtected([2.25, 1.62, -1.8], true)).toBe(false);
-    expect(isOperatorProtected([1.5, 1.62, -2.4], true)).toBe(false);
+  it('requires an observer in the separate control room with its lead door closed', () => {
+    expect(isOperatorProtected([5.05, 1.62, -1.1], true)).toBe(true);
+    expect(isOperatorProtected([5.05, 1.62, -1.1], false)).toBe(false);
+    expect(isOperatorProtected([2.25, 1.62, -2.65], true)).toBe(false);
+    expect(isOperatorProtected([-5.1, 1.62, 4.6], true)).toBe(false);
     expect(isOperatorProtected([100, 1.62, -100], true)).toBe(false);
-    expect(isOperatorProtected([3.15, 1.62, -2.95], true)).toBe(true);
-    expect(isOperatorProtected([3.21, 1.62, -2.95], true)).toBe(false);
-    expect(isOperatorProtected([3.15, 1.62, -3.06], true)).toBe(false);
-    expect(isOperatorProtected([2.25, NaN, -2.4], true)).toBe(false);
-    expect(isOperatorProtected([1.65, 1.62, -2.4], true)).toBe(false);
-    expect(isOperatorProtected([2.25, 1.62, -1.94], true)).toBe(false);
+    expect(isOperatorProtected([6.6, 1.62, -2.95], true)).toBe(true);
+    expect(isOperatorProtected([6.70, 1.62, -2.95], true)).toBe(false);
+    expect(isOperatorProtected([6.0, 1.62, -3.06], true)).toBe(false);
+    expect(isOperatorProtected([5.1, NaN, -2.4], true)).toBe(false);
+    expect(isOperatorProtected([3.65, 1.62, -2.4], true)).toBe(false);
+    expect(isOperatorProtected([5.05, 1.62, 3.02], true)).toBe(false);
   });
 });

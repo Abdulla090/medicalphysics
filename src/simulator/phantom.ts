@@ -63,12 +63,40 @@ export function getPhantom(state: SimulatorState): PhantomPrimitive[] {
   add('skull', 'Cranium', 'bone', 'skeleton', [0, 162, -0.4], [6.9, 8.7, 7.8], 1.92, undefined, 0.45);
   chain('mandible', 'Mandible', [[-5.8, 157, 3], [-5, 151, 5], [0, 149.5, 6.6], [5, 151, 5], [5.8, 157, 3]], 0.6);
 
-  const inspiration = state.breathHeld ? 1 : 0.94;
-  add('right-lung', 'Right lung', 'lung', 'organs', [-7.7, 124.5, 0.3], [6.7, 15.5 * inspiration, 8.3], state.breathHeld ? 0.26 : 0.31, [0, 0, -0.035]);
-  add('left-lung', 'Left lung', 'lung', 'organs', [7.7, 124.8, 0.3], [6.3, 14.9 * inspiration, 8.1], state.breathHeld ? 0.26 : 0.31, [0, 0, 0.035]);
+  // Routine chest views use suspended inspiration; the abdomen AP protocol
+  // instead teaches end-expiration. Neither state is a respiratory animation.
+  const inspiration = !state.breathHeld ? 0.97 : state.protocol === 'abdomen-ap' ? 0.94 : 1;
+  const lungDensity = state.breathHeld ? state.protocol === 'abdomen-ap' ? 0.31 : 0.26 : 0.29;
+  add('right-lung', 'Right lung', 'lung', 'organs', [-7.7, 124.5, 0.3], [6.7, 15.5 * inspiration, 8.3], lungDensity, [0, 0, -0.035]);
+  add('left-lung', 'Left lung', 'lung', 'organs', [7.7, 124.8, 0.3], [6.3, 14.9 * inspiration, 8.1], lungDensity, [0, 0, 0.035]);
   add('heart', 'Heart', 'heart', 'organs', [3.2, 119, 4.3], [6.6, 9.3, 5.8], 1.06, [0.12, 0, -0.34]);
   add('mediastinum', 'Mediastinum', 'heart', 'organs', [0, 134, 1.2], [3.2, 12, 4.2], 1.06);
   add('aortic-arch', 'Aortic arch', 'heart', 'organs', [2.1, 136.6, -0.5], [2.6, 3.1, 2.2], 1.06);
+  // Idealized hilar-to-peripheral branching adds line-like parenchymal structure
+  // to the projected lungs. Segments occupy true 3D space so PA/AP/LAT views
+  // superimpose them differently. They are illustrative vessels, not an atlas,
+  // a vascular abnormality generator, or diagnostic anatomy.
+  for (const side of [-1, 1]) {
+    const hilum: Vec3 = [side * 4.2, 129, -0.8];
+    const branches: Vec3[][] = [
+      [hilum, [side * 7.1, 134, -1.5], [side * 9.8, 138, -3.3], [side * 11.1, 140, -4.2]],
+      [hilum, [side * 7.8, 128, 0.5], [side * 10.7, 126.5, 2.6], [side * 12.1, 125, 3.4]],
+      [hilum, [side * 6.9, 122, -1.3], [side * 9.2, 117, -2.4], [side * 10.7, 113.5, -3.8]],
+      [hilum, [side * 7.1, 124, 1.9], [side * 9.1, 118, 3.2], [side * 10.1, 113.8, 3.7]],
+    ];
+    branches.forEach((points, branch) => {
+      for (let i = 1; i < points.length; i++) {
+        segment(`${side > 0 ? 'left' : 'right'}-vessel-${branch}-${i}`, 'Pulmonary vascular branch', 'heart', 'organs', points[i - 1], points[i], [0.65, 0.38, 0.17][i - 1], 1.05);
+      }
+      // Small asymmetric distal bifurcations preserve identifiable vessel
+      // tapering without inventing focal rounded shadows or lesions.
+      const end = points[2];
+      segment(`${side > 0 ? 'left' : 'right'}-vessel-tip-${branch}-a`, 'Distal vascular branch', 'heart', 'organs', end,
+        [end[0] + side * 1.1, end[1] + 2.4, end[2] + 1.1], 0.13, 1.05);
+      segment(`${side > 0 ? 'left' : 'right'}-vessel-tip-${branch}-b`, 'Distal vascular branch', 'heart', 'organs', end,
+        [end[0] + side * 1.3, end[1] - 2.1, end[2] - 1.1], 0.11, 1.05);
+    });
+  }
   add('trachea', 'Trachea', 'air', 'organs', [0, 145, 1.3], [0.95, 8.5, 0.95], 0.0012);
   add('liver', 'Liver', 'heart', 'organs', [-5.8, 107, 2.1], [8.3, 5.7, 6.3], 1.06, [0, 0, -0.13]);
   add('stomach-air', 'Gastric gas', 'air', 'organs', [7.2, 108, 2.5], [3.8, 2.3, 3.1], 0.0012);

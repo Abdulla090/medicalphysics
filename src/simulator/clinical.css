@@ -1,0 +1,150 @@
+/* A teaching-hospital workstation: restrained clinical typography and purposeful layers. */
+.sim-app.is-immersive .sim-viewport { --clinical-ink: #102023; --clinical-accent: #c8f0d7; }
+.sim-case-access {
+  position: absolute; z-index: 5; left: 22px; top: 85px; display: flex; align-items: center;
+  text-align: left; gap: 10px; background: #0c2024ed; color: #eff6f1;
+  border: 1px solid #b9cec34d; border-radius: 5px; padding: 9px 10px; min-width: 192px;
+  box-shadow: 0 10px 30px #03191e25; cursor: pointer;
+}
+.sim-case-access > svg:first-child { height: 17px; width: 17px; color: #b1d7c2; }
+.sim-case-access > svg:last-child { height: 12px; margin-left: auto; color: #93a9a3; }
+.sim-case-access span { display: flex; flex-direction: column; gap: 2px; }
+.sim-case-access small { letter-spacing: 1.1px; font: 8px 'IBM Plex Mono', monospace; color: #b1cfc2; }
+.sim-case-access strong { font: 500 11px 'IBM Plex Mono', monospace; color: #fff; }
+.sim-case-access:hover { background: #1a3839; border-color: #c1ead5; }
+.sim-app.is-immersive .sim-anatomy-selector { top: 147px; }
+.sim-learning { top: 195px; max-height: calc(100% - 284px); }
+.sim-learning-case-link { display: block; width: 100%; text-align: left; margin-top: 12px; padding: 11px 0 12px; background: none; border: 0; border-top: 1px solid #d3e8d628; border-bottom: 1px solid #d3e8d628; cursor: pointer; color: #ebf6ee; }
+.sim-learning-case-link span { display: block; font-size: 11px; line-height: 1.35; font-weight: 600; }
+.sim-learning-case-link small { display: block; margin-top: 5px; color: #acc9b7; font: 9px 'IBM Plex Mono', monospace; line-height: 1.5; }
+.sim-learning-case-link:hover span { text-decoration: underline; text-underline-offset: 4px; }
+.sim-learning-case-link:focus-visible, .sim-case-access:focus-visible { outline: 2px solid #d1f4db; outline-offset: 2px; }
+
+.sim-clinical-overlay {
+  position: absolute; z-index: 20; inset: 0; display: flex; flex-direction: column;
+  width: min(660px, 100%); left: auto; background: #eef1ec; color: #21312f;
+  border-left: 1px solid #90a39c; box-shadow: -30px 0 90px #071b20b0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 12px;
+}
+.sim-clinical-overlay::before { content: ''; position: absolute; pointer-events: none; right: 100%; top: 0; bottom: 0; width: 5000px; background: #08191f70; }
+.sim-clinical-heading { height: 60px; padding: 0 29px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: #10272b; color: #f0faf3; }
+.sim-clinical-heading > span { display: inline-flex; align-items: center; gap: 9px; font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.sim-clinical-heading > span > svg { width: 17px; height: 17px; color: #b7e7cc; }
+.sim-clinical-heading em { margin-left: 9px; color: #9cbaa9; font: normal 9px 'IBM Plex Mono', monospace; letter-spacing: .4px; }
+.sim-clinical-heading button { border: 1px solid #90aa9a55; border-radius: 4px; color: #e2f1e7; background: #fff1; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
+.sim-clinical-heading button:hover { background: #ffffff26; }
+.sim-clinical-tabs { display: flex; flex-shrink: 0; background: #dfe5df; border-bottom: 1px solid #c2cbc2; padding: 0 23px; gap: 20px; }
+.sim-clinical-tabs button { background: transparent; border: none; border-bottom: 2px solid transparent; padding: 17px 3px 14px; color: #6b7c76; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .6px; cursor: pointer; }
+.sim-clinical-tabs button[aria-selected='true'] { color: #173b2e; border-bottom-color: #326e55; }
+.sim-clinical-content { overflow: auto; min-height: 0; flex: 1; padding: 26px 30px 32px; }
+.sim-clinical-caption { font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .9px; color: #698076; margin: 0 0 12px; }
+.sim-case-list { border-top: 1px solid #cbd5cd; margin-bottom: 25px; }
+.sim-case-list button { display: flex; justify-content: space-between; gap: 18px; width: 100%; text-align: left; padding: 14px 10px; border: none; border-bottom: 1px solid #cbd5cd; background: transparent; color: #263b32; cursor: pointer; }
+.sim-case-list button[aria-pressed='true'] { background: #dceae0; box-shadow: inset 3px 0 #397a56; }
+.sim-case-list button:hover { background: #e4ede6; }
+.sim-case-list button > span { display: flex; flex-direction: column; gap: 5px; }
+.sim-case-list button b { color: #61776d; font: 600 9px 'IBM Plex Mono', monospace; }
+.sim-case-list button strong { font-size: 13px; font-weight: 600; }
+.sim-case-list button small { display: flex; flex-direction: column; align-items: end; gap: 8px; font-size: 10px; color: #456b54; white-space: nowrap; }
+.sim-case-list button small span { font: 600 9px 'IBM Plex Mono', monospace; }
+.sim-clinical-patient { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px 0; margin-bottom: 24px; border-top: 2px solid #2a5942; border-bottom: 1px solid #c3cdc4; }
+.sim-clinical-patient > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sim-clinical-patient span { font: 9px 'IBM Plex Mono', monospace; color: #677d70; letter-spacing: .5px; }
+.sim-clinical-patient strong { font-size: clamp(16px, 2.1vw, 21px); font-weight: 550; letter-spacing: -.5px; }
+.sim-clinical-patient small { font-size: 11px; color: #687b6c; }
+.sim-clinical-prose { font-size: 14px; color: #304a3a; line-height: 1.65; max-width: 55ch; margin: 10px 0; }
+.sim-clinical-prose.is-secondary { color: #617169; font-size: 12px; }
+.sim-clinical-primary { margin-top: 19px; width: 100%; border: none; padding: 14px 17px; display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; font-weight: 600; background: #1d503c; color: #fff; border-radius: 3px; cursor: pointer; }
+.sim-clinical-primary:hover { background: #2b694b; }
+.sim-clinical-primary > span { font-size: 18px; }
+.sim-clinical-progress { display: flex; align-items: end; justify-content: space-between; border-bottom: 2px solid #2c604a; padding-bottom: 16px; margin-bottom: 20px; }
+.sim-clinical-progress > span { font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: .6px; }
+.sim-clinical-progress strong { font: 500 33px 'IBM Plex Mono', monospace; line-height: 1; }
+.sim-clinical-progress small { color: #789084; font-size: 15px; }
+.sim-clinical-checks { border-top: 1px solid #c4d0c7; margin: 22px 0 0; }
+.sim-clinical-interview { padding: 19px 0; margin: 18px 0 5px; border-top: 2px solid #2f6347; border-bottom: 1px solid #b3c5b9; }
+.sim-interview-questions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sim-interview-questions button { background: #e0e9e1; border: 1px solid #bacfc0; border-radius: 3px; padding: 10px; color: #2c4a39; text-align: left; font-size: 10px; line-height: 1.45; cursor: pointer; }
+.sim-interview-questions button:hover, .sim-interview-questions button[aria-pressed='true'] { background: #c5ddcb; border-color: #73a785; }
+.sim-interview-response { margin-top: 12px; padding: 16px; border-radius: 2px 12px 12px 12px; background: #cfded1; border-left: 3px solid #59936a; }
+.sim-interview-response span { font: 600 9px 'IBM Plex Mono', monospace; color: #44664c; }
+.sim-interview-response p { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #294232; }
+.sim-clinical-checks label { display: grid; grid-template-columns: 28px 1fr; align-items: start; gap: 10px; padding: 16px 5px; cursor: pointer; border-bottom: 1px solid #c4d0c7; }
+.sim-clinical-checks label:hover { background: #e4eae4; }
+.sim-clinical-checks input { width: 1px; height: 1px; opacity: 0; position: absolute; }
+.sim-clinical-check-mark { display: grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid #9caf9f; margin-top: 1px; border-radius: 2px; }
+.sim-clinical-check-mark svg { height: 16px; width: 16px; color: white; }
+.sim-clinical-checks label.is-checked .sim-clinical-check-mark { background: #2e7150; border-color: #2e7150; }
+.sim-clinical-checks label:has(input:focus-visible) { outline: 2px solid #4b9067; outline-offset: -2px; }
+.sim-clinical-checks strong { font-size: 12px; font-weight: 600; display: block; }
+.sim-clinical-checks small { display: block; margin-top: 5px; line-height: 1.55; font-size: 11px; color: #667c6c; }
+.sim-clinical-note { padding: 12px 15px; border-left: 3px solid #83a996; background: #dce7dd; color: #3f5a4b; font-size: 11px; line-height: 1.65; margin: 20px 0; }
+.sim-clinical-hygiene { display: flex; align-items: start; gap: 11px; padding: 15px 4px; border-bottom: 1px solid #c8d5ca; }
+.sim-clinical-hygiene > span { margin-top: 2px; flex-shrink: 0; display: grid; place-items: center; height: 19px; width: 19px; border-radius: 50%; color: #9a6b47; border: 1px solid #bb9069; font: 600 11px 'IBM Plex Mono', monospace; }
+.sim-clinical-hygiene > span.is-done { background: #317952; border-color: #317952; color: #fff; }
+.sim-clinical-hygiene svg { height: 13px; width: 13px; }
+.sim-clinical-hygiene strong { display: block; color: #2f4337; font-size: 12px; }
+.sim-clinical-hygiene small { display: block; color: #647a6a; line-height: 1.5; margin-top: 5px; font-size: 11px; }
+.sim-clinical-gown { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 20px 0; border-bottom: 1px solid #bccabf; }
+.sim-clinical-gown > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sim-clinical-gown strong { font-size: 13px; }
+.sim-clinical-gown span { font-size: 11px; line-height: 1.6; color: #728675; }
+.sim-clinical-gown button { display: inline-flex; align-items: center; gap: 6px; background: #27694b; color: #fff; border: 0; padding: 13px 14px; border-radius: 3px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.sim-clinical-gown button:disabled { background: #c7d1c8; color: #5c6c61; cursor: default; }
+.sim-clinical-gown button svg { width: 14px; height: 14px; }
+.sim-assessment-hero { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 2px solid #27533c; padding-bottom: 26px; }
+.sim-assessment-hero > div:first-child > span { display: block; font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: .6px; color: #51715b; }
+.sim-assessment-hero strong { display: block; margin: 10px 0; font: 500 58px 'IBM Plex Mono', monospace; line-height: .98; letter-spacing: -3px; color: #1f543a; }
+.sim-assessment-hero strong small { font-size: 18px; letter-spacing: 0; color: #98aa99; }
+.sim-assessment-hero p { max-width: 36ch; font-size: 11px; line-height: 1.6; color: #5d7465; }
+.sim-assessment-ring { --progress: 0%; width: 95px; height: 95px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; background: conic-gradient(#357a4c var(--progress), #becfc3 var(--progress)); }
+.sim-assessment-ring > span { display: grid; place-items: center; border-radius: 50%; width: 79px; height: 79px; background: #eef1ec; font: 600 17px 'IBM Plex Mono', monospace; }
+.sim-assessment-critical { margin: 20px 0; border-left: 3px solid #ad7149; padding: 13px 16px; background: #f4e7dd; color: #784632; }
+.sim-assessment-critical strong { font-size: 12px; }
+.sim-assessment-critical p { font-size: 11px; line-height: 1.6; margin: 5px 0; }
+.sim-assessment-items { margin-top: 20px; }
+.sim-assessment-items > div { display: grid; grid-template-columns: 22px 1fr auto; align-items: start; gap: 11px; padding: 12px 1px; border-bottom: 1px solid #cad5cb; }
+.sim-assessment-items > div > span { height: 19px; width: 19px; border: 1px solid #bd7f6b; display: grid; place-items: center; border-radius: 100%; color: #a6604b; }
+.sim-assessment-items > div > span.is-complete { background: #347855; color: #fff; border-color: #347855; }
+.sim-assessment-items svg { height: 13px; width: 13px; }
+.sim-assessment-items strong { font-size: 12px; }
+.sim-assessment-items small { display: block; margin-top: 5px; color: #677a6e; font-size: 11px; line-height: 1.5; }
+.sim-assessment-items b { color: #345c43; font: 12px 'IBM Plex Mono', monospace; }
+.sim-clinical-comparison { margin-top: 28px; border-top: 2px solid #2d6347; padding-top: 18px; }
+.sim-clinical-comparison-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sim-clinical-comparison-images > div { min-width: 0; }
+.sim-comparison-image { height: 200px; display: flex; justify-content: center; background: #121a1e; border: 1px solid #5c7870; overflow: hidden; }
+.sim-comparison-image img { max-width: 100%; height: 100%; object-fit: contain; filter: contrast(1.12); }
+.sim-clinical-comparison-images span { display: block; font: 9px 'IBM Plex Mono', monospace; margin-top: 10px; color: #697c6d; }
+.sim-clinical-comparison-images b { display: block; font: 600 13px 'IBM Plex Mono', monospace; margin-top: 5px; }
+.sim-clinical-comparison-images small { display: block; line-height: 1.6; font-size: 10px; color: #687b6d; margin-top: 4px; }
+.sim-clinical-empty { text-align: center; max-width: 320px; margin: 65px auto 0; }
+.sim-clinical-empty > svg { width: 30px; height: 30px; color: #719c7c; margin-bottom: 16px; }
+.sim-clinical-empty strong { display: block; font-size: 18px; }
+.sim-clinical-empty p { line-height: 1.7; font-size: 12px; color: #697b6c; }
+.sim-clinical-empty button { margin-top: 14px; border: 1px solid #829c87; background: transparent; padding: 11px 20px; border-radius: 3px; color: #2e563d; cursor: pointer; }
+.sim-clinical-footer { display: flex; justify-content: space-between; gap: 8px; padding: 13px 29px; background: #dfe6df; color: #60766a; flex-shrink: 0; border-top: 1px solid #c1cec2; font: 9px 'IBM Plex Mono', monospace; }
+@media (max-width: 850px) {
+  .sim-case-access { top: 79px; left: 13px; min-width: 0; padding: 8px 10px; }
+  .sim-learning { top: 190px; }
+  .sim-app.is-immersive .sim-anatomy-selector { top: 140px; }
+}
+@media (max-width: 720px) {
+  .sim-interview-questions { grid-template-columns: 1fr; }
+  .sim-comparison-image { height: 138px; }
+  .sim-case-access { top: 77px; left: 12px; }
+  .sim-case-access small { font-size: 7px; }
+  .sim-app.is-immersive .sim-anatomy-selector { top: 133px; }
+  .sim-learning { top: 186px; max-height: calc(100% - 290px); }
+  .sim-world-safety { top: auto; bottom: 244px; left: auto; right: 12px; }
+  .sim-clinical-heading { padding: 0 16px; height: 57px; }
+  .sim-clinical-heading > span { font-size: 9px; letter-spacing: .2px; }
+  .sim-clinical-heading em { display: none; }
+  .sim-clinical-tabs { padding: 0 12px; gap: 12px; }
+  .sim-clinical-tabs button { font-size: 8px; padding: 14px 3px 12px; }
+  .sim-clinical-content { padding: 20px 18px 24px; }
+  .sim-clinical-footer { padding: 12px; font-size: 7px; }
+  .sim-clinical-patient { gap: 8px; }
+  .sim-clinical-patient strong { font-size: 15px; }
+  .sim-clinical-gown { flex-wrap: wrap; }
+}

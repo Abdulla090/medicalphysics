@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Euler, PerspectiveCamera, Vector3, type Camera } from 'three';
 import type { CameraView, SimulatorState } from './types';
 import { getSceneGeometry } from './sceneGeometry';
 import type { Point3 } from './sceneGeometry';
-import { getRoomColliders, moveObserver } from './RoomMovement';
+import { getRoomColliders, getWorldZone, integrateWalking, moveObserver } from './RoomMovement';
 
 type ControlsProps = {
   state: SimulatorState;
@@ -13,6 +13,10 @@ type ControlsProps = {
   cameraReset: number;
   onWalkChange?: (walking: boolean) => void;
   barrierClosed?: boolean;
+  changingDoorClosed?: boolean;
+  patientPrepared?: boolean;
+  registered?: boolean;
+  patientInRoom?: boolean;
   paused?: boolean;
 };
 
@@ -40,13 +44,13 @@ function getPreset(view: CameraView, state: SimulatorState): { position: Point3;
     case 'detector': return supine
       ? { position: [0.45, 1.69, target[2] + 1.31], target: [-0.45, 0.78, target[2]] }
       : { position: [-0.80, 1.87, -0.46], target: [0.65, 1.24, -2.15] };
-    case 'first-person': return { position: [2.13, 1.62, 2.30], target: [0.54, 1.35, -1.7] };
+    case 'first-person': return { position: [5.60, 1.62, 5.90], target: [7.34, 1.35, 4.78] };
     default: return { position: [4.12, 2.57, 4.31], target: [-0.15, 1.30, -0.46] };
   }
 }
 
 /** First person uses the active render camera. Orbit remains available for inspection. */
-export function SceneControls({ state, view, cameraReset, onWalkChange, barrierClosed = true, paused = false }: ControlsProps) {
+export function SceneControls({ state, view, cameraReset, onWalkChange, barrierClosed = true, changingDoorClosed = false, patientPrepared = true, registered = true, patientInRoom = true, paused = false }: ControlsProps) {
   const { camera, gl, invalidate, size } = useThree();
   const orbit = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const spring = useRef<SpringState>({ position: new Vector3(), target: new Vector3(), positionVelocity: new Vector3(), targetVelocity: new Vector3(), moving: false });
@@ -66,10 +70,35 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
   pause.current = paused;
   const reportedPose = useRef<number[]>([]);
   const reportedRotation = useRef(new Euler(0, 0, 0, 'YXZ'));
+  const velocity = useRef({ x: 0, z: 0 });
+  const walkCycle = useRef(0);
+  const reducedMotion = useRef(false);
+  const lastLocationReport = useRef(0);
+  const lastReportedZone = useRef('');
+  const roomColliders = useMemo(() => ({ standing: getRoomColliders(state, 1.62, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom), crouching: getRoomColliders(state, 1.12, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom) }), [state, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom]);
+
+  useEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return;
+    const fov = view === 'first-person' ? 69 : 43;
+    if (camera.fov !== fov) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+      invalidate();
+    }
+  }, [camera, view, invalidate]);
 
   const reportPose = (observer: Camera) => {
     const position = observer.position;
     const rotation = observer.quaternion;
+    if (view === 'first-person') {
+      const zone = getWorldZone(position);
+      const now = performance.now();
+      if (now - lastLocationReport.current >= 200 || zone !== lastReportedZone.current) {
+        lastLocationReport.current = now;
+        lastReportedZone.current = zone;
+        window.dispatchEvent(new CustomEvent('xray-location', { detail: { x: position.x, z: position.z, zone, yaw: look.current.yaw } }));
+      }
+    }
     const next = [position.x, position.y, position.z, rotation.x, rotation.y, rotation.z, rotation.w];
     if (next.every((value, index) => value === reportedPose.current[index])) return;
     reportedPose.current = next;
@@ -83,6 +112,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
   useEffect(() => {
     if (paused) {
       keys.current.clear();
+      velocity.current = { x: 0, z: 0 };
       dragging.current = false;
       spring.current.moving = false;
       if (walking.current) callback.current?.(false);
@@ -95,10 +125,18 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
   }, [paused, gl, invalidate]);
 
   useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const change = () => { reducedMotion.current = preference.matches; };
+    change();
+    preference.addEventListener('change', change);
+    return () => preference.removeEventListener('change', change);
+  }, []);
+
+  useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
     const aspect = size.width / Math.max(1, size.height);
     const framing = view === 'room' ? Math.max(1, 1.25 / aspect) : 1;
-    camera.fov = view === 'first-person' ? 60 : Math.min(76, 2 * Math.atan(Math.tan(43 * Math.PI / 360) * framing) * 180 / Math.PI);
+    camera.fov = view === 'first-person' ? 69 : Math.min(76, 2 * Math.atan(Math.tan(43 * Math.PI / 360) * framing) * 180 / Math.PI);
     camera.updateProjectionMatrix();
     invalidate();
   }, [camera, invalidate, size.width, size.height, view]);
@@ -107,7 +145,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
     const canvas = gl.domElement;
     const pressedKeys = keys.current;
     canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', 'Interactive radiography room. W A S D or arrow keys walk, Shift moves faster, C changes stance, E uses equipment. Hold the right mouse button and drag to look. Left drag uses equipment or looks around empty space. Double click enables mouse look. Escape releases mouse look.');
+    canvas.setAttribute('aria-label', 'Explore the radiography department. W A S D or arrow keys walk, Shift moves faster, C changes stance, E uses equipment. Drag to look with a mouse or touch. Hold the right mouse button to look without moving equipment. Double click enables mouse look. Escape releases mouse look. Find the corridor through the open doorway behind your starting position.');
     canvas.style.touchAction = 'none';
     canvas.style.outlineOffset = '-3px';
     return () => {
@@ -143,6 +181,8 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
     spring.current.positionVelocity.set(0, 0, 0);
     spring.current.targetVelocity.set(0, 0, 0);
     keys.current.clear();
+    velocity.current = { x: 0, z: 0 };
+    lastLocationReport.current = 0;
     dragging.current = false;
     walking.current = false;
     crouching.current = false;
@@ -170,6 +210,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
     const canvas = gl.domElement;
     const clear = () => {
       keys.current.clear();
+      velocity.current = { x: 0, z: 0 };
       dragging.current = false;
       if (walking.current) callback.current?.(false);
       walking.current = false;
@@ -307,33 +348,41 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
     }
     // Swept collision steps keep walking stable even on slower renderers.
     // The inspection spring retains its smaller integration step.
-    const delta = Math.max(0, Math.min(rawDelta, view === 'first-person' ? 0.25 : 0.05));
+    const delta = Math.max(0, Math.min(rawDelta, view === 'first-person' ? 0.10 : 0.05));
     if (view === 'first-person') {
       const observer = frameState.camera;
       const pressed = keys.current;
       const forward = Number(pressed.has('KeyW') || pressed.has('ArrowUp')) - Number(pressed.has('KeyS') || pressed.has('ArrowDown'));
       const right = Number(pressed.has('KeyD') || pressed.has('ArrowRight')) - Number(pressed.has('KeyA') || pressed.has('ArrowLeft'));
-      const moving = !!(forward || right) && !manipulating.current;
+      const requested = !!(forward || right) && !manipulating.current;
+      const moving = requested || Math.hypot(velocity.current.x, velocity.current.z) > 0.015;
       if (moving !== walking.current) {
         walking.current = moving;
         callback.current?.(moving);
       }
-      const speed = crouching.current ? 0.75 : pressed.has('ShiftLeft') || pressed.has('ShiftRight') ? 2.1 : 1.35;
+      const speed = crouching.current ? 0.75 : pressed.has('ShiftLeft') || pressed.has('ShiftRight') ? 2.8 : 1.7;
       const length = Math.hypot(forward, right) || 1;
       const sin = Math.sin(look.current.yaw);
       const cos = Math.cos(look.current.yaw);
-      const dx = moving ? (-sin * forward + cos * right) / length * speed * delta : 0;
-      const dz = moving ? (-cos * forward - sin * right) / length * speed * delta : 0;
+      const desired = { x: requested ? (-sin * forward + cos * right) / length * speed : 0, z: requested ? (-cos * forward - sin * right) / length * speed : 0 };
+      const motion = integrateWalking(velocity.current, desired, delta, reducedMotion.current);
+      velocity.current = moving ? motion.velocity : { x: 0, z: 0 };
       const eyeHeight = crouching.current ? 1.12 : 1.62;
-      const next = moveObserver(observer.position, { x: dx, z: dz }, getRoomColliders(state, eyeHeight, barrierClosed));
-      observer.position.set(next.x, eyeHeight, next.z);
+      const next = moveObserver(observer.position, moving ? motion.displacement : { x: 0, z: 0 }, crouching.current ? roomColliders.crouching : roomColliders.standing);
+      if (Math.abs(next.x - observer.position.x) < 0.000001) velocity.current.x = 0;
+      if (Math.abs(next.z - observer.position.z) < 0.000001) velocity.current.z = 0;
+      const travelled = Math.hypot(next.x - observer.position.x, next.z - observer.position.z);
+      if (moving) walkCycle.current += travelled;
+      const bob = moving && !reducedMotion.current ? Math.sin(walkCycle.current * 11) * 0.009 : 0;
+      const height = reducedMotion.current ? eyeHeight : eyeHeight + bob + (observer.position.y - eyeHeight - bob) * Math.exp(-18 * delta);
+      observer.position.set(next.x, Math.abs(height - eyeHeight) < 0.001 ? eyeHeight : height, next.z);
       // Update the render camera's matrices explicitly; input can arrive between demand frames.
       lookRotation.set(look.current.pitch, look.current.yaw, 0);
       observer.quaternion.setFromEuler(lookRotation);
       observer.updateMatrix();
       observer.updateMatrixWorld(true);
       reportPose(observer);
-      if (moving) invalidate();
+      if (moving || observer.position.y !== eyeHeight) invalidate();
       return;
     }
     const animation = spring.current;

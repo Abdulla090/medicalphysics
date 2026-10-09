@@ -4,6 +4,11 @@ export interface PatientMaterials {
   skin: THREE.MeshPhysicalMaterial;
   ghost: THREE.MeshStandardMaterial;
   fabric: THREE.MeshStandardMaterial;
+  casualShirt: THREE.MeshStandardMaterial;
+  trousers: THREE.MeshStandardMaterial;
+  footwear: THREE.MeshStandardMaterial;
+  piping: THREE.MeshStandardMaterial;
+  eyelid: THREE.MeshStandardMaterial;
   iris: THREE.MeshStandardMaterial;
   hair: THREE.MeshStandardMaterial;
   dispose: () => void;
@@ -52,12 +57,13 @@ export function createPatientMaterials(): PatientMaterials {
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const offset = (y * size + x) * 4;
     const u = x / size * Math.PI * 2, v = y / size * Math.PI * 2;
-    const broad = Math.sin(u * 3 + Math.cos(v * 2)) * 1.8 + Math.cos(u * 5 - v * 4) * 1.2;
+    const broad = Math.sin(u * 3 + Math.cos(v * 2)) * 2.5 + Math.cos(u * 5 - v * 4) * 1.6;
+    const mottling = Math.sin(u * 11 + Math.sin(v * 8) * 0.8) * 0.7;
     const fine = (random() - 0.5) * 3.5;
-    const pigment = broad + fine + pore[y * size + x] * 0.055;
-    color[offset] = 208 + pigment;
-    color[offset + 1] = 168 + pigment * 0.91;
-    color[offset + 2] = 145 + pigment * 0.84;
+    const pigment = broad + mottling + fine + pore[y * size + x] * 0.055;
+    color[offset] = 212 + pigment;
+    color[offset + 1] = 178 + pigment * 0.91;
+    color[offset + 2] = 157 + pigment * 0.84;
     color[offset + 3] = 255;
     const height = 137 + pore[y * size + x] + fine;
     const roughness = 191 + broad * 2.1 + fine * 3 - pore[y * size + x] * 0.28;
@@ -80,9 +86,9 @@ export function createPatientMaterials(): PatientMaterials {
     const over = (Math.floor(x / 8) + Math.floor(y / 8)) % 2;
     const thread = (over ? warp * 0.7 + weft * 0.3 : weft * 0.7 + warp * 0.3) * 5;
     const fuzz = (random() - 0.5) * 2;
-    weaveColor[offset] = 66 + thread + fuzz;
-    weaveColor[offset + 1] = 115 + thread + fuzz;
-    weaveColor[offset + 2] = 117 + thread + fuzz;
+    weaveColor[offset] = 218 + thread + fuzz;
+    weaveColor[offset + 1] = 225 + thread + fuzz;
+    weaveColor[offset + 2] = 222 + thread + fuzz;
     weaveColor[offset + 3] = 255;
     weaveHeight[offset] = weaveHeight[offset + 1] = weaveHeight[offset + 2] = 140 + thread * 6;
     weaveHeight[offset + 3] = 255;
@@ -113,14 +119,19 @@ export function createPatientMaterials(): PatientMaterials {
   const irisMap = texture(irisPixels, irisSize, 1, true);
   irisMap.wrapS = irisMap.wrapT = THREE.ClampToEdgeWrapping;
   const hairMap = texture(hairPixels, irisSize, 35, true);
-  const skin = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: skinColor, bumpMap: skinRelief, bumpScale: 0.00013, roughnessMap: skinRoughness, roughness: 0.94, metalness: 0, clearcoat: 0.06, clearcoatRoughness: 0.76, side: THREE.DoubleSide });
+  const skin = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: skinColor, bumpMap: skinRelief, bumpScale: 0.00013, roughnessMap: skinRoughness, roughness: 0.94, metalness: 0, clearcoat: 0.025, clearcoatRoughness: 0.76, side: THREE.DoubleSide });
   const ghost = new THREE.MeshStandardMaterial({ color: '#c6e0de', roughness: 0.78, transparent: true, opacity: 0.115, depthWrite: false, side: THREE.DoubleSide });
-  const fabric = new THREE.MeshStandardMaterial({ color: '#ffffff', map: fabricColor, bumpMap: fabricBump, bumpScale: 0.0002, roughness: 0.95 });
+  const fabric = new THREE.MeshStandardMaterial({ color: '#8fbfc0', map: fabricColor, bumpMap: fabricBump, bumpScale: 0.0002, roughness: 0.93, side: THREE.DoubleSide });
+  const casualShirt = new THREE.MeshStandardMaterial({ color: '#586e72', map: fabricColor, bumpMap: fabricBump, bumpScale: 0.00014, roughness: 0.91, side: THREE.DoubleSide });
+  const trousers = new THREE.MeshStandardMaterial({ color: '#454e58', map: fabricColor, bumpMap: fabricBump, bumpScale: 0.00015, roughness: 0.97, side: THREE.DoubleSide });
+  const footwear = new THREE.MeshStandardMaterial({ color: '#343d43', roughness: 0.68, metalness: 0.01 });
+  const piping = new THREE.MeshStandardMaterial({ color: '#c5d5d0', roughness: 0.88 });
+  const eyelid = new THREE.MeshStandardMaterial({ color: '#956b5d', roughness: 0.86 });
   const iris = new THREE.MeshStandardMaterial({ map: irisMap, roughness: 0.28 });
   const hair = new THREE.MeshStandardMaterial({ map: hairMap, roughness: 0.93 });
   const textures = [skinColor, skinRelief, skinRoughness, fabricColor, fabricBump, irisMap, hairMap];
-  return { skin, ghost, fabric, iris, hair, dispose: () => {
-    [skin, ghost, fabric, iris, hair].forEach(material => material.dispose());
+  return { skin, ghost, fabric, casualShirt, trousers, footwear, piping, eyelid, iris, hair, dispose: () => {
+    [skin, ghost, fabric, casualShirt, trousers, footwear, piping, eyelid, iris, hair].forEach(material => material.dispose());
     textures.forEach(item => item.dispose());
   } };
 }

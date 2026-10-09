@@ -1,0 +1,295 @@
+/* First-person game: the world is the interface. Routine simulator panels remain in inspection mode only. */
+.sim-app.is-game { background: #0e1a1b; color: #e9f4ed; min-height: 100dvh; }
+.sim-app.is-game .sim-topbar { height: 54px; padding: 0 26px; background: #111f23; color: #eaf3ed; border-bottom: 1px solid #ffffff15; }
+.sim-app.is-game .sim-brand { color: #ebf5f0; }
+.sim-app.is-game .sim-brand span span { color: #b8d6c4; }
+.sim-app.is-game .sim-brand-symbol { background: #315a4b; color: #ddf3df; }
+.sim-app.is-game .sim-top-divider, .sim-app.is-game .sim-workspace-title,
+.sim-app.is-game .sim-training-badge, .sim-app.is-game .sim-avatar,
+.sim-app.is-game .sim-titlebar, .sim-app.is-game .sim-acquisitions,
+.sim-app.is-game .sim-scene-head, .sim-app.is-game .sim-scene-side,
+.sim-app.is-game .sim-scene-bottom, .sim-app.is-game .sim-navigation-hint,
+.sim-app.is-game .sim-anatomy-selector, .sim-app.is-game .sim-learning,
+.sim-app.is-game .sim-case-access, .sim-app.is-game .sim-campus-map,
+.sim-app.is-game .sim-world-brief, .sim-app.is-game .sim-world-target,
+.sim-app.is-game .sim-world-safety, .sim-app.is-game .sim-world-console-toggle,
+.sim-app.is-game .sim-prepared-strip, .sim-app.is-game .sim-console,
+.sim-app.is-game.is-console-open .sim-console, .sim-app.is-game .sim-statusbar { display: none !important; }
+.sim-app.is-game .sim-workspace { display: block; height: calc(100dvh - 54px); max-height: none; min-height: 470px; padding: 0; background: #142025; }
+.sim-app.is-game .sim-main { display: block; height: 100%; padding: 0; margin: 0; }
+.sim-app.is-game .sim-viewport { display: block; height: 100%; min-height: 470px; border: none; border-radius: 0; overflow: hidden; background: #b5c5c0; }
+.sim-app.is-game .sim-crosshair { z-index: 2; opacity: .63; }
+.sim-app.is-game .sim-crosshair.is-targeted { opacity: 1; }
+.sim-app.is-game .sim-top-actions { margin-left: auto; }
+.sim-app.is-game .sim-top-actions .sim-text-button { display: none; }
+.sim-app.is-game .sim-top-actions .sim-icon-button { color: #d0dfd5; }
+.game-top { position: absolute; z-index: 3; top: 16px; left: 24px; right: 24px; display: flex; align-items: center; gap: 18px; pointer-events: none; color: #f3f7f5; text-shadow: 0 2px 6px #1722238c; font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.game-progress-name span { opacity: .5; padding: 0 3px; }
+.game-progress-steps { display: flex; gap: 4px; margin-left: 10px; }
+.game-progress-steps i { display: block; width: 24px; height: 3px; background: #ffffff59; border-radius: 2px; }
+.game-progress-steps i.is-active { background: #c4eacc; }
+.game-progress-case { margin-left: auto; font-size: 10px; letter-spacing: 0; color: #e4ede9; }
+.game-objective { position: absolute; z-index: 3; top: 59px; left: 24px; width: min(304px, calc(100% - 48px)); padding: 19px 21px 17px; background: #102329ed; border: 1px solid #d4e6d03b; border-left: 3px solid #b6e2bd; box-shadow: 0 15px 50px #0c242b36; backdrop-filter: blur(12px); color: #eff7f2; }
+.game-kicker { display: flex; justify-content: space-between; gap: 8px; color: #b7d4c4; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: 1.3px; }
+.game-kicker b { color: #a7baaf; font-weight: 500; letter-spacing: .3px; }
+.game-objective h2 { margin: 13px 0 7px; font-size: 21px; letter-spacing: -.8px; line-height: 1.2; font-weight: 550; color: #f5fff6; }
+.game-objective p { margin: 0; font-size: 11px; line-height: 1.7; color: #cad8ce; }
+.game-destination { display: flex; align-items: center; gap: 7px; border-top: 1px solid #e3f2e31e; padding-top: 13px; margin-top: 13px; font: 9px 'IBM Plex Mono', monospace; letter-spacing: .5px; color: #91b19e; }
+.game-destination strong { color: #d0f0d4; font-weight: 600; }
+.game-destination-dot { width: 7px; height: 7px; border: 1px solid #cbe4bd; border-radius: 50%; box-shadow: 0 0 0 3px #cde5bf1c; }
+.game-waypoint { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; white-space: nowrap; color: #d7f8df; letter-spacing: 0; }
+.game-waypoint > span { display: inline-block; font-size: 17px; font-family: 'IBM Plex Mono', monospace; line-height: 1; }
+.game-utilities { position: absolute; z-index: 4; right: 24px; top: 58px; display: flex; align-items: center; gap: 7px; }
+.game-utilities button { display: flex; align-items: center; gap: 7px; height: 35px; padding: 0 12px; color: #e4f4eb; background: #12292be8; border: 1px solid #bdd7c84d; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .5px; cursor: pointer; border-radius: 4px; }
+.game-utilities svg { width: 14px; height: 14px; }
+.game-utilities button:hover { border-color: #bbebc5; background: #2a4b42; }
+.game-interact { position: absolute; z-index: 5; bottom: 101px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 13px; min-width: 210px; max-width: calc(100% - 140px); white-space: nowrap; padding: 12px 17px; background: #d3f0d6; color: #142e22; border: 1px solid #f2fff0; box-shadow: 0 6px 30px #07181485; border-radius: 5px; cursor: pointer; }
+.game-interact:hover { background: #ecffef; }
+.game-interact kbd { border: 1px solid #557c61; border-radius: 3px; padding: 5px 8px; font: 600 13px 'IBM Plex Mono', monospace; }
+.game-interact strong { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.game-interact > svg { width: 16px; flex-shrink: 0; margin-left: auto; }
+.game-toast { position: absolute; z-index: 3; bottom: 24px; left: 24px; font-size: 11px; max-width: min(420px, 55%); padding: 9px 11px; line-height: 1.45; background: #142629b9; border: 1px solid #c1d8bd35; color: #e0efe1; pointer-events: none; }
+.game-controls-caption { position: absolute; z-index: 2; right: 24px; bottom: 24px; font: 9px 'IBM Plex Mono', monospace; color: #f4fff3; letter-spacing: .2px; text-shadow: 0 2px 6px #001; pointer-events: none; }
+.game-controls-caption span { opacity: .55; margin: 0 5px; }
+.sim-app.is-game .sim-walk-pad { right: 22px; bottom: 75px; }
+.sim-app.is-game .sim-walk-pad button { background: #132d30e5; color: #e5f6ea; border-color: #d9efdd60; }
+.game-dialog { position: absolute; z-index: 20; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; width: min(535px, 100%); background: #f2f2ea; box-shadow: -32px 0 110px #081416a8; color: #213b30; border-left: 1px solid #b4c7b6; }
+.game-dialog::before { content: ''; position: absolute; right: 100%; top: 0; bottom: 0; width: 200vw; background: #0a1d21a3; pointer-events: none; }
+.game-dialog > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 27px; background: #18372d; color: #eef8ee; flex-shrink: 0; font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.game-dialog > header button { background: #ffffff15; border: 1px solid #ffffff3d; border-radius: 3px; color: #f1fbf3; width: 35px; height: 35px; display: grid; place-items: center; cursor: pointer; }
+.game-dialog > header svg { width: 16px; height: 16px; }
+.game-dialog-content { padding: 32px 34px 42px; overflow-y: auto; min-height: 0; }
+.game-dialog-kicker { font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: .7px; color: #618373; }
+.game-dialog h2 { font-size: 32px; letter-spacing: -1.5px; line-height: 1.1; font-weight: 550; margin: 13px 0 12px; color: #18382b; }
+.game-dialog p { font-size: 13px; line-height: 1.7; color: #5e7165; margin: 0 0 23px; }
+.game-case-choice { border-top: 1px solid #bfcdc2; }
+.game-case-choice button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: transparent; border: 0; border-bottom: 1px solid #bfcdc2; padding: 16px 13px; text-align: left; color: #254335; cursor: pointer; }
+.game-case-choice button[aria-pressed='true'] { background: #dcebdd; box-shadow: inset 3px 0 #427956; }
+.game-case-choice button:hover { background: #e3ede3; }
+.game-case-choice button > span { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.game-case-choice button strong { font-size: 13px; font-weight: 600; }
+.game-case-choice small { font-size: 11px; color: #6d8172; }
+.game-case-choice b { font: 600 11px 'IBM Plex Mono', monospace; white-space: nowrap; }
+.game-patient-slip { display: flex; align-items: center; gap: 12px; margin-top: 26px; padding: 16px 13px; border: 1px solid #b6cbb9; background: #e5ece2; }
+.game-patient-slip > svg { height: 22px; width: 22px; flex-shrink: 0; color: #427359; }
+.game-patient-slip > svg:last-child { width: 16px; margin-left: auto; }
+.game-patient-slip > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.game-patient-slip span { color: #698773; font: 9px 'IBM Plex Mono', monospace; }
+.game-patient-slip strong { font-size: 13px; }
+.game-patient-slip small { font-size: 10px; color: #708576; }
+.game-case-meta { display: flex; flex-wrap: wrap; gap: 12px 22px; padding: 16px 0 20px; border-bottom: 1px solid #c4d3c5; }
+.game-case-meta span { display: flex; flex-direction: column; gap: 5px; font: 9px 'IBM Plex Mono', monospace; color: #698471; }
+.game-case-meta strong { font-size: 12px; color: #2e5a3b; }
+.game-case-detail { padding: 16px 0 7px; border-bottom: 1px solid #c7d3c9; }
+.game-case-detail > span { display: block; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .5px; color: #739179; margin-bottom: 7px; }
+.game-case-detail > strong { font-size: 14px; color: #255b3a; }
+.game-dialog .game-case-detail p { margin: 4px 0 10px; font-size: 12px; line-height: 1.6; }
+.game-registration-checks { border-bottom: 1px solid #c8d5c8; padding: 15px 2px 3px; }
+.game-registration-checks label { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 9px 0; color: #36543d; cursor: pointer; }
+.game-registration-checks input { width: 18px; height: 18px; accent-color: #30734b; cursor: pointer; }
+.game-preparation-tasks { border-top: 1px solid #c6d5ca; margin: 16px 0 20px; }
+.game-preparation-tasks label { display: flex; align-items: flex-start; gap: 13px; padding: 13px 1px; border-bottom: 1px solid #c6d5ca; cursor: pointer; }
+.game-preparation-tasks input { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; accent-color: #337a51; }
+.game-preparation-tasks strong { display: block; font-size: 12px; font-weight: 650; color: #2b4937; }
+.game-preparation-tasks small { display: block; font-size: 11px; color: #657c6d; line-height: 1.6; margin-top: 4px; }
+.game-primary { margin-top: 25px; width: 100%; padding: 16px 17px; display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 0; border-radius: 3px; background: #22593e; color: white; cursor: pointer; font-size: 13px; font-weight: 600; }
+.game-primary:hover:not(:disabled) { background: #32734e; }
+.game-primary:disabled { background: #c9d4c8; color: #647c6c; cursor: default; }
+.game-primary svg { width: 17px; height: 17px; }
+.game-dialog-small { width: min(490px,100%); }
+.game-instruction { padding: 21px; border-left: 3px solid #487b59; background: #e0e9df; color: #31543b; font-size: 14px; line-height: 1.7; font-style: italic; }
+.game-dialog .game-privacy-note { padding: 14px 0; margin: 14px 0 0; color: #516d5a; }
+.game-position-grid { border-top: 1px solid #c9d4c6; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 18px; padding: 21px 0; }
+.game-position-preview { background: #13292c; border: 1px solid #819e91; padding: 8px; margin: 17px 0 18px; }
+.game-position-preview svg { display: block; width: 100%; max-height: 190px; }
+.game-position-preview-help { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 7px 7px 2px; font: 9px 'IBM Plex Mono', monospace; color: #daede0; }
+.game-position-preview-help span { color: #8fafa1; }
+.game-position-grid > div > span { display: block; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .5px; color: #738a77; margin-bottom: 10px; }
+.game-pos-buttons { display: flex; align-items: center; gap: 5px; }
+.game-pos-buttons button { height: 43px; width: 44px; border-radius: 3px; border: 1px solid #a7c0ae; color: #2d6541; background: #e3ece1; cursor: pointer; font-size: 19px; }
+.game-pos-buttons button:hover { background: #d1e5d4; }
+.game-pos-buttons b { flex: 1; min-width: 66px; text-align: center; font: 600 12px 'IBM Plex Mono', monospace; }
+.game-position-toggle { border: 1px solid #9fbaa9; padding: 13px; background: #e5ece3; color: #285237; cursor: pointer; border-radius: 3px; width: 100%; text-align: left; font-size: 11px; }
+.game-position-toggle[aria-pressed='true'] { background: #d2e8d5; border-color: #639b72; }
+.game-position-quality { display: flex; gap: 10px; align-items: center; color: #4c7957; border-top: 1px solid #ccd8cc; padding: 15px 0; font-size: 11px; }
+.game-position-quality svg { height: 19px; width: 19px; }
+.game-tech-values { border-top: 1px solid #c9d7ca; }
+.game-tech-values label { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #c9d7ca; padding: 13px 0; font-size: 12px; }
+.game-tech-values label > span:last-child { display: flex; align-items: center; gap: 8px; }
+.game-tech-values input { width: 78px; height: 37px; border: 1px solid #acc3b1; background: white; padding: 7px; text-align: right; color: #25432b; font: 600 16px 'IBM Plex Mono', monospace; }
+.game-tech-values small { width: 29px; font: 10px 'IBM Plex Mono', monospace; color: #64816a; }
+.game-tech-total { display: flex; justify-content: space-between; margin-top: 19px; font: 10px 'IBM Plex Mono', monospace; color: #718578; }
+.game-tech-total b { color: #225638; font-size: 19px; }
+.game-advanced-trigger { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 13px 1px; margin-top: 10px; border: 0; border-bottom: 1px solid #c2d4c4; color: #315d42; background: transparent; font-size: 11px; cursor: pointer; text-align: left; }
+.game-advanced-trigger span { font-size: 17px; }
+.game-advanced-panel { background: #e5ece2; padding: 12px 14px; border: 1px solid #c1d0c0; }
+.game-advanced-panel label { display: grid; grid-template-columns: 1fr 1.25fr auto; align-items: center; gap: 9px; padding: 10px 0; border-bottom: 1px solid #c1d0c0; font-size: 10px; }
+.game-advanced-panel label:last-child { border-bottom: 0; }
+.game-advanced-panel input { accent-color: #397956; width: 100%; }
+.game-advanced-panel strong { white-space: nowrap; font: 600 10px 'IBM Plex Mono', monospace; }
+.game-interlocks { margin-top: 22px; padding: 15px 16px; background: #e3ece3; border: 1px solid #c3d4c5; }
+.game-interlocks > span { display: block; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .4px; color: #6a8872; margin-bottom: 10px; }
+.game-interlocks > div { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #c5d5c6; }
+.game-interlocks > div:last-child { border-bottom: 0; }
+.game-interlocks > div > span { width: 21px; height: 21px; flex: 0 0 21px; display: grid; place-items: center; border-radius: 50%; font: 700 11px 'IBM Plex Mono', monospace; }
+.game-interlocks .is-ready > span { background: #346d4d; color: #eef9ed; }
+.game-interlocks .is-blocked > span { background: #ead9b8; color: #936a32; }
+.game-interlocks svg { width: 13px; height: 13px; }
+.game-interlocks strong { flex: 1; font-size: 11px; font-weight: 600; color: #365a42; }
+.game-interlocks small { font-size: 10px; color: #678777; }
+.game-interlocks .is-blocked small { color: #996c3c; }
+.game-breath-workstation { padding: 17px 16px 14px; margin-top: 14px; border: 1px solid #b0c7b7; background: #edf3e9; }
+.game-breath-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 600 9px 'IBM Plex Mono',monospace; letter-spacing: .35px; color: #5a7a65; }
+.game-breath-head strong { color: #316e47; }
+.game-dialog .game-breath-workstation p { margin: 10px 0 13px; font-size: 11px; line-height: 1.5; }
+.game-breath-workstation button { min-height: 41px; padding: 9px 12px; width: 100%; background: #245c41; border: 0; border-radius: 3px; color: #f3faf2; font-size: 11px; cursor: pointer; }
+.game-breath-workstation button:disabled { background: #cad8cc; color: #78927d; cursor: not-allowed; }
+.game-breath-progress { height: 3px; overflow: hidden; background: #d2ddd2; margin-top: 12px; }
+.game-breath-progress > span { display: block; background: #3e8a59; height: 100%; transition: width 110ms linear; }
+.game-exposure-warning, .game-exposure-ready { margin-top: 24px; padding: 14px; font-size: 11px; border-left: 3px solid #bd9864; background: #f0e8d8; color: #775b34; line-height: 1.55; }
+.game-exposure-ready { border-left-color: #568768; background: #dceade; color: #356044; }
+.game-expose-cta { background: #356a44; }
+.game-simulation-note { display: block; margin-top: 12px; text-align: center; font-size: 10px; color: #829384; }
+.game-review-image { height: min(33vh, 255px); width: 100%; background: #0c1215; display: flex; justify-content: center; border: 1px solid #374d45; margin: 16px 0 20px; }
+.game-review-image img { height: 100%; max-width: 100%; object-fit: contain; }
+.game-review-assessment { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 14px 0 16px; border-top: 1px solid #c2d1c3; border-bottom: 1px solid #c2d1c3; }
+.game-review-assessment > span { font: 600 10px 'IBM Plex Mono', monospace; color: #64836a; }
+.game-review-assessment strong { color: #276645; font: 600 25px 'IBM Plex Mono', monospace; }
+.game-review-assessment strong small { font-size: 12px; color: #859788; }
+.game-review-assessment p { grid-column: 1 / -1; font-size: 11px; margin: 0; }
+.game-review-verdict { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 15px 0; }
+.game-review-verdict strong { display: block; font-size: 12px; color: #285a3d; font-weight: 650; }
+.game-review-verdict small { display: block; margin-top: 4px; color: #708477; font-size: 10px; }
+.game-review-verdict > span { font: 650 20px 'IBM Plex Mono', monospace; color: #285a3d; }
+.game-review-details { border-block: 1px solid #c2d2c6; padding: 10px 0; }
+.game-review-details summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #346244; font-size: 11px; font-weight: 650; padding: 7px 0; }
+.game-review-details summary span { font-size: 14px; }
+.game-review-details > div { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 9px 0; border-bottom: 1px solid #d2dbd2; font-size: 11px; }
+.game-review-details > div b { font: 600 11px 'IBM Plex Mono', monospace; }
+.game-review-details > div small { grid-column: 1 / -1; font-size: 10px; color: #7d6855; line-height: 1.55; }
+.game-review-details p { margin: 10px 0 0; color: #966b50; font-size: 10px; }
+.game-disposition { margin-top: 18px; padding: 18px 0; border-top: 1px solid #c5d1c6; }
+.game-disposition > span { font: 600 10px 'IBM Plex Mono',monospace; letter-spacing: .6px; color: #477554; }
+.game-dialog .game-disposition p { margin: 8px 0 14px; font-size: 11px; }
+.game-disposition > div { display: flex; gap: 8px; }
+.game-disposition button { flex: 1; padding: 12px 9px; text-align: center; border: 1px solid #9fbba8; border-radius: 3px; background: #eaf0e6; color: #345542; cursor: pointer; font-size: 11px; }
+.game-disposition button[aria-pressed='true'] { background: #cfe3d5; border-color: #3b8254; box-shadow: inset 0 -2px #3b8254; }
+.game-dialog .game-disposition [role='status'] { padding: 12px; background: #dcece0; color: #2d6e46; border-left: 2px solid #3e8158; margin-bottom: 0; }
+.game-dialog .game-disposition [role='status'].is-warning { background: #efe4d4; color: #7e5b36; border-color: #bc854c; }
+.game-secondary:disabled { opacity: .45; cursor: not-allowed; }
+.game-secondary { display: block; margin-top: 12px; background: none; border: 1px solid #8dae96; color: #346040; border-radius: 3px; width: 100%; padding: 14px; cursor: pointer; font-size: 12px; }
+.game-dialog :focus-visible, .game-interact:focus-visible, .game-utilities :focus-visible { outline: 2px solid #a9e6b4; outline-offset: 2px; }
+@media (max-width: 720px) {
+  .sim-app.is-game .sim-topbar { height: 49px; padding: 0 14px; }
+  .sim-app.is-game .sim-workspace { height: calc(100dvh - 49px); min-height: 490px; padding: 0; }
+  .sim-app.is-game .sim-viewport { height: 100%; min-height: 490px; border-radius: 0; }
+  .game-top { top: 14px; left: 12px; right: 12px; gap: 9px; font-size: 8px; }
+  .game-progress-case { display: none; }
+  .game-progress-steps { gap: 3px; margin-left: 0; }
+  .game-progress-steps i { width: 12px; }
+  .game-progress-case { max-width: 93px; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .game-objective { top: 45px; left: 12px; width: min(255px, calc(100% - 112px)); padding: 13px 14px; }
+  .game-objective h2 { margin: 8px 0 5px; font-size: 17px; }
+  .game-objective p { font-size: 10px; line-height: 1.5; }
+  .game-destination { margin-top: 9px; padding-top: 9px; font-size: 8px; }
+  .game-utilities { top: 47px; right: 12px; flex-direction: column; gap: 6px; }
+  .game-utilities button { height: 33px; padding: 0 8px; font-size: 8px; }
+  .game-interact { bottom: 169px; left: 12px; transform: none; min-width: 0; max-width: calc(100% - 146px); white-space: normal; padding: 10px; gap: 8px; }
+  .game-interact strong { font-size: 10px; }
+  .game-interact kbd { font-size: 10px; padding: 4px 6px; }
+  .game-interact > svg { width: 12px; }
+  .game-toast { bottom: 53px; left: 12px; max-width: calc(100% - 162px); font-size: 9px; padding: 7px; }
+  .game-controls-caption { bottom: 12px; left: 12px; right: auto; font-size: 8px; }
+  .sim-app.is-game .sim-walk-pad { right: 12px; bottom: 78px; grid-template-columns: repeat(3, 43px); grid-template-rows: repeat(2, 43px); }
+  .game-dialog { width: 100%; }
+  .game-dialog > header { padding: 11px 16px; font-size: 9px; }
+  .game-dialog-content { padding: 25px 19px 40px; }
+  .game-dialog h2 { font-size: 27px; }
+  .game-dialog p { font-size: 12px; }
+  .game-position-grid { gap: 15px 8px; }
+  .game-position-preview svg { max-height: 155px; }
+  .game-position-preview-help { font-size: 8px; }
+  .game-pos-buttons button { width: 32px; height: 39px; }
+  .game-pos-buttons b { min-width: 50px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .game-interact, .game-primary { transition: none; } }
+
+/* The bedside panels are workstations: all decisions and feedback must stay legible. */
+.game-controls-caption .game-desktop-help { opacity: 1; margin: 0; }
+.game-controls-caption .game-mobile-help { display: none; }
+.game-dialog > header button { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
+.game-dialog :is(button, input, select, summary):focus-visible { outline: 3px solid #286f4d; outline-offset: 3px; }
+.game-dialog > header button:focus-visible { outline-color: #b9f2cb; }
+.game-dialog-content { scrollbar-color: #96ad9b transparent; }
+.game-position-grid > div > span, .game-interlocks > span, .game-review-assessment > span,
+.game-case-detail > span { font-size: 11px; }
+.game-pos-buttons button { min-width: 44px; min-height: 44px; }
+.game-position-toggle { min-height: 44px; font-size: 12px; }
+.game-position-quality { align-items: flex-start; font-size: 12px; }
+.game-position-quality svg { flex: 0 0 19px; }
+.game-position-quality div { display: grid; gap: 5px; line-height: 1.5; }
+.game-position-quality strong { font-weight: 700; color: #245c39; }
+.game-position-quality span { color: #526f5a; }
+.game-position-quality small { color: #8b5e30; line-height: 1.5; font-size: 11px; }
+.game-dialog .game-position-footnote { margin: 0 0 6px; padding: 10px 12px; background: #e6ebe2; border-left: 2px solid #86a58c; color: #4e6756; font-size: 12px; line-height: 1.5; }
+.game-advanced-trigger { min-height: 44px; font-size: 12px; }
+.game-advanced-panel label { font-size: 12px; }
+.game-advanced-panel input[type='range'] { min-height: 36px; }
+.game-advanced-panel strong { font-size: 11px; }
+.game-interlocks strong, .game-interlocks small { font-size: 12px; }
+.game-interlocks > div > span { width: 25px; height: 25px; flex-basis: 25px; }
+.game-technique-review { padding: 14px 16px; background: #e8efe8; border: 1px solid #c0d3c5; margin-top: 14px; }
+.game-technique-review.has-flags { background: #f4ede0; border-color: #d4b892; }
+.game-technique-review > strong { display: block; font: 650 11px 'IBM Plex Mono', monospace; letter-spacing: .4px; color: #3d704f; }
+.game-technique-review.has-flags > strong { color: #8b592b; }
+.game-dialog .game-technique-review p { margin: 8px 0 0; font-size: 12px; line-height: 1.55; color: #526b5b; }
+.game-dialog .game-technique-review.has-flags p { color: #765b3c; }
+.game-technique-review ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.game-technique-review li { padding-top: 9px; border-top: 1px solid #d7c7b4; display: grid; gap: 4px; }
+.game-technique-review li b { font-size: 12px; color: #624a2f; }
+.game-technique-review li span { font-size: 11px; line-height: 1.5; color: #735b43; }
+.game-breath-workstation button { min-height: 44px; font-size: 12px; }
+.game-breath-head { flex-wrap: wrap; font-size: 11px; }
+.game-breath-head strong { font-size: 11px; }
+.game-dialog .game-breath-workstation p { font-size: 12px; }
+.game-exposure-warning, .game-exposure-ready { font-size: 12px; }
+.game-dialog .game-review-unavailable { margin: 10px 0 0; padding: 10px 12px; border-left: 2px solid #bd874f; background: #f2e8d7; color: #725333; font-size: 12px; }
+.game-disposition button { min-height: 44px; }
+.game-review-details summary { min-height: 44px; font-size: 12px; }
+.game-privacy-note { line-height: 1.55; }
+
+@media (max-width: 720px) {
+  .game-dialog > header { padding: 9px 16px; }
+  .game-dialog-content { padding: 20px 18px 30px; }
+  .game-controls-caption .game-desktop-help { display: none; }
+  .game-controls-caption .game-mobile-help { display: inline; opacity: 1; margin: 0; }
+  .game-controls-caption { max-width: calc(100% - 24px); line-height: 1.5; }
+  .game-position-grid { gap: 16px 12px; }
+  .game-pos-buttons b { min-width: 44px; }
+  .game-position-preview svg { max-height: 185px; }
+  .game-advanced-panel label { grid-template-columns: minmax(0, 1fr) minmax(100px, 1.2fr); }
+  .game-advanced-panel label strong { grid-column: 2; justify-self: end; }
+  .game-tech-total { align-items: center; gap: 8px; }
+}
+@media (max-width: 420px) {
+  .game-objective { max-height: min(36dvh, 260px); overflow-y: auto; }
+  .game-objective h2 { font-size: 17px; }
+  .game-objective p { font-size: 11px; }
+  .game-position-grid { grid-template-columns: 1fr; gap: 13px; }
+  .game-position-grid > div { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 6px; }
+  .game-position-grid > div > span { margin-bottom: 0; }
+  .game-pos-buttons button { width: 44px; }
+  .game-pos-buttons b { font-size: 11px; }
+  .game-advanced-panel label { display: grid; grid-template-columns: 1fr auto; }
+  .game-advanced-panel label > span { grid-column: 1 / -1; }
+  .game-advanced-panel label strong { grid-column: 2; grid-row: 2; }
+  .game-controls-caption { bottom: 6px; font-size: 8px; right: 12px; width: calc(100% - 24px); text-align: center; }
+  .game-toast { bottom: 41px; }
+}
+@media (pointer: coarse) {
+  .game-controls-caption .game-desktop-help { display: none; }
+  .game-controls-caption .game-mobile-help { display: inline; opacity: 1; margin: 0; }
+  .game-utilities button { min-height: 44px; }
+  .game-interact { min-height: 44px; }
+  .game-interact kbd { display: none; }
+}

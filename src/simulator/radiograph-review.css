@@ -1,0 +1,47 @@
+.sim-review-film-frame { position: relative; margin: 0 auto; flex: none; background: #050705; box-shadow: 0 12px 48px #0007; }
+.sim-film-scroll .sim-review-film-frame canvas { display: block; image-rendering: auto; }
+.sim-review-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.sim-review-envelope { position: absolute; border: 1px dashed; background: #78bb8720; }
+.sim-review-landmark { position: absolute; z-index: 2; width: 9px; height: 9px; margin: -4px; border-radius: 50%; background: #71e6a9; border: 2px solid #06291b; box-shadow: 0 0 0 1px #bbf7d1; }
+.sim-review-landmark i { position: absolute; top: -5px; left: 2px; width: 1px; height: 15px; background: #c8ffea8f; transform: rotate(90deg); }
+.sim-review-overlay-toggle { margin-right: 9px; border: 1px solid #496a59; color: #d6e9d9; background: #243e2d; border-radius: 5px; padding: 6px 9px; font: 10px 'IBM Plex Mono', monospace; }
+.sim-review-quality { padding: 0 0 20px; border-bottom: 1px solid #dce7d9; }
+.sim-review-quality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 13px; }
+.sim-review-quality-grid > div { background: #f0f4ee; border: 1px solid #e1e9dd; border-radius: 6px; padding: 12px 10px; display: grid; gap: 6px; min-width: 0; }
+.sim-review-quality-grid strong { font: 18px 'IBM Plex Mono', monospace; color: #274837; letter-spacing: -.8px; }
+.sim-review-quality-grid span { font-size: 9px; color: #65766a; line-height: 1.4; }
+.sim-review-quant-note { color: #66786a; font-size: 10px; line-height: 1.5; margin-top: 10px; }
+.sim-review-tutor { padding: 20px 0; border-bottom: 1px solid #dce7d9; }
+.sim-review-tutor > p { font-size: 11px; color: #64796b; line-height: 1.6; margin: 10px 0; }
+.sim-review-focus-options { display: grid; grid-template-columns: repeat(2,1fr); gap: 5px; margin-bottom: 12px; }
+.sim-review-focus-options button { background: #f0f5ed; border: 1px solid #dbe5d7; color: #556d59; padding: 9px 7px; border-radius: 5px; font-size: 11px; text-align: center; }
+.sim-review-focus-options button[aria-pressed='true'] { background: #355d48; color: #f6fff7; border-color: #355d48; }
+.sim-review-prediction > strong { display: block; margin: 8px 0; color: #3f5d49; font-size: 11px; line-height: 1.5; }
+.sim-review-prediction-options { display: flex; gap: 6px; margin-bottom: 12px; }
+.sim-review-prediction-options button { flex: 1; border: 1px solid #cddccc; border-radius: 5px; background: #f8fbf7; color: #55705b; padding: 9px 5px; font-size: 10px; line-height: 1.4; }
+.sim-review-prediction-options button[aria-pressed='true'] { border-color: #47694f; background: #e0eddf; color: #264c35; }
+.sim-review-explanation { padding: 12px; background: #fbfcf7; border-left: 3px solid #73967e; color: #415e4e; }
+.sim-review-explanation strong { font-size: 12px; font-weight: 650; }
+.sim-review-explanation p { margin: 8px 0 12px; font-size: 11px; line-height: 1.6; }
+.sim-review-explanation > span, .sim-review-landmark-list > span { font-size: 9px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #697c6c; }
+.sim-review-explanation ul { padding: 0 0 0 15px; margin: 10px 0 0; display: grid; gap: 7px; font-size: 10px; line-height: 1.55; }
+.sim-review-alert { padding: 11px 12px; margin: 10px 0 0; background: #fff5ea; border: 1px solid #e8d1b8; border-radius: 5px; }
+.sim-review-alert strong { color: #875523; font-size: 11px; }
+.sim-review-alert p { color: #886d55; font-size: 10px; line-height: 1.5; margin: 5px 0 0; }
+.sim-review-landmark-list { display: grid; gap: 7px; margin-top: 18px; }
+.sim-review-landmark-list > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 10px; color: #516e5a; }
+.sim-review-landmark-list strong { flex: none; font: 9px 'IBM Plex Mono', monospace; color: #4c7863; }
+.sim-review-landmark-list strong.needs-review { color: #b06c31; }
+.sim-review-window-controls { padding-top: 20px; }
+.sim-review-window-controls > .sim-section-label { display: block; margin: 0 0 16px; }
+.sim-review-window-controls > .sim-outline-button { margin-top: 11px; }
+.sim-image-dialog .sim-image-dialog-body { grid-template-columns: minmax(0, 1fr) minmax(295px, 340px); }
+.sim-image-dialog .sim-image-settings { padding: 20px 21px; }
+.sim-image-dialog .sim-film-view .sim-film-zoom { z-index: 2; }
+@media (max-width: 720px) {
+  .sim-image-dialog .sim-image-dialog-body { display: flex; flex-direction: column; }
+  .sim-image-dialog .sim-film-view { height: 54dvh; }
+  .sim-image-dialog .sim-image-settings { padding: 18px; }
+  .sim-review-quality-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .sim-review-overlay-toggle { margin-right: 3px; font-size: 8px; padding: 5px; }
+}

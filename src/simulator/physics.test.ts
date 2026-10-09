@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ATTENUATION_TABLE, approximateSpectrum, beerLambert, calculateMetrics, generateRadiograph, getReadinessChecks, intersectEllipsoid, massAttenuation, sampleQuantumCounts, seededRandom } from './physics';
+import { ATTENUATION_TABLE, analyzeProjectionCoverage, analyzeRadiographQuality, approximateSpectrum, beerLambert, calculateMetrics, generateRadiograph, getReadinessChecks, intersectEllipsoid, massAttenuation, renderPixelsToCanvas, sampleQuantumCounts, seededRandom } from './physics';
 import { getArmJoints, getPhantom } from './phantom';
 import * as phantomModule from './phantom';
 import type { PhantomPrimitive } from './phantom';
@@ -39,6 +39,8 @@ describe('analytic attenuation and geometry', () => {
     expect(base.magnification).toBeCloseTo(180 / 167.5, 12);
     expect(base.unsharpness).toBeCloseTo(0.6 * 12.5 / 167.5, 12);
     expect(calculateMetrics({ ...DEFAULT_STATE, sid: 0 }).magnification).toBeNaN();
+    expect(calculateMetrics({ ...DEFAULT_STATE, tubeAngle: NaN }).relativeExposure).toBeNaN();
+    expect(calculateMetrics({ ...DEFAULT_STATE, patientSize: NaN }).noise).toBeNaN();
     expect(Object.keys(base)).not.toContain('dose');
   });
   it('keeps the approximate spectrum finite, normalized and below tube potential', () => {
@@ -64,6 +66,26 @@ describe('quantum noise', () => {
   });
 });
 
+describe('presentation pipeline', () => {
+  it('keeps unexposed collimator pixels black at unusual windows, without modifying the 16-bit source', () => {
+    const pixels = new Uint16Array([0, 8000, 22000, 0]);
+    const original = pixels.slice();
+    let imageData: Uint8ClampedArray | undefined;
+    const canvas = {
+      width: 0, height: 0,
+      getContext: () => ({
+        createImageData: (width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+        putImageData: (image: { data: Uint8ClampedArray }) => { imageData = image.data; },
+      }),
+    } as unknown as HTMLCanvasElement;
+    renderPixelsToCanvas(pixels, 2, 2, canvas, 0.1, 1, true);
+    expect(imageData![0]).toBe(0);
+    expect(imageData![12]).toBe(0);
+    expect(imageData![4]).toBeGreaterThan(0);
+    expect(pixels).toEqual(original);
+  });
+});
+
 describe('shared anthropomorphic phantom', () => {
   it('uses positive x for the left lung/heart and valid dimensions', () => {
     const phantom = getPhantom(DEFAULT_STATE);
@@ -82,6 +104,27 @@ describe('shared anthropomorphic phantom', () => {
     expect(raised.left.wrist[1]).toBeGreaterThan(raised.left.shoulder[1]);
     expect(down.left.wrist[1]).toBeLessThan(down.left.shoulder[1]);
     expect(raised.left.shoulder[0]).toBeCloseTo(down.left.shoulder[0] * 1.2, 12);
+  });
+  it('models end-expiration on held abdomen rather than assuming chest inspiration', () => {
+    const abdomen = applyProtocol(DEFAULT_STATE, 'abdomen-ap');
+    const endExpiration = getPhantom(abdomen).find((part) => part.id === 'left-lung')!;
+    const freeBreathing = getPhantom({ ...abdomen, breathHeld: false }).find((part) => part.id === 'left-lung')!;
+    const chestInspiration = getPhantom(DEFAULT_STATE).find((part) => part.id === 'left-lung')!;
+    expect(endExpiration.radii[1]).toBeLessThan(freeBreathing.radii[1]);
+    expect(endExpiration.radii[1]).toBeLessThan(chestInspiration.radii[1]);
+    expect(endExpiration.density).toBeGreaterThan(freeBreathing.density);
+    expect(getReadinessChecks(abdomen).find((check) => check.id === 'breath')!.detail).toMatch(/after expiration/);
+  });
+  it('adds truly 3D branching pulmonary detail with tapering, no invented lesions', () => {
+    const parts = getPhantom(DEFAULT_STATE);
+    const vessels = parts.filter(part => part.id.includes('vessel'));
+    expect(vessels.length).toBeGreaterThanOrEqual(40);
+    expect(vessels.every(part => part.material === 'heart' && part.layer === 'organs')).toBe(true);
+    expect(vessels.some(part => part.center[2] > 2)).toBe(true);
+    expect(vessels.some(part => part.center[2] < -2)).toBe(true);
+    expect(vessels.some(part => part.center[0] > 0)).toBe(true);
+    expect(vessels.some(part => part.center[0] < 0)).toBe(true);
+    expect(vessels.filter(part => part.id.includes('tip')).every(part => part.radii[0] <= 0.13)).toBe(true);
   });
 });
 
@@ -135,6 +178,75 @@ describe('exposure interlocks and production radiographs', () => {
     expect(() => generateRadiograph({ ...DEFAULT_STATE, kvp: NaN }, 1, 32)).toThrow(/Valid equipment/);
     expect(() => generateRadiograph({ ...DEFAULT_STATE, collimationWidth: Infinity }, 1, 32)).toThrow();
     expect(getReadinessChecks({ ...DEFAULT_STATE, patientRotation: 10 }).find((check) => check.id === 'rotation')).toMatchObject({ passed: false, blocking: false });
+  });
+  it('detects projected reference-anatomy cutoff due to centering, angulation and collimation', () => {
+    const covered = (settings: typeof DEFAULT_STATE) => getReadinessChecks(settings).find((check) => check.id === 'coverage')!.passed;
+    for (const protocol of PROTOCOLS) {
+      const settings = applyProtocol(DEFAULT_STATE, protocol.id);
+      expect(covered(settings), `${protocol.id} default field should cover its teaching envelope`).toBe(true);
+      expect(covered({ ...settings, collimationWidth: 8 })).toBe(false);
+      expect(covered({ ...settings, patientOffsetX: 12 })).toBe(false);
+      expect(covered({ ...settings, patientOffsetY: 15 })).toBe(false);
+    }
+    const chest = applyProtocol(DEFAULT_STATE, 'chest-pa');
+    expect(covered({ ...chest, tubeAngle: 30 })).toBe(false);
+    expect(covered({ ...chest, patientOffsetX: NaN })).toBe(false);
+    expect(getReadinessChecks({ ...chest, patientOffsetX: 12 }).find((check) => check.id === 'coverage')).toMatchObject({ passed: false, blocking: false });
+  });
+  it('distinguishes PA, AP and left-lateral cardiac projection geometry at matched SID', () => {
+    const pa = analyzeProjectionCoverage({ ...applyProtocol(DEFAULT_STATE, 'chest-pa'), sid: 180 });
+    const ap = analyzeProjectionCoverage({ ...applyProtocol(DEFAULT_STATE, 'chest-ap'), sid: 180 });
+    const lat = analyzeProjectionCoverage({ ...applyProtocol(DEFAULT_STATE, 'chest-lateral'), sid: 180 });
+    const findHeart = (study: typeof pa) => study.landmarks.find(mark => mark.id === 'heart')!;
+    expect(pa.projection).toBe('PA');
+    expect(ap.projection).toBe('AP');
+    expect(lat.projection).toBe('LAT');
+    expect(Math.abs(findHeart(ap).detectorXcm)).toBeGreaterThan(Math.abs(findHeart(pa).detectorXcm));
+    expect(findHeart(lat).detectorXcm).toBeLessThan(0); // positive patient anterior projects left on lateral
+    expect(pa.envelopeCoveragePercent).toBe(100);
+    expect(ap.envelopeCoveragePercent).toBe(100);
+    expect(lat.envelopeCoveragePercent).toBe(100);
+  });
+  it('quantifies progressive cutoff, projection-specific critique and image-derived tonal texture', () => {
+    const state = applyProtocol(DEFAULT_STATE, 'chest-lateral');
+    const { pixels, width, height } = generateRadiograph(state, 81, 96);
+    const clean = analyzeRadiographQuality(state, pixels, width, height);
+    expect(clean.coverage.envelopeCoveragePercent).toBe(100);
+    expect(clean.coverage.landmarkCoveragePercent).toBe(100);
+    expect(clean.p10).toBeLessThanOrEqual(clean.p50);
+    expect(clean.p50).toBeLessThanOrEqual(clean.p90);
+    expect(clean.tonalSpanPercent).toBeGreaterThan(1);
+    expect(clean.textureIndex).toBeGreaterThan(0);
+    expect(clean.projectionExplanation).toMatch(/left side/i);
+    const cropped = analyzeRadiographQuality({ ...state, patientOffsetX: 12, arms: 'down', breathHeld: false }, pixels, width, height);
+    expect(cropped.coverage.envelopeCoveragePercent).toBeLessThan(100);
+    expect(cropped.coverage.minimumMarginCm).toBeLessThan(0);
+    expect(cropped.findings.find(item => item.id === 'field')?.status).toBe('review');
+    expect(cropped.findings.find(item => item.id === 'arms')?.status).toBe('review');
+    expect(cropped.findings.find(item => item.id === 'breathing')?.status).toBe('review');
+    expect(() => analyzeRadiographQuality(state, pixels, width + 1, height)).toThrow(/dimensions/);
+  });
+  it('makes pulmonary branch detail measurably visible in PA and lateral captures', () => {
+    const fixtures = {
+      'chest-pa': getPhantom(applyProtocol(DEFAULT_STATE, 'chest-pa')),
+      'chest-lateral': getPhantom(applyProtocol(DEFAULT_STATE, 'chest-lateral')),
+    };
+    const get = vi.spyOn(phantomModule, 'getPhantom');
+    const compare = (protocol: 'chest-pa' | 'chest-lateral') => {
+      const state = applyProtocol(DEFAULT_STATE, protocol);
+      const original = fixtures[protocol];
+      get.mockReturnValue(original);
+      const full = generateRadiograph(state, 23, 128).pixels;
+      get.mockReturnValue(original.filter(part => !part.id.includes('vessel')));
+      const bare = generateRadiograph(state, 23, 128).pixels;
+      return full.reduce((sum, value, index) => sum + Math.abs(value - bare[index]), 0) / full.length;
+    };
+    try {
+      // Deterministic, same exposure/seed: the vessels actually affect the final
+      // detector buffer, rather than being a decorative 2D overlay.
+      expect(compare('chest-pa')).toBeGreaterThan(1);
+      expect(compare('chest-lateral')).toBeGreaterThan(1);
+    } finally { get.mockRestore(); }
   });
   it('produces finite, anatomically varied nonblank output for every protocol', () => {
     for (const protocol of PROTOCOLS) {

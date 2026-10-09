@@ -36,12 +36,128 @@ export function objectDetectorDistance(state: SimulatorState): number {
 export function calculateMetrics(state: SimulatorState): ExposureMetrics {
   const oid = objectDetectorDistance(state) / Math.cos(state.tubeAngle * Math.PI / 180), sod = state.sid - oid;
   const mas = state.ma * state.exposureMs / 1000;
-  if (![state.sid, state.kvp, state.focalSpot, mas].every(Number.isFinite) || sod <= 0 || state.kvp <= 0 || mas <= 0 || state.focalSpot <= 0) {
+  if (![state.sid, state.kvp, state.focalSpot, state.patientSize, state.tubeAngle, oid, sod, mas].every(Number.isFinite)
+    || sod <= 0 || state.sid <= 0 || state.kvp <= 0 || mas <= 0 || state.focalSpot <= 0 || state.patientSize <= 0) {
     return { mas, magnification: NaN, unsharpness: NaN, relativeExposure: NaN, noise: NaN };
   }
   // Relative detector air fluence only; no dosimetric calibration or exposure index.
   const relativeExposure = mas / 2 * (state.kvp / 110) ** 2 * (180 / state.sid) ** 2 * (state.grid ? 1 : 1 / 0.72);
   return { mas, magnification: state.sid / sod, unsharpness: state.focalSpot * oid / sod, relativeExposure, noise: 1 / Math.sqrt(1000 * relativeExposure) };
+}
+
+/**
+ * A coarse protocol-specific central-anatomy envelope, in patient-local cm.
+ * These bounds intentionally represent key teaching landmarks, not the entire
+ * patient or an assertion that a clinical examination has adequate coverage.
+ * Projecting its corners catches centering/angulation issues which a field-size
+ * threshold alone cannot detect.
+ */
+export interface ProjectedLandmark {
+  id: string;
+  label: string;
+  detectorXcm: number;
+  detectorYcm: number;
+  inField: boolean;
+}
+
+export interface ProjectionCoverage {
+  projection: 'PA' | 'AP' | 'LAT';
+  /** A sampled analytic reference envelope, not a clinical coverage score. */
+  envelopeCoveragePercent: number;
+  landmarkCoveragePercent: number;
+  /** Smallest distance from a sampled envelope point to a collimator edge. Negative = outside. */
+  minimumMarginCm: number;
+  bounds: { leftCm: number; rightCm: number; bottomCm: number; topCm: number };
+  landmarks: ProjectedLandmark[];
+}
+
+const REFERENCE_LANDMARKS = {
+  chest: [
+    ['right-apex', 'Right lung apex', -7.8, 141, 0],
+    ['left-apex', 'Left lung apex', 7.8, 141, 0],
+    ['right-angle', 'Right costophrenic region', -12, 110, 0],
+    ['left-angle', 'Left costophrenic region', 12, 110, 0],
+    ['carina', 'Carina region', 0, 132, 1],
+    ['heart', 'Heart center', 3.2, 119, 4.3],
+  ],
+  abdomen: [
+    ['right-diaphragm', 'Right hemidiaphragm region', -8, 110, 0],
+    ['left-diaphragm', 'Left hemidiaphragm region', 8, 110, 0],
+    ['right-flank', 'Right flank region', -13, 95, 0],
+    ['left-flank', 'Left flank region', 13, 95, 0],
+    ['pubic', 'Pubic symphysis region', 0, 81, 4],
+  ],
+  pelvis: [
+    ['right-crest', 'Right iliac crest', -13, 86, -1],
+    ['left-crest', 'Left iliac crest', 13, 86, -1],
+    ['pubic', 'Pubic symphysis', 0, 71, 4],
+    ['right-hip', 'Right femoral head', -9, 73, 0],
+    ['left-hip', 'Left femoral head', 9, 73, 0],
+  ],
+} as const;
+
+/** Projection of protocol landmarks and a sampled reference volume onto the true receptor plane. */
+export function analyzeProjectionCoverage(state: SimulatorState): ProjectionCoverage {
+  const protocol = getProtocol(state.protocol);
+  const valid = [state.sid, state.tubeAngle, state.patientSize, state.patientRotation, state.patientOffsetX,
+    state.patientOffsetY, state.collimationWidth, state.collimationHeight].every(Number.isFinite) && state.sid > 0;
+  const lateral = protocol.projection === 'LAT';
+  const bounds = protocol.region === 'chest'
+    ? { halfX: protocol.position === 'supine' ? 12 : 14.5, halfZ: lateral ? 8.8 : 7, lowY: 109, highY: 142 }
+    : protocol.region === 'abdomen'
+      ? { halfX: 13, halfZ: 7, lowY: 82, highY: 111 }
+      : { halfX: 12.5, halfZ: 7, lowY: 69, highY: 88 };
+  const b: Vec3 = protocol.projection === 'PA' ? [0, 0, 1] : lateral ? [1, 0, 0] : [0, 0, -1];
+  const u: Vec3 = lateral ? [0, 0, -1] : [1, 0, 0];
+  const angle = state.tubeAngle * Math.PI / 180;
+  const axialSid = state.sid * Math.cos(angle);
+  const oid = objectDetectorDistance(state);
+  const detector: Vec3 = [b[0] * oid, protocol.centerY, b[2] * oid];
+  const source: Vec3 = [detector[0] - b[0] * axialSid, detector[1] + Math.sin(angle) * state.sid, detector[2] - b[2] * axialSid];
+  const yaw = rotationMatrix([0, state.patientRotation * Math.PI / 180, 0]);
+  const project = (x: number, y: number, z: number) => {
+    const local = rotate([x * state.patientSize, y, z * state.patientSize], yaw);
+    const point: Vec3 = [
+      local[0] + u[0] * state.patientOffsetX,
+      local[1] + state.patientOffsetY,
+      local[2] + u[2] * state.patientOffsetX,
+    ];
+    const delta: Vec3 = [point[0] - source[0], point[1] - source[1], point[2] - source[2]];
+    const forward = delta[0] * b[0] + delta[2] * b[2];
+    if (forward <= 0 || !valid) return { x: NaN, y: NaN, margin: -Infinity };
+    const t = axialSid / forward;
+    const px = t * (delta[0] * u[0] + delta[2] * u[2]);
+    const py = source[1] + t * delta[1] - detector[1];
+    return { x: px, y: py, margin: Math.min(state.collimationWidth / 2 - Math.abs(px), state.collimationHeight / 2 - Math.abs(py)) };
+  };
+  let inside = 0, total = 0, minimumMarginCm = Infinity;
+  const all = [] as ReturnType<typeof project>[];
+  // Sampling intermediate points permits progressive feedback during partial cutoff.
+  for (const x of [-bounds.halfX, 0, bounds.halfX]) for (const y of [bounds.lowY, (bounds.lowY + bounds.highY) / 2, bounds.highY]) for (const z of [-bounds.halfZ, 0, bounds.halfZ]) {
+    const p = project(x, y, z);
+    all.push(p); total++;
+    if (p.margin >= -1e-9) inside++;
+    minimumMarginCm = Math.min(minimumMarginCm, p.margin);
+  }
+  const landmarks = REFERENCE_LANDMARKS[protocol.region].map(([id, label, x, y, z]) => {
+    const point = project(x, y, z);
+    return { id, label, detectorXcm: point.x, detectorYcm: point.y, inField: point.margin >= 0 };
+  });
+  return {
+    projection: protocol.projection,
+    envelopeCoveragePercent: Math.round(100 * inside / total),
+    landmarkCoveragePercent: Math.round(100 * landmarks.filter((item) => item.inField).length / landmarks.length),
+    minimumMarginCm,
+    bounds: {
+      leftCm: Math.min(...all.map((p) => p.x)), rightCm: Math.max(...all.map((p) => p.x)),
+      bottomCm: Math.min(...all.map((p) => p.y)), topCm: Math.max(...all.map((p) => p.y)),
+    },
+    landmarks,
+  };
+}
+
+function referenceAnatomyCovered(state: SimulatorState): boolean {
+  return analyzeProjectionCoverage(state).envelopeCoveragePercent === 100;
 }
 
 export function getReadinessChecks(state: SimulatorState): ReadinessCheck[] {
@@ -58,9 +174,9 @@ export function getReadinessChecks(state: SimulatorState): ReadinessCheck[] {
     { id: 'parameters', label: 'Valid equipment settings', passed: PROTOCOLS.some((p) => p.id === state.protocol) && ranges.every(([value, low, high]) => Number.isFinite(value) && value >= low && value <= high), blocking: true, detail: 'Settings must be finite and within this simulated equipment’s supported operating ranges.' },
     { id: 'centering', label: 'Patient centered', passed: Math.abs(state.patientOffsetX) <= 1.5 && Math.abs(state.patientOffsetY) <= 1.5, blocking: false, detail: 'Patient displacement changes coverage. Confirm the requested anatomy is inside the field.' },
     { id: 'rotation', label: 'Projection aligned', passed: Math.abs(state.patientRotation) <= 3 && Math.abs(state.tubeAngle) <= 3, blocking: false, detail: 'Rotation and tube angulation alter projected anatomy; deliberate variants remain available.' },
-    { id: 'coverage', label: 'Anatomy coverage', passed: state.collimationWidth >= (protocol.projection === 'LAT' ? 25 : 30) * state.patientSize && state.collimationHeight >= (protocol.region === 'pelvis' ? 32 : 40), blocking: false, detail: 'Coverage is estimated from the analytic phantom. Inspect the image edges before accepting a capture.' },
+    { id: 'coverage', label: 'Reference anatomy in field', passed: referenceAnatomyCovered(state), blocking: false, detail: 'A simplified anatomy envelope is projected through the current geometry. Inspect actual anatomy at image edges; this estimate cannot establish clinically adequate coverage.' },
     { id: 'arms', label: 'Arms clear of anatomy', passed: protocol.projection !== 'LAT' || state.arms === 'raised', blocking: false, detail: 'Raise the arms for a lateral chest to reduce superimposition.' },
-    { id: 'breath', label: 'Respiration suspended', passed: state.breathHeld, blocking: false, detail: protocol.region === 'chest' ? 'The phantom uses inspiration when held; free breathing reduces lung volume and adds motion blur.' : 'Free breathing adds an approximate longitudinal motion blur.' },
+    { id: 'breath', label: 'Respiration suspended', passed: state.breathHeld, blocking: false, detail: protocol.region === 'chest' ? 'Hold after inspiration for routine chest projections; the teaching phantom expands the lungs and reduces modeled motion.' : protocol.region === 'abdomen' ? 'Hold after expiration for this abdomen projection; free breathing adds approximate longitudinal motion blur.' : 'Suspended respiration reduces the approximate longitudinal motion blur.' },
   ];
 }
 
@@ -242,7 +358,11 @@ export function generateRadiograph(state: SimulatorState, seed = 1, width = 384)
       const transmitted = Math.min(1, primary + scatterFraction * (1 - primary) * Math.exp(-0.09 * (tissueMass + boneMass)));
       const airCounts = referenceCounts * state.sid ** 2 / rayLength ** 2;
       const counts = sampleQuantumCounts(airCounts * transmitted, random);
-      const attenuation = -Math.log(Math.max(0.5, counts) / airCounts);
+      // Transparent flat-panel teaching approximation: small independent
+      // electronics/readout noise is added before air-normalized log conversion.
+      // Relative detector counts are arbitrary; these are not real detector data.
+      const electronicNoise = Math.sqrt(-2 * Math.log(Math.max(Number.EPSILON, random()))) * Math.cos(2 * Math.PI * random()) * 3.5;
+      const attenuation = -Math.log(Math.max(0.5, counts + electronicNoise) / airCounts);
       pixels[row * width + column] = Math.round(Math.max(0, Math.min(1, attenuation / 8.5)) * 65535);
     }
   }
@@ -280,15 +400,142 @@ function gaussianBlur(input: Uint16Array, width: number, height: number, sigmaX:
   return pass(pass(input, sigmaX, true), sigmaY, false);
 }
 
-export function renderPixelsToCanvas(pixels: Uint16Array, width: number, height: number, canvas: HTMLCanvasElement, windowCenter = 0.5, windowWidth = 1, inverted = false): void {
+export interface ImageQualityFinding {
+  id: string;
+  label: string;
+  status: 'review' | 'observed';
+  evidence: string;
+  correctiveAction: string;
+}
+
+export interface RadiographQualityReport {
+  /** Calculated from simulated geometry, not automatic clinical image acceptance. */
+  coverage: ProjectionCoverage;
+  fieldAreaPercent: number;
+  p10: number;
+  p50: number;
+  p90: number;
+  tonalSpanPercent: number;
+  nearWhitePercent: number;
+  /** Local sampled gradient, includes anatomical edges and quantum noise. */
+  textureIndex: number;
+  /** Inverse-square count proxy relative to default chest PA; not a dose/EI. */
+  relativeDetectorFluence: number;
+  findings: ImageQualityFinding[];
+  projectionExplanation: string;
+  inspect: string[];
+}
+
+/**
+ * Deterministic critique for a teaching radiograph. Reports explicitly separate
+ * sample statistics, analytic positioning geometry and heuristics. It does not
+ * infer pathology, radiation dose, diagnostic adequacy, or the need to repeat.
+ */
+export function analyzeRadiographQuality(state: SimulatorState, pixels: Uint16Array, width: number, height: number): RadiographQualityReport {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || pixels.length !== width * height) {
+    throw new RangeError('Image dimensions and pixel buffer must match.');
+  }
+  const coverage = analyzeProjectionCoverage(state);
+  const protocol = getProtocol(state.protocol);
+  const histogram = new Uint32Array(256);
+  let total = 0, nearWhite = 0, gradient = 0, gradientN = 0;
+  // Sample a fixed budget for consistent large-image review cost.
+  const stride = Math.max(1, Math.ceil(Math.sqrt(width * height / 35000)));
+  for (let y = Math.floor(stride / 2); y < height; y += stride) {
+    const dy = Math.abs((0.5 - (y + 0.5) / height) * 43);
+    if (dy > state.collimationHeight / 2) continue;
+    for (let x = Math.floor(stride / 2); x < width; x += stride) {
+      const dx = Math.abs(((x + 0.5) / width - 0.5) * 35);
+      if (dx > state.collimationWidth / 2) continue;
+      const index = y * width + x, value = pixels[index];
+      histogram[Math.min(255, value >>> 8)]++;
+      total++;
+      if (value >= 0.98 * 65535) nearWhite++;
+      if (x + stride < width && dx + stride * 35 / width <= state.collimationWidth / 2) {
+        gradient += Math.abs(value - pixels[index + stride]);
+        gradientN++;
+      }
+    }
+  }
+  const percentile = (fraction: number) => {
+    if (!total) return 0;
+    const target = total * fraction;
+    let sum = 0;
+    for (let i = 0; i < histogram.length; i++) {
+      sum += histogram[i];
+      if (sum >= target) return (i + 0.5) / 256;
+    }
+    return 1;
+  };
+  const p10 = percentile(0.1), p50 = percentile(0.5), p90 = percentile(0.9);
+  const relativeDetectorFluence = calculateMetrics(state).relativeExposure;
+  const findings: ImageQualityFinding[] = [];
+  const add = (id: string, label: string, review: boolean, evidence: string, correctiveAction: string) => findings.push({ id, label, status: review ? 'review' : 'observed', evidence, correctiveAction });
+  add('field', 'Reference anatomy / field', coverage.envelopeCoveragePercent < 100 || coverage.landmarkCoveragePercent < 100,
+    `${coverage.envelopeCoveragePercent}% of sampled reference envelope and ${coverage.landmarkCoveragePercent}% of named landmarks project inside the chosen field; nearest edge margin ${Number.isFinite(coverage.minimumMarginCm) ? coverage.minimumMarginCm.toFixed(1) : '—'} cm.`,
+    'Re-center the patient or receptor, then adjust collimation only enough to include the required anatomy. Verify the acquired image edges.');
+  const rotation = Math.abs(state.patientRotation), angulation = Math.abs(state.tubeAngle);
+  add('alignment', 'Projection alignment', rotation > 3 || angulation > 3,
+    `Patient rotation ${state.patientRotation}°; tube angle ${state.tubeAngle}°. Deliberate angulation requires its own protocol.`,
+    'For a routine orthogonal projection, align the patient and central ray; judge symmetry or superimposition appropriate to the requested view.');
+  if (protocol.projection === 'LAT') add('arms', 'Lateral arm clearance', state.arms !== 'raised',
+    state.arms === 'raised' ? 'Arms are raised in the synthetic pose.' : 'Arm shadows may overlap the projected thorax.',
+    'Raise both arms comfortably clear of the thorax when possible and recheck alignment.');
+  add('breathing', 'Breath instruction', !state.breathHeld,
+    state.breathHeld ? protocol.region === 'abdomen' ? 'Simulated end-expiration suspension.' : 'Simulated suspended inspiration/respiration.' : `Free-breathing motion heuristic included over ${state.exposureMs} ms.`,
+    protocol.region === 'chest' ? 'Coach and time suspended inspiration if the patient can cooperate.' : 'Coach the protocol-specific breath hold if feasible; adapt to patient condition.');
+  add('fluence', 'Detector signal / noise', relativeDetectorFluence < 0.45,
+    `Relative detector air-fluence proxy ${Number.isFinite(relativeDetectorFluence) ? relativeDetectorFluence.toFixed(2) : '—'}×; measured P10–P90 span ${((p90 - p10) * 100).toFixed(1)}% of the synthetic 16-bit scale.`,
+    'Compare fine-structure visibility and quantum noise with another simulated technique; never infer patient dose from this value.');
+  if (nearWhite / Math.max(1, total) > 0.04) add('highlights', 'High-signal clipping', true,
+    `${(100 * nearWhite / total).toFixed(1)}% of sampled in-field pixels approach full-scale attenuation encoding.`,
+    'Inspect the raw image at different windows; determine whether apparent loss of detail is from the synthetic processing.');
+  const projectionExplanation = protocol.projection === 'PA'
+    ? 'PA chest: anterior anatomy, including the heart, lies nearer the image receptor than in AP. The modeled projected cardiac silhouette is consequently less magnified at matched SID.'
+    : protocol.projection === 'LAT'
+      ? 'Left lateral chest: the left side is receptor-adjacent. Both lungs and posterior ribs overlap in the projection; arm clearance and true lateral position are key teaching cues.'
+      : protocol.region === 'chest'
+        ? 'AP chest: the anterior heart lies farther from the receptor than in PA; its projected silhouette is more magnified at matched SID. Supine orientation also changes superimposed anatomy.'
+        : `AP ${protocol.region}: posterior structures are nearer the receptor. Check the image for the requested superior/inferior landmarks, centering and symmetric positioning.`;
+  const inspect = protocol.projection === 'LAT'
+    ? ['Posterior rib superimposition and sternum visibility', 'Both lung apices and posterior costophrenic regions', 'Arms and humeri projected out of the chest', 'Thoracic vertebral and diaphragmatic boundaries']
+    : protocol.region === 'chest'
+      ? ['Both apices and costophrenic regions', 'Clavicle symmetry and spine alignment', 'Cardiomediastinal outline versus chosen PA/AP projection', 'Vascular markings, diaphragm edges and visible quantum texture']
+      : protocol.region === 'abdomen'
+        ? ['Diaphragmatic region and inferior pelvic extent', 'Lateral flank margins and midline', 'Psoas/lumbar and gas-pattern landmarks as phantom permits', 'Motion and quantum texture']
+        : ['Bilateral iliac crests and proximal femora', 'Pubic symphysis and obturator ring symmetry', 'Femoral heads and hip alignment', 'Field edges and detector texture'];
+  return {
+    coverage, fieldAreaPercent: 100 * state.collimationWidth * state.collimationHeight / (35 * 43),
+    p10, p50, p90, tonalSpanPercent: (p90 - p10) * 100,
+    nearWhitePercent: 100 * nearWhite / Math.max(total, 1),
+    textureIndex: gradientN ? 100 * gradient / gradientN / 65535 : 0,
+    relativeDetectorFluence, findings, projectionExplanation, inspect,
+  };
+}
+
+export function renderPixelsToCanvas(pixels: Uint16Array, width: number, height: number, canvas: HTMLCanvasElement, windowCenter = 0.46, windowWidth = 0.86, inverted = false): void {
   if (pixels.length !== width * height || !Number.isFinite(windowCenter) || !Number.isFinite(windowWidth) || windowWidth <= 0) throw new RangeError('Invalid image dimensions or display window.');
   canvas.width = width; canvas.height = height;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas 2D rendering is unavailable.');
   const image = context.createImageData(width, height), low = windowCenter - windowWidth / 2;
   for (let i = 0; i < pixels.length; i++) {
-    let value = Math.max(0, Math.min(1, (pixels[i] / 65535 - low) / windowWidth));
-    if (inverted) value = 1 - value;
+    // Zero is the engine's closed-field sentinel. Keep it visibly unexposed
+    // even when the learner chooses an unusual low display window.
+    let value = pixels[i] === 0 ? 0 : Math.max(0, Math.min(1, (pixels[i] / 65535 - low) / windowWidth));
+    // A fixed and restrained presentation curve approximates a processed
+    // radiographic display; it does not modify the acquired 16-bit buffer.
+    value = value ** 0.87;
+    // Mild unsharp masking adds visible edge definition at the 384 px teaching
+    // resolution. Do not sharpen against a black collimator boundary.
+    if (pixels[i] > 0 && value > 0 && i >= width && i < pixels.length - width) {
+      const x = i % width;
+      if (x > 0 && x < width - 1 && pixels[i - 1] > 0 && pixels[i + 1] > 0 && pixels[i - width] > 0 && pixels[i + width] > 0) {
+        const average = (pixels[i - 1] + pixels[i + 1] + pixels[i - width] + pixels[i + width]) / (4 * 65535);
+        value = Math.max(0, Math.min(1, value + 0.16 * (pixels[i] / 65535 - average) / windowWidth));
+      }
+    }
+    if (inverted && pixels[i] !== 0) value = 1 - value;
     const grey = Math.round(value * 255), index = i * 4;
     image.data[index] = grey; image.data[index + 1] = grey; image.data[index + 2] = grey; image.data[index + 3] = 255;
   }

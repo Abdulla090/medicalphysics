@@ -1,0 +1,96 @@
+.sim-workshop {
+  position: absolute; z-index: 22; inset: 0; margin: auto; width: min(570px, calc(100% - 36px));
+  max-height: calc(100% - 24px); height: fit-content; display: flex; flex-direction: column;
+  color: #dcece4; background: #102528; border: 1px solid #7b998c;
+  border-radius: 4px; box-shadow: 0 18px 80px #08141cf0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+.sim-workshop::before { position: absolute; inset: -100vh -100vw; content: ''; background: #071b20a0; z-index: -1; pointer-events: none; }
+.sim-workshop > header { display: flex; flex-shrink: 0; justify-content: space-between; gap: 12px; align-items: center; border-bottom: 1px solid #90b39c40; padding: 16px 24px; }
+.sim-workshop > header > span { display: inline-flex; align-items: center; gap: 8px; font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+.sim-workshop > header svg { width: 17px; height: 17px; }
+.sim-workshop > header small { margin-left: 8px; color: #a1baa8; font: 9px 'IBM Plex Mono', monospace; }
+.sim-workshop > header button { display: grid; place-items: center; border: 1px solid #8a9e934a; width: 35px; height: 35px; background: #ffffff0b; color: #e5f6e9; cursor: pointer; border-radius: 3px; }
+.sim-workshop-body { padding: 25px 26px 24px; min-height: 0; overflow-y: auto; }
+.sim-workshop-eyebrow { color: #a6d2b5; font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.sim-workshop h2 { color: #f1fff5; letter-spacing: -.7px; font-size: 26px; font-weight: 500; margin: 6px 0 12px; }
+.sim-workshop-body > p { color: #b4c9bc; font-size: 12px; line-height: 1.7; max-width: 52ch; }
+.sim-workshop-chart { margin: 21px 0; border-top: 1px solid #aac4af35; border-bottom: 1px solid #aac4af35; padding: 17px 0; }
+.sim-workshop-chart > div { display: grid; grid-template-columns: 130px 1fr 80px; align-items: center; gap: 10px; margin: 13px 0; }
+.sim-workshop-chart span { font-size: 10px; color: #c1d8c7; }
+.sim-workshop-chart b { text-align: right; color: #e8faef; font: 600 11px 'IBM Plex Mono', monospace; }
+.sim-workshop-track { background: #4b686033; height: 13px; border: 1px solid #557365; overflow: hidden; }
+.sim-workshop-track > div { height: 100%; max-width: 100%; min-width: 2px; background: linear-gradient(90deg, #548e71, #ccedb9); transition: width .2s ease; }
+.sim-workshop-controls > div:first-child { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px; align-items: baseline; }
+.sim-workshop-controls strong { font-size: 12px; }
+.sim-workshop-controls span { font-size: 10px; color: #9fb7aa; }
+.sim-workshop-control { display: block; padding: 12px 0; border-top: 1px solid #aac6ad30; }
+.sim-workshop-control > span { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.sim-workshop-control b { color: #d5f5df; font: 600 12px 'IBM Plex Mono', monospace; }
+.sim-workshop-control input { width: 100%; height: 22px; accent-color: #b9e4c9; cursor: pointer; }
+.sim-workshop-outcome { background: #d6e5d7; padding: 15px 17px; margin-top: 18px; border-left: 3px solid #75b088; color: #2b4c38; }
+.sim-workshop-outcome strong { font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+.sim-workshop-outcome p { font-size: 11px; line-height: 1.65; margin: 8px 0 0; }
+.sim-workshop-return { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 16px; background: #c8edce; color: #183925; border: none; margin-top: 16px; cursor: pointer; font-weight: 600; font-size: 12px; }
+.sim-workshop-return:hover { background: #e2f9e3; }
+.sim-workshop-body footer { font-size: 9px; color: #9bb7a6; margin-top: 13px; line-height: 1.5; }
+@media (max-width: 720px) {
+  .sim-workshop { width: calc(100% - 18px); max-height: calc(100% - 20px); }
+  .sim-workshop > header { padding: 12px; }
+  .sim-workshop > header small { display: none; }
+  .sim-workshop-body { padding: 17px 16px; }
+  .sim-workshop h2 { font-size: 22px; }
+  .sim-workshop-chart > div { grid-template-columns: 95px 1fr 66px; gap: 7px; }
+  .sim-workshop-controls > div:first-child { display: block; }
+  .sim-workshop-controls > div:first-child span { display: block; margin-top: 5px; }
+}
+@media (prefers-reduced-motion: reduce) { .sim-workshop-track > div { transition: none; } }
+
+/* Clinical physics practical: evidence is revealed only after a prediction. */
+.sim-lab-dialog { width: min(1000px,calc(100% - 30px)); max-height: min(90dvh,850px); border-radius: 10px; background: #102724; }
+.sim-lab-body { padding: clamp(18px,3vw,31px); }
+.sim-lab-body h2 { font-size: clamp(25px,3vw,33px); font-weight: 650; letter-spacing: -1px; }
+.sim-lab-body > p { max-width: 750px; font-size: 12px; margin-bottom: 23px; }
+.sim-lab-columns { display: grid; grid-template-columns: 1fr minmax(300px,.82fr); gap: 17px; align-items: start; }
+.sim-lab-primary,.sim-lab-secondary { padding: 18px; min-width: 0; border: 1px solid #517c67; border-radius: 7px; background: #183630; }
+.sim-lab-secondary { border-color: #41665c; background: #17312f; }
+.sim-lab-section > span { font: 600 10px 'IBM Plex Mono',monospace; color: #badfaf; letter-spacing: .75px; }
+.sim-lab-section > strong { display: block; color: #f5fbee; font-size: 16px; margin: 8px 0 7px; font-weight: 650; }
+.sim-lab-section > p { color: #c4d8cd; font-size: 11px; line-height: 1.7; margin: 0 0 16px; }
+.sim-lab-beam { width: 100%; height: auto; display: block; border: 1px solid #577669; border-radius: 5px; }
+.sim-lab-control { display: block; margin-top: 16px; padding-bottom: 15px; border-bottom: 1px solid #bde1be25; }
+.sim-lab-control > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #e5f4e5; font-size: 11px; font-weight: 600; }
+.sim-lab-control b { font: 600 13px 'IBM Plex Mono',monospace; color: #d7f6c3; }
+.sim-lab-control input { display: block; width: 100%; margin: 9px 0 5px; accent-color: #c5eeb4; cursor: pointer; }
+.sim-lab-control small { font-size: 10px; color: #abc8b2; }
+.sim-lab-reset { display: inline-flex; align-items: center; gap: 8px; margin-top: 15px; border: 1px solid #8bb19c; border-radius: 4px; background: #244d3c; color: #edf8e5; padding: 10px 12px; font-size: 11px !important; }
+.sim-lab-reset:hover { background: #33644c; }
+.sim-lab-reset svg { width: 14px; height: 14px; }
+.sim-lab-hypothesis { font-size: 12px; line-height: 1.7; color: #dae7d7; padding: 12px 14px; background: #25443b; border-left: 3px solid #b1d79f; }
+.sim-lab-hypothesis b { color: #f2ffdd; }
+.sim-lab-choices { display: grid; gap: 7px; margin: 16px 0; }
+.sim-lab-choices label { display: block; position: relative; cursor: pointer; }
+.sim-lab-choices input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.sim-lab-choices label > span { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 13px; border: 1px solid #5c7968; border-radius: 4px; color: #e4f0db; background: #204039; font-size: 12px; font-weight: 600; }
+.sim-lab-choices label.is-selected > span { background: #d4edc2; border-color: #edffdf; color: #1c4733; }
+.sim-lab-choices label:focus-within > span { outline: 2px solid #d8efbf; outline-offset: 3px; }
+.sim-lab-choices label small { font-size: 10px; color: inherit; opacity: .75; font-weight: 400; }
+.sim-lab-reveal { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; padding: 13px; border: 1px solid #d9eec9; border-radius: 4px; background: #cfe8bb; color: #173a2b; font-size: 12px !important; font-weight: 700 !important; }
+.sim-lab-reveal:disabled { opacity: .4; cursor: not-allowed; }
+.sim-lab-result { margin-top: 18px; padding: 15px; border: 1px solid #9ec68e; border-radius: 5px; background: #254d39; }
+.sim-lab-result.is-wrong { border-color: #ddb98b; background: #514333; }
+.sim-lab-result > div:first-child { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sim-lab-result svg { width: 16px; height: 16px; }
+.sim-lab-result > div:first-child strong { font-size: 12px; color: #fffce8; }
+.sim-lab-result > span { font: 9px 'IBM Plex Mono',monospace; letter-spacing: 1px; color: #d0e6cd; }
+.sim-lab-metric { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.sim-lab-metric strong { font: 600 20px 'IBM Plex Mono',monospace; color: #f4ffdf; }
+.sim-lab-metric > span { color: #c5e4bc; }
+.sim-lab-metric small { color: #d0e3ce; font-size: 10px; }
+.sim-lab-result p { color: #e0efde; font-size: 11px; line-height: 1.7; margin: 10px 0 0; }
+.sim-lab-result p.sim-lab-crop { color: #ffe0c0; }
+.sim-lab-result p.sim-lab-coverage { color: #dcf5c7; }
+.sim-lab-body > .sim-workshop-outcome { margin-top: 18px; }
+.sim-lab-body .sim-workshop-return { justify-content: center; gap: 13px; border-radius: 4px; }
+.sim-lab-body .sim-workshop-return svg { width: 14px; height: 14px; }
+@media (max-width: 700px) { .sim-lab-dialog { width: calc(100% - 16px); max-height: calc(100% - 18px); } .sim-lab-columns { grid-template-columns: 1fr; } .sim-lab-primary,.sim-lab-secondary { padding: 14px; } .sim-lab-body { padding: 16px; } }

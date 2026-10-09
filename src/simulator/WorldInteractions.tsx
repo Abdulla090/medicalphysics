@@ -10,6 +10,10 @@ export interface WorldInteractionProps {
   enabled: boolean;
   disabled: boolean;
   barrierClosed: boolean;
+  patientPrepared: boolean;
+  canManipulatePatient?: boolean;
+  patientInRoom?: boolean;
+  registered?: boolean;
   onHover: (target: WorldTargetId | null) => void;
   onSelect: (target: WorldTargetId) => void;
   onAction: (target: WorldTargetId, action: WorldAction) => void;
@@ -40,7 +44,7 @@ export function WorldInteractions(props: WorldInteractionProps) {
   useFrame(({ camera: observer }) => {
     if (!live.current.enabled) return;
     observer.getWorldDirection(direction);
-    const targets = getWorldTargets(live.current.state);
+    const targets = getWorldTargets(live.current.state).filter(item => item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true) && (live.current.canManipulatePatient ?? true)));
     const target = getAimedTarget(observer.position.toArray(), direction.toArray(), targets, live.current.barrierClosed);
     aimed.current = target;
     if ((target?.id ?? null) !== previousHover.current) {
@@ -76,7 +80,7 @@ export function WorldInteractions(props: WorldInteractionProps) {
       const bounds = canvas.getBoundingClientRect();
       pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1);
       ray.setFromCamera(pointer, camera);
-      return getAimedTarget(camera.position.toArray(), ray.ray.direction.toArray(), getWorldTargets(live.current.state), live.current.barrierClosed);
+      return getAimedTarget(camera.position.toArray(), ray.ray.direction.toArray(), getWorldTargets(live.current.state).filter(item => item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true) && (live.current.canManipulatePatient ?? true))), live.current.barrierClosed);
     };
     const action = (id: WorldTargetId, type: WorldAction) => {
       live.current.onSelect(id);
@@ -117,9 +121,11 @@ export function WorldInteractions(props: WorldInteractionProps) {
     };
     const release = () => {
       if (!grip.current) return;
+      const click = grip.current.target === 'patient' && Math.abs(grip.current.dx) + Math.abs(grip.current.dy) < 3;
       grip.current = null;
       window.dispatchEvent(new CustomEvent('xray-manipulating', { detail: false }));
       live.current.onGrip(false);
+      if (click && permitted()) action('patient', 'use');
       invalidate();
     };
     const wheel = (event: WheelEvent) => {
@@ -132,7 +138,7 @@ export function WorldInteractions(props: WorldInteractionProps) {
       if (!permitted()) return;
       const id = (event as CustomEvent<WorldTargetId>).detail;
       const target = getWorldTargets(live.current.state).find((item) => item.id === id);
-      if (target && camera.position.distanceTo(new Vector3(...target.position)) <= target.reach + target.radius) live.current.onSelect(id);
+      if (target && (id !== 'patient' || live.current.canManipulatePatient !== false) && camera.position.distanceTo(new Vector3(...target.position)) <= target.reach + target.radius) live.current.onSelect(id);
     };
     canvas.addEventListener('keydown', keydown);
     canvas.addEventListener('pointerdown', down);
