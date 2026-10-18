@@ -3,7 +3,7 @@ import { getProtocol } from './protocols';
 import type { ProtocolId, SimulatorState } from './types';
 
 /** Fictional case material for educational practice. None is patient data or clinical advice. */
-export type CaseId = 'outpatient-chest' | 'lateral-followup' | 'abdominal-survey';
+export type CaseId = 'outpatient-chest' | 'lateral-followup' | 'abdominal-survey' | 'supine-chest' | 'pelvis-survey';
 export type PreparationKey = 'identity' | 'request' | 'screening' | 'metals' | 'communication';
 export type PreparationRecord = Record<PreparationKey, boolean>;
 export const EMPTY_PREPARATION: PreparationRecord = {
@@ -50,6 +50,26 @@ export const CLINICAL_CASES: ClinicalCase[] = [
     teachingFocus: 'Clinical justification, pregnancy screening, table setup and requested anatomical coverage.',
     expected: { kvp: [70, 95], sid: [90, 115], mas: [10, 30] },
   },
+  {
+    id: 'supine-chest', accession: 'EDU-DR-2404', name: 'Robin Ali', identifier: 'EDU 1428', age: 64,
+    indication: 'Follow-up chest examination with limited standing tolerance',
+    clinicalContext: 'Stable fictional outpatient who can transfer with support but cannot comfortably stand for imaging.',
+    question: 'Explain the AP geometry and support a comfortable supine position.',
+    requested: 'chest-ap', preparationNote: 'Offer transfer support, remove chest artifacts and rehearse inspiration.',
+    teachingFocus: 'Supported supine positioning, AP magnification and adaptation to mobility.',
+    expected: { kvp: [80, 110], sid: [100, 120], mas: [2, 8] },
+  },
+  {
+    id: 'pelvis-survey', accession: 'EDU-DR-2405', name: 'Dana Karim', identifier: 'EDU 1650', age: 48,
+    indication: 'Non-traumatic pelvic discomfort',
+    clinicalContext: 'Stable ambulatory adult. No injury is reported in this fictional case. Confirm mobility and screening before positioning.',
+    question: 'Include the pelvic ring and proximal femora with symmetric positioning.',
+    requested: 'pelvis-ap', preparationNote: 'Remove waist artifacts, review pregnancy considerations and explain supine positioning.',
+    teachingFocus: 'Pelvic symmetry, respectful draping, inclusion and motion control. Never force rotation in suspected injury.',
+    expected: { kvp: [70, 95], sid: [90, 115], mas: [10, 25] },
+  },
+
+
 ];
 
 export const PREPARATION_ITEMS: { key: PreparationKey; title: string; detail: string }[] = [

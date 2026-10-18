@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Euler, PerspectiveCamera, Vector3, type Camera } from 'three';
@@ -8,6 +8,7 @@ import type { Point3 } from './sceneGeometry';
 import { getRoomColliders, getWorldZone, integrateWalking, moveObserver } from './RoomMovement';
 
 type ControlsProps = {
+  roamingPatient?: MutableRefObject<{x:number;z:number}|null>;
   state: SimulatorState;
   view: CameraView;
   cameraReset: number;
@@ -18,6 +19,7 @@ type ControlsProps = {
   registered?: boolean;
   patientInRoom?: boolean;
   paused?: boolean;
+  initialPosition?: {x:number;z:number};
 };
 
 type SpringState = {
@@ -44,13 +46,13 @@ function getPreset(view: CameraView, state: SimulatorState): { position: Point3;
     case 'detector': return supine
       ? { position: [0.45, 1.69, target[2] + 1.31], target: [-0.45, 0.78, target[2]] }
       : { position: [-0.80, 1.87, -0.46], target: [0.65, 1.24, -2.15] };
-    case 'first-person': return { position: [5.60, 1.62, 5.90], target: [7.34, 1.35, 4.78] };
+    case 'first-person': return { position: [7.70, 1.62, 4.78], target: [5.82, 1.52, 4.77] };
     default: return { position: [4.12, 2.57, 4.31], target: [-0.15, 1.30, -0.46] };
   }
 }
 
 /** First person uses the active render camera. Orbit remains available for inspection. */
-export function SceneControls({ state, view, cameraReset, onWalkChange, barrierClosed = true, changingDoorClosed = false, patientPrepared = true, registered = true, patientInRoom = true, paused = false }: ControlsProps) {
+export function SceneControls({ state, view, cameraReset, onWalkChange, barrierClosed = true, changingDoorClosed = false, patientPrepared = true, registered = true, patientInRoom = true, paused = false, initialPosition, roamingPatient }: ControlsProps) {
   const { camera, gl, invalidate, size } = useThree();
   const orbit = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const spring = useRef<SpringState>({ position: new Vector3(), target: new Vector3(), positionVelocity: new Vector3(), targetVelocity: new Vector3(), moving: false });
@@ -75,7 +77,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
   const reducedMotion = useRef(false);
   const lastLocationReport = useRef(0);
   const lastReportedZone = useRef('');
-  const roomColliders = useMemo(() => ({ standing: getRoomColliders(state, 1.62, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom), crouching: getRoomColliders(state, 1.12, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom) }), [state, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom]);
+  const roomColliders = useMemo(() => ({ standing: getRoomColliders(state, 1.62, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom, !roamingPatient || patientInRoom), crouching: getRoomColliders(state, 1.12, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom, !roamingPatient || patientInRoom) }), [state, barrierClosed, changingDoorClosed, patientPrepared, registered, patientInRoom, roamingPatient]);
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
@@ -176,6 +178,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
       return;
     }
     const preset = getPreset(view, state);
+    if(view === 'first-person' && initialPosition) preset.position=[initialPosition.x,1.62,initialPosition.z];
     spring.current.position.set(...preset.position);
     spring.current.target.set(...preset.target);
     spring.current.positionVelocity.set(0, 0, 0);
@@ -266,6 +269,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
       pointer.current.y = event.clientY;
       turn(dx, dy);
     };
+    const touchLook=(event:Event)=>{const detail=(event as CustomEvent<{dx:number;dy:number}>).detail;if(Number.isFinite(detail?.dx)&&Number.isFinite(detail?.dy))turn(detail.dx,detail.dy);};
     const lockedMove = (event: MouseEvent) => {
       if (document.pointerLockElement === canvas) turn(event.movementX, event.movementY);
     };
@@ -312,6 +316,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
     canvas.addEventListener('pointercancel', pointerUp);
     window.addEventListener('blur', clear);
     window.addEventListener('xray-walk', touchWalk);
+    window.addEventListener('xray-look', touchLook);
     canvas.addEventListener('dblclick', lockPointer);
     canvas.addEventListener('contextmenu', contextMenu);
     document.addEventListener('mousemove', lockedMove);
@@ -329,6 +334,7 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
       canvas.removeEventListener('pointercancel', pointerUp);
       window.removeEventListener('blur', clear);
       window.removeEventListener('xray-walk', touchWalk);
+      window.removeEventListener('xray-look', touchLook);
       canvas.removeEventListener('dblclick', lockPointer);
       canvas.removeEventListener('contextmenu', contextMenu);
       document.removeEventListener('mousemove', lockedMove);
@@ -368,12 +374,15 @@ export function SceneControls({ state, view, cameraReset, onWalkChange, barrierC
       const motion = integrateWalking(velocity.current, desired, delta, reducedMotion.current);
       velocity.current = moving ? motion.velocity : { x: 0, z: 0 };
       const eyeHeight = crouching.current ? 1.12 : 1.62;
-      const next = moveObserver(observer.position, moving ? motion.displacement : { x: 0, z: 0 }, crouching.current ? roomColliders.crouching : roomColliders.standing);
+      const staticColliders=crouching.current ? roomColliders.crouching : roomColliders.standing;
+      const actor=roamingPatient?.current;
+      const colliders=actor?[...staticColliders,{kind:'circle' as const,...actor,radius:.22}]:staticColliders;
+      const next = moveObserver(observer.position, moving ? motion.displacement : { x: 0, z: 0 }, colliders);
       if (Math.abs(next.x - observer.position.x) < 0.000001) velocity.current.x = 0;
       if (Math.abs(next.z - observer.position.z) < 0.000001) velocity.current.z = 0;
       const travelled = Math.hypot(next.x - observer.position.x, next.z - observer.position.z);
       if (moving) walkCycle.current += travelled;
-      const bob = moving && !reducedMotion.current ? Math.sin(walkCycle.current * 11) * 0.009 : 0;
+      const bob = 0; // Stable eye level by default.
       const height = reducedMotion.current ? eyeHeight : eyeHeight + bob + (observer.position.y - eyeHeight - bob) * Math.exp(-18 * delta);
       observer.position.set(next.x, Math.abs(height - eyeHeight) < 0.001 ? eyeHeight : height, next.z);
       // Update the render camera's matrices explicitly; input can arrive between demand frames.

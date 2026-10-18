@@ -1,3 +1,4 @@
+import { requireAdmin, requireOwner } from './permissions';
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -23,17 +24,18 @@ export const getCategoryById = query({
 export const getCourses = query({
     args: {},
     handler: async (ctx) => {
-        return await ctx.db.query("courses").collect();
+        return await ctx.db.query("courses").filter(q=>q.eq(q.field("isPublished"),true)).collect();
     },
 });
 
 export const getCourseBySlug = query({
     args: { slug: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const course=await ctx.db
             .query("courses")
             .withIndex("by_slug", (q) => q.eq("slug", args.slug))
             .first();
+        return course?.isPublished?course:null;
     },
 });
 
@@ -44,7 +46,7 @@ export const getCoursesByCategory = query({
         // For now, assuming direct link or filtering in application layer if needed
         // But wait, lessons link to categories, not directly courses? 
         // Let's assume for now we list all courses or filter client-side if schema doesn't support direct link
-        return await ctx.db.query("courses").collect();
+        return await ctx.db.query("courses").filter(q=>q.eq(q.field("isPublished"),true)).collect();
     }
 });
 
@@ -53,20 +55,22 @@ export const getCoursesByCategory = query({
 export const getLessons = query({
     args: {},
     handler: async (ctx) => {
-        return await ctx.db.query("lessons").collect();
+        return await ctx.db.query("lessons").filter(q=>q.eq(q.field("isPublished"),true)).collect();
     },
 });
 
 export const getLessonById = query({
     args: { id: v.id("lessons") },
     handler: async (ctx, args) => {
-        return await ctx.db.get(args.id);
+        const lesson=await ctx.db.get(args.id);
+        return lesson?.isPublished?lesson:null;
     },
 });
 
 export const getLessonsByCourse = query({
     args: { courseId: v.id("courses") },
     handler: async (ctx, args) => {
+        if(!(await ctx.db.get(args.courseId))?.isPublished)return [];
         const courseLessons = await ctx.db
             .query("course_lessons")
             .withIndex("by_course", (q) => q.eq("courseId", args.courseId))
@@ -77,7 +81,7 @@ export const getLessonsByCourse = query({
             courseLessons.map(async (cl) => await ctx.db.get(cl.lessonId))
         );
 
-        return lessons.filter(l => l !== null);
+        return lessons.filter(l => l !== null && l.isPublished);
     },
 });
 
@@ -85,9 +89,10 @@ export const getLessonsByCourse = query({
 export const getUser = query({
     args: { userId: v.string() },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         return await ctx.db
             .query("profiles")
-            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
             .first();
     }
 });
@@ -95,20 +100,21 @@ export const getUser = query({
 export const createUser = mutation({
     args: { userId: v.string(), email: v.string(), fullName: v.optional(v.string()) },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const existing = await ctx.db
             .query("profiles")
-            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
             .first();
 
         if (!existing) {
             await ctx.db.insert("profiles", {
-                userId: args.userId,
+                userId: userId,
                 fullName: args.fullName,
             });
 
             // Default role user
             await ctx.db.insert("user_roles", {
-                userId: args.userId,
+                userId: userId,
                 role: "user"
             });
         }
@@ -187,7 +193,7 @@ export const getLessonsByCategory = query({
 export const getAllLessons = query({
     args: {},
     handler: async (ctx) => {
-        const lessons = await ctx.db.query("lessons").collect();
+        const lessons = await ctx.db.query("lessons").filter(q=>q.eq(q.field("isPublished"),true)).collect();
 
         // Enrich with category name and storage URLs
         return await Promise.all(lessons.map(async (l) => {
@@ -215,10 +221,11 @@ export const getAllLessons = query({
 export const markLessonComplete = mutation({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const existing = await ctx.db
             .query("lesson_progress")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
 
@@ -230,7 +237,7 @@ export const markLessonComplete = mutation({
             });
         } else {
             await ctx.db.insert("lesson_progress", {
-                userId: args.userId,
+                userId: userId,
                 lessonId: args.lessonId,
                 completed: true,
                 completedAt: new Date().toISOString(),
@@ -243,10 +250,11 @@ export const markLessonComplete = mutation({
 export const unmarkLessonComplete = mutation({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const existing = await ctx.db
             .query("lesson_progress")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
 
@@ -262,9 +270,10 @@ export const unmarkLessonComplete = mutation({
 export const getUserProgress = query({
     args: { userId: v.string() },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         return await ctx.db
             .query("lesson_progress")
-            .withIndex("by_user", (q) => q.eq("userId", args.userId))
+            .withIndex("by_user", (q) => q.eq("userId", userId))
             .collect();
     },
 });
@@ -272,10 +281,11 @@ export const getUserProgress = query({
 export const isLessonCompleted = query({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const progress = await ctx.db
             .query("lesson_progress")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
         return progress?.completed || false;
@@ -286,16 +296,17 @@ export const isLessonCompleted = query({
 export const addBookmark = mutation({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const existing = await ctx.db
             .query("bookmarks")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
 
         if (!existing) {
             await ctx.db.insert("bookmarks", {
-                userId: args.userId,
+                userId: userId,
                 lessonId: args.lessonId,
                 createdAt: new Date().toISOString(),
             });
@@ -306,10 +317,11 @@ export const addBookmark = mutation({
 export const removeBookmark = mutation({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const existing = await ctx.db
             .query("bookmarks")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
 
@@ -322,9 +334,10 @@ export const removeBookmark = mutation({
 export const getUserBookmarks = query({
     args: { userId: v.string() },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const bookmarks = await ctx.db
             .query("bookmarks")
-            .withIndex("by_user", (q) => q.eq("userId", args.userId))
+            .withIndex("by_user", (q) => q.eq("userId", userId))
             .collect();
 
         // Fetch full lesson details
@@ -340,10 +353,11 @@ export const getUserBookmarks = query({
 export const isLessonBookmarked = query({
     args: { userId: v.string(), lessonId: v.id("lessons") },
     handler: async (ctx, args) => {
+        const userId = await requireOwner(ctx, args.userId);
         const bookmark = await ctx.db
             .query("bookmarks")
             .withIndex("by_user_lesson", (q) =>
-                q.eq("userId", args.userId).eq("lessonId", args.lessonId)
+                q.eq("userId", userId).eq("lessonId", args.lessonId)
             )
             .first();
         return !!bookmark;
@@ -392,8 +406,7 @@ export const getCourseById = query({
     args: { id: v.id("courses") },
     handler: async (ctx, args) => {
         const course = await ctx.db.get(args.id);
-        if (!course) return null;
-
+        if (!course?.isPublished) return null;
         const courseLessons = await ctx.db.query("course_lessons")
             .withIndex("by_course", (q) => q.eq("courseId", args.id))
             .collect();
@@ -405,23 +418,25 @@ export const getCourseById = query({
             })
         );
 
-        return { ...course, lessons };
+        return { ...course, lessons: lessons.filter(({ lesson }) => lesson?.isPublished) };
     },
 });
 
 export const getCourseLessons = query({
     args: { courseId: v.id("courses") },
     handler: async (ctx, args) => {
+        if(!(await ctx.db.get(args.courseId))?.isPublished)return [];
         const courseLessons = await ctx.db.query("course_lessons")
             .withIndex("by_course", (q) => q.eq("courseId", args.courseId))
             .collect();
 
-        return await Promise.all(
+        const joined = await Promise.all(
             courseLessons.sort((a, b) => a.orderIndex - b.orderIndex).map(async (cl) => {
                 const lesson = await ctx.db.get(cl.lessonId);
                 return { ...cl, lesson };
             })
         );
+        return joined.filter(item=>item.lesson?.isPublished);
     },
 });
 
@@ -500,6 +515,15 @@ export const getArticleById = query({
 export const getFileUrl = query({
     args: { storageId: v.id("_storage") },
     handler: async (ctx, args) => {
+        // Public content references are the only anonymous file capability.
+        // Training pixels use authenticated database queries, never public URLs.
+        const [lessons, parts, articles] = await Promise.all([
+            ctx.db.query('lessons').collect(), ctx.db.query('anatomy_parts').collect(), ctx.db.query('articles').collect()
+        ]);
+        const published = lessons.some(x => x.isPublished && (x.imageStorageId === args.storageId || x.videoStorageId === args.storageId))
+            || parts.some(x => x.isPublished && x.imageStorageId === args.storageId)
+            || articles.some(x => x.isPublished && x.coverImageStorageId === args.storageId);
+        if (!published) await requireAdmin(ctx);
         return await ctx.storage.getUrl(args.storageId);
     }
 });

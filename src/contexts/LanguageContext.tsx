@@ -268,7 +268,8 @@ export const useLanguage = () => {
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     const [language, setLanguageState] = useState<Language>(() => {
         if (typeof window !== 'undefined') {
-            return (localStorage.getItem('language') as Language) || 'ku'; // Default to Kurdish
+            try { return localStorage.getItem('language') === 'en' ? 'en' : 'ku'; }
+            catch { return 'ku'; }
         }
         return 'ku';
     });
@@ -279,7 +280,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         // Update document direction and font
         const root = document.documentElement;
         root.dir = isRTL ? 'rtl' : 'ltr';
-        root.lang = language;
+        root.lang = language === 'ku' ? 'ckb-IQ' : 'en';
 
         // Add/remove RTL class for styling
         if (isRTL) {
@@ -292,7 +293,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }, [isRTL, language]);
 
     const setLanguage = (lang: Language) => {
-        localStorage.setItem('language', lang);
+        try { localStorage.setItem('language', lang); } catch { /* Language selection also works without persistent storage. */ }
         setLanguageState(lang);
     };
 

@@ -1,3 +1,4 @@
+import { ClinicalCharacter } from './ClinicalCharacter';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, type DependencyList } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -599,7 +600,7 @@ function PatientStillness({ bodyRef, headRef, breathHeld }: {
  * Adult procedural training phantom. Metres; soles y=0, head y=1.716, anterior +z,
  * anatomical left +x. Position/projection transforms belong to the room scene.
  */
-export const PatientModel = memo(function PatientModel({ state, garment = 'gown', gait }: { state: SimulatorState; garment?: 'gown' | 'outpatient'; gait?: GaitRef }) {
+const ProceduralPatientModel = memo(function ProceduralPatientModel({ state, garment = 'gown', gait }: { state: SimulatorState; garment?: 'gown' | 'outpatient'; gait?: GaitRef }) {
   const ghost = state.anatomy !== 'surface';
   const materials = useMemo(createPatientMaterials, []);
   const movingTorso = useRef<THREE.Group>(null);
@@ -618,4 +619,7 @@ export const PatientModel = memo(function PatientModel({ state, garment = 'gown'
   </group>;
 });
 
+export const PatientModel=memo(function PatientModel(props:{state:SimulatorState;garment?:'gown'|'outpatient';gait?:GaitRef}){
+  return props.state.anatomy==='surface'?<ClinicalCharacter {...props} appearance={{'chest-pa':0,'chest-lateral':1,'abdomen-ap':2,'chest-ap':4,'pelvis-ap':3}[props.state.protocol]}/>:<ProceduralPatientModel {...props}/>;
+});
 export default PatientModel;

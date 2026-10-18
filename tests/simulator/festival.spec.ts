@@ -1,0 +1,34 @@
+import { expect, test } from '@playwright/test';
+
+for(const mobile of [false,true])test(`festival skips reach deliberate exposure on ${mobile?'phone':'desktop'}`,async({page})=>{
+ if(mobile)await page.setViewportSize({width:390,height:844});
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.addInitScript(()=>localStorage.setItem('language','en'));
+ await page.goto('/tools/xray-simulator?case=outpatient-chest');
+ const shell=page.locator('.cg-shell');
+ await expect(shell).toHaveAttribute('data-game-stage','registration');
+ await expect(page.locator('.sim-three-room canvas')).toHaveAttribute('data-observer-position',/\[/,{timeout:75000});
+ await page.screenshot({path:`artifacts/simulator/festival-skips-${mobile?'phone':'desktop'}.png`});
+ await page.getByRole('button',{name:/Skip for demo/}).click();
+ await expect(shell).toHaveAttribute('data-game-stage','changing');
+ await expect(page.getByRole('dialog')).toBeVisible();
+ await page.getByRole('button',{name:/Skip for demo/}).click();
+ await expect(shell).toHaveAttribute('data-game-stage','escort');
+ await page.getByRole('button',{name:/Skip for demo/}).click();
+ await expect(shell).toHaveAttribute('data-game-stage','position');
+ await expect(shell).toHaveAttribute('data-patient-location','imaging');
+ await page.getByRole('button',{name:/Skip for demo/}).click();
+ await expect(shell).toHaveAttribute('data-game-stage','equipment');
+ await page.getByRole('button',{name:/Skip for demo/}).click();
+ await expect(shell).toHaveAttribute('data-game-stage','exposure');
+ await expect(page.getByRole('button',{name:/Skip for demo/})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Expose deliberately'})).toBeDisabled();
+ await expect(page.locator('.cg-footer')).toContainText('Festival demo');
+ await page.getByRole('button',{name:'Prepare exposure',exact:true}).click();
+ await page.getByRole('button',{name:'Give breathing instruction',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Expose deliberately'})).toBeEnabled();
+ const dimensions=await page.evaluate(()=>({viewport:document.documentElement.clientWidth,width:document.documentElement.scrollWidth}));
+ expect(dimensions.width).toBeLessThanOrEqual(dimensions.viewport+1);
+ await page.screenshot({path:`artifacts/simulator/festival-${mobile?'phone':'desktop'}.png`});
+ expect(errors).toEqual([]);
+});

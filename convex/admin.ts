@@ -1,8 +1,10 @@
+import { requireAdmin } from './permissions';
 import { query } from "./_generated/server";
 
 export const getStats = query({
     args: {},
     handler: async (ctx) => {
+        await requireAdmin(ctx);
         const lessonsCount = await ctx.db.query("lessons").collect();
         const categoriesCount = await ctx.db.query("categories").collect();
         // For published vs draft, we filter strictly in code or create specific indexes if performance needed
@@ -19,6 +21,7 @@ export const getStats = query({
 export const getRecentLessons = query({
     args: {},
     handler: async (ctx) => {
+        await requireAdmin(ctx);
         const lessons = await ctx.db.query("lessons").collect();
 
         // Enrich with category name and resolve storage URLs
@@ -50,6 +53,7 @@ export const getRecentLessons = query({
 export const getCategoryLessonCounts = query({
     args: {},
     handler: async (ctx) => {
+        await requireAdmin(ctx);
         const lessons = await ctx.db.query("lessons").collect();
         const counts: Record<string, number> = {};
 

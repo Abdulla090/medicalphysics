@@ -1,6 +1,6 @@
 import { calculateMetrics, getReadinessChecks } from './physics';
 import { getProtocol } from './protocols';
-import type { CaseId, ClinicalCase, PreparationRecord, SimulatedAssessment } from './clinicalCases';
+import { CLINICAL_CASES, type CaseId, type ClinicalCase, type PreparationRecord, type SimulatedAssessment } from './clinicalCases';
 import type { GameStage } from './GameJourney';
 import type { SimulatorState } from './types';
 
@@ -89,7 +89,7 @@ const SHARED_QUESTIONS: Record<GameStage, TeachingQuestion> = {
   ], 'c', 'Separate image quality critique from any decision to repeat; this educational model cannot determine clinical acceptability.'),
 };
 
-const CASE_QUESTIONS: Record<CaseId, Partial<Record<GameStage, TeachingQuestion>>> = {
+const CASE_QUESTIONS: Partial<Record<CaseId, Partial<Record<GameStage, TeachingQuestion>>>> = {
   'outpatient-chest': {
     registration: makeQuestion('pa-request', 'registration', 'Alex can stand and follow instructions. Which plan answers this referral in the exercise?', [
       ['a', 'A supine AP chest because it is always equivalent to PA.', 'Projection and patient posture affect interpretation; AP is not interchangeable by default.'],
@@ -188,7 +188,7 @@ const CASE_QUESTIONS: Record<CaseId, Partial<Record<GameStage, TeachingQuestion>
   },
 };
 
-const LESSONS: Record<CaseId, Record<GameStage, TeachingLesson>> = {
+const LESSONS: Partial<Record<CaseId, Record<GameStage, TeachingLesson>>> = {
   'outpatient-chest': {
     registration: { title: 'Interpret the PA chest request', objective: 'Identify the correct patient and the requested projection.', clinicalReasoning: 'Alex is ambulatory and can follow a breathing instruction. The fictional referral requests an erect PA chest to demonstrate the lung fields.', practice: 'Have Alex state two identifiers. Compare the referral, indication and requested PA projection before proceeding.', imageCritique: 'Later check that the final projection corresponds to the order.' },
     changing: { title: 'Prepare the thorax', objective: 'Protect privacy while preparing an artifact-free field.', clinicalReasoning: 'Jewelry and pocket contents can superimpose the lung fields, hiding information needed for the exercise.', practice: 'Explain the gown, remove relevant objects, complete screening and plan a full-inspiration breath instruction.', imageCritique: 'Check for external objects along the chest and clavicles.' },
@@ -216,11 +216,32 @@ const LESSONS: Record<CaseId, Record<GameStage, TeachingLesson>> = {
 };
 
 export function getTeachingLesson(caseId: CaseId, stage: GameStage): TeachingLesson {
-  return LESSONS[caseId][stage];
+  const authored=LESSONS[caseId]?.[stage];if(authored)return authored;
+  const c=CLINICAL_CASES.find(c=>c.id===caseId)!;
+  // New table projections use their own referral; never silently teach erect PA.
+  return {
+    title:getProtocol(c.requested).name+' · '+stage,
+    objective:c.question,
+    clinicalReasoning:c.clinicalContext,
+    practice:stage==='registration'?`Ask ${c.name} for two identifiers and compare the ${getProtocol(c.requested).name} referral.`:
+      stage==='changing'||stage==='escort'?c.preparationNote:
+      stage==='exposure'?'Review this exercise’s settings, enter the control room, secure the door, prepare and give the breathing instruction before deliberately exposing.':c.teachingFocus,
+    imageCritique:'Compare the acquired projection and anatomical coverage with the actual referral. Document observations and justify any repeat.',
+  };
 }
 
 export function getTeachingQuestions(caseId: CaseId, stage: GameStage): TeachingQuestion[] {
-  return [CASE_QUESTIONS[caseId][stage]!, SHARED_QUESTIONS[stage]];
+  const authored=CASE_QUESTIONS[caseId]?.[stage];
+  if(authored)return [authored,SHARED_QUESTIONS[stage]];
+  const c=CLINICAL_CASES.find(c=>c.id===caseId)!;
+  const answer=stage==='registration'?getProtocol(c.requested).name:stage==='changing'||stage==='escort'?c.preparationNote:c.teachingFocus;
+  const question:TeachingQuestion={id:caseId+'-'+stage,stage,points:2,correctId:'referral',
+    prompt:`For ${c.name}, which choice matches the ${stage} work in this referral?`,
+    choices:[{id:'referral',label:answer,feedback:'This follows the recorded request and the patient context for this fictional encounter.'},
+      {id:'substitute',label:'Use the erect PA chest workflow regardless of the request.',feedback:'A different projection cannot silently replace the view specified in the referral.'},
+      {id:'automatic',label:'Continue automatically without checking the patient or referral.',feedback:'The learner must check the request and deliberately perform the relevant clinical actions.'}],
+    rationale:c.clinicalContext+' '+c.teachingFocus};
+  return [question,SHARED_QUESTIONS[stage]];
 }
 
 /** A missing or unknown answer receives zero credit and is never treated as completed. */

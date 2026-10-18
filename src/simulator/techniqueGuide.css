@@ -1,0 +1,38 @@
+.sim-student-guide { margin: 14px 0 18px; color: #274632; font-family: 'DM Sans', sans-serif; }
+.sim-student-guide.is-kurdish, .sim-student-guide.is-kurdish .sim-student-guide-trigger { font-family: 'Noto Sans Arabic', Tahoma, sans-serif; }
+.sim-student-guide-trigger { display: flex; align-items: center; width: 100%; gap: 9px; padding: 12px 13px; border: 1px solid #adcab7; border-radius: 5px; background: #e5efe7; color: #26563b; font: 650 12px 'DM Sans', sans-serif; text-align: start; cursor: pointer; }
+.sim-student-guide-trigger:hover { background: #d7e8dc; }
+.cg-station .sim-student-guide-trigger { justify-content: flex-start; background: #e5efe7; color: #26563b; border: 1px solid #adcab7; font: 650 12px 'DM Sans', sans-serif; }
+.cg-station .sim-student-guide-trigger:hover:not(:disabled) { background: #d7e8dc; }
+.sim-student-guide-trigger:focus-visible { outline: 3px solid #387c55; outline-offset: 2px; }
+.sim-student-guide-trigger > span { display: grid; place-items: center; width: 21px; height: 21px; flex-shrink: 0; border: 1px solid currentColor; border-radius: 50%; font: 700 13px 'IBM Plex Mono', monospace; }
+.sim-student-guide-trigger > b { margin-inline-start: auto; font-size: 19px; }
+.sim-student-guide-body { padding: 16px 13px; background: #f3f6f1; border: 1px solid #c5d8c8; border-top: 0; border-radius: 0 0 5px 5px; }
+.sim-student-guide-caption { margin: 0 0 11px !important; color: #5b7b64 !important; font: 700 10px 'IBM Plex Mono', monospace !important; letter-spacing: .65px; }
+.sim-student-guide-grid { display: grid; gap: 9px; }
+.sim-student-guide-reading { border: 1px solid #c6d6c9; padding: 12px; background: #fff; border-inline-start: 4px solid #5c9971; }
+.sim-student-guide-reading[data-state='low'] { border-inline-start-color: #bc7832; background: #fff9f1; }
+.sim-student-guide-reading[data-state='high'] { border-inline-start-color: #a9554a; background: #fff7f5; }
+.sim-student-guide-reading[data-state='attention'] { border-inline-start-color: #a9554a; background: #fff7f5; }
+.sim-student-guide-reading-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; }
+.sim-student-guide-reading-head > strong { font-weight: 700; }
+.sim-student-guide-reading-head > span { color: #377150; font-weight: 700; font-size: 11px; }
+.sim-student-guide-reading[data-state='low'] .sim-student-guide-reading-head > span { color: #91602a; }
+.sim-student-guide-reading[data-state='high'] .sim-student-guide-reading-head > span { color: #9f4c40; }
+.sim-student-guide-reading[data-state='attention'] .sim-student-guide-reading-head > span { color: #9f4c40; }
+.sim-student-guide-values { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; margin: 7px 0; }
+.sim-student-guide-values b { font: 600 20px 'IBM Plex Mono', monospace; color: #1e4c36; }
+.sim-student-guide-values b small { font-size: 10px; }
+.sim-student-guide-values > span { font: 10px 'IBM Plex Mono', monospace; color: #67806c; }
+.sim-student-guide-reading p { margin: 0 !important; color: #526757 !important; font-size: 11px !important; line-height: 1.55 !important; }
+.sim-student-guide-limit { display: block; margin-top: 9px; color: #6a7d6d; font-size: 10px; line-height: 1.45; }
+.sim-student-guide-limit b { color: #486653; font-weight: 700; }
+.sim-student-guide-limit-note { margin: 10px 0 0 !important; color: #68796b !important; font-size: 10px !important; line-height: 1.55 !important; }
+.sim-student-guide-geometry { display: grid; gap: 9px; margin-top: 12px; }
+.sim-student-guide-geometry-values { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 5px 10px; margin: 7px 0; }
+.sim-student-guide-geometry-values > span { color: #718177; font-size: 10px; }
+.sim-student-guide-geometry-values > b { color: #355847; font: 600 10px 'IBM Plex Mono', monospace; }
+.sim-student-guide-principle { margin: 12px 0 0 !important; color: #355847 !important; font-size: 11px !important; line-height: 1.7 !important; }
+.sim-student-guide-caveat { margin: 12px 0 0 !important; padding-top: 11px; border-top: 1px solid #cddccf; color: #697c6d !important; font-size: 10px !important; line-height: 1.6 !important; }
+@media (min-width: 720px) { .sim-student-guide-geometry { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .sim-student-guide-body { padding: 12px 9px; } .sim-student-guide-reading { padding: 10px; } .sim-student-guide-geometry-values { align-items: flex-start; flex-direction: column; } }

@@ -12,6 +12,8 @@ import type * as admin from "../admin.js";
 import type * as admin_actions from "../admin_actions.js";
 import type * as anatomy from "../anatomy.js";
 import type * as api_ from "../api.js";
+import type * as roles from "../roles.js";
+import type * as training from "../training.js";
 import type * as gemini from "../gemini.js";
 
 import type {
@@ -26,6 +28,8 @@ declare const fullApi: ApiFromModules<{
   anatomy: typeof anatomy;
   api: typeof api_;
   gemini: typeof gemini;
+  roles: typeof roles;
+  training: typeof training;
 }>;
 
 /**

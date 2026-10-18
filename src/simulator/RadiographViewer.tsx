@@ -27,7 +27,7 @@ export default function RadiographViewer({ image, onClose }: { image: CapturedIm
   const [landmarkOverlay, setLandmarkOverlay] = useState(false);
   const [focus, setFocus] = useState<CritiqueFocus>('projection');
   const [predictions, setPredictions] = useState<Partial<Record<CritiqueFocus, 'review' | 'observed'>>>({});
-  const quality = useMemo(() => image ? analyzeRadiographQuality(image.state, image.pixels, image.width, image.height) : null, [image]);
+  const quality = useMemo(() => image ? image.quality ?? analyzeRadiographQuality(image.state, image.pixels, image.width, image.height) : null, [image]);
   useEffect(() => { setCenter(0.46); setWidth(0.86); setInverted(false); setZoom(1); setLandmarkOverlay(false); setFocus('projection'); setPredictions({}); }, [image?.id]);
   useEffect(() => {
     if (image && canvasRef.current) renderPixelsToCanvas(image.pixels, image.width, image.height, canvasRef.current, center, width, inverted);

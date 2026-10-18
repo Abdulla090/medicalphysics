@@ -1,125 +1,62 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test,expect,type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-
-const viewport = (page: Page) => page.locator('.sim-three-room canvas');
-async function pose(page: Page): Promise<number[]> {
-  return JSON.parse((await viewport(page).getAttribute('data-observer-position'))!);
-}
-
-/** Send actual secondary-button look gestures; diagnostics are read-only. */
-async function lookAt(page: Page, point: number[]) {
-  const canvas = viewport(page);
-  const position = await pose(page);
-  const dx = point[0] - position[0], dy = point[1] - position[1], dz = point[2] - position[2];
-  const yaw = Math.atan2(-dx, -dz), pitch = Math.atan2(dy, Math.hypot(dx, dz));
-  const currentYaw = Number(await canvas.getAttribute('data-observer-yaw'));
-  const currentPitch = Number(await canvas.getAttribute('data-observer-pitch'));
-  const deltaYaw = Math.atan2(Math.sin(yaw - currentYaw), Math.cos(yaw - currentYaw));
-  let moveX = -deltaYaw / .0031, moveY = (currentPitch - pitch) / .0031;
-  const box = (await canvas.boundingBox())!;
-  while (Math.abs(moveX) + Math.abs(moveY) > .01) {
-    const stepX = Math.max(-160, Math.min(160, moveX));
-    const stepY = Math.max(-140, Math.min(140, moveY));
-    await page.mouse.move(box.x + box.width * .5, box.y + box.height * .5);
-    await page.mouse.down({ button: 'right' });
-    await page.mouse.move(box.x + box.width * .5 + stepX, box.y + box.height * .5 + stepY, { steps: 2 });
-    await page.mouse.up({ button: 'right' });
-    moveX -= stepX; moveY -= stepY;
-  }
-  await expect.poll(async () => Number(await canvas.getAttribute('data-observer-pitch'))).toBeCloseTo(pitch, 2);
-  await expect.poll(async () => {
-    const actualYaw = Number(await canvas.getAttribute('data-observer-yaw'));
-    return Math.atan2(Math.sin(actualYaw - yaw), Math.cos(actualYaw - yaw));
-  }).toBeCloseTo(0, 2);
-}
-
-async function walkTo(page: Page, x: number, z: number) {
-  await viewport(page).focus();
-  if ((await pose(page))[1] > 1.3) {
-    await viewport(page).press('c');
-    await expect.poll(async () => (await pose(page))[1]).toBeCloseTo(1.12, 2);
-  }
-  // A continuously held key can overshoot while a software GPU delays the CDP
-  // poll/keyup round trip. Each actual keyboard pulse releases before telemetry
-  // is read, then the next pulse re-aims from the real stopped camera position.
-  for (let pulse = 0; pulse < 30; pulse++) {
-    const position = await pose(page);
-    if (Math.hypot(position[0] - x, position[2] - z) < .15) break;
-    await lookAt(page, [x, position[1], z]);
-    await viewport(page).focus();
-    try { await page.keyboard.press('w', { delay: 600 }); }
-    finally { await page.keyboard.up('w'); }
-  }
-  const arrived = await pose(page);
-  expect(Math.hypot(arrived[0] - x, arrived[2] - z)).toBeLessThan(.5);
-}
-
-test('operates the room by walking, aiming, grabbing and acquiring at the protected console', async ({ page }) => {
-  test.skip(process.env.XRAY_ROOM_WALKTHROUGH !== '1', 'Extended room walkthrough is opt-in while software-renderer input timing remains under review.');
-  test.setTimeout(240_000);
-  const errors: string[] = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/tools/xray-simulator');
-  await expect(viewport(page)).toHaveAttribute('data-observer-position', /\[/);
-  await expect(page.locator('.sim-three-room')).toHaveAttribute('data-camera-view', 'first-person');
-  await expect(page.locator('.sim-world-safety')).toContainText('Outside protected');
-  const accessibility = await new AxeBuilder({ page }).include('.sim-app').withTags(['wcag2a', 'wcag2aa']).analyze();
-  expect(accessibility.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.failureSummary) }))).toEqual([]);
-  await page.screenshot({ path: 'artifacts/simulator/first-person-room.png' });
-
-  await walkTo(page, 1.35, .2);
-  await lookAt(page, [.65, 1.35, -.35]);
-  await expect(page.locator('.sim-world-target')).toHaveAttribute('data-world-target', 'tube');
-  const box = (await viewport(page).boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await expect(page.locator('.sim-crosshair')).toHaveClass(/is-holding/);
-  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 4 });
-  await page.mouse.up();
-  await expect(page.locator('.sim-crosshair')).not.toHaveClass(/is-holding/);
-  // The captured state must reflect the source moved by hand, rather than a console edit.
-  await viewport(page).press('t');
-  await expect(page.locator('.sim-world-dial')).toContainText('Tube current');
-
-  await walkTo(page, 1.35, -1.35);
-  await lookAt(page, [.65, 1.15, -2.025]);
-  await expect(page.locator('.sim-world-target')).toHaveAttribute('data-world-target', 'patient');
-  await viewport(page).press('r');
-  await viewport(page).press('b');
-  await viewport(page).press('b');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 4 });
-  await page.mouse.up();
-
-  await walkTo(page, 2.25, -1.4);
-  await lookAt(page, [2.25, 1.05, -2.65]);
-  await expect(page.locator('.sim-world-target')).toHaveAttribute('data-world-target', '');
-  await viewport(page).press('e');
-  await expect(page.locator('.sim-app')).toHaveAttribute('data-exposure-state', 'idle');
-  await expect(page.locator('.sim-world-safety')).toContainText('Outside protected');
-  await walkTo(page, 1.35, -1.35);
-
-  await walkTo(page, 1.35, -2.15);
-  await lookAt(page, [.99, 1.25, -2.12]);
-  await expect(page.locator('.sim-world-target')).toHaveAttribute('data-world-target', 'detector');
-  await viewport(page).press('e'); // Disarm, then arm the actual receptor.
-  await expect(page.locator('.sim-statusbar')).toContainText('Settings updated');
-  await viewport(page).press('e');
-
-  await walkTo(page, 2.25, -2.15);
-  await lookAt(page, [2.25, 1.05, -2.65]);
-  await expect(page.locator('.sim-world-target')).toHaveAttribute('data-world-target', 'console');
-  await expect(page.locator('.sim-world-safety')).toContainText('Behind closed protective barrier');
-  await viewport(page).press('e');
-  await expect(page.locator('.sim-app')).toHaveAttribute('data-exposure-state', 'prepared');
-  await viewport(page).press('e');
-  await expect(page.getByRole('button', { name: 'Review Chest PA acquisition 1', exact: true })).toBeVisible();
-  await viewport(page).press('v');
-  await expect(page.getByRole('dialog', { name: 'Chest PA', exact: true })).toBeVisible();
-  await expect(page.locator('.sim-film-meta')).toContainText('190 cm');
-  await expect(page.locator('.sim-image-settings')).toContainText('Raised');
-  await expect(page.locator('.sim-image-settings')).toContainText('4.8 / 0.0 cm');
-  await page.screenshot({ path: 'artifacts/simulator/first-person-acquisition.png' });
-  expect(errors).toEqual([]);
+import { lookAt,walkTo } from './journey-helpers';
+import { CLINICAL_CASES } from '../../src/simulator/clinicalCases';
+import { getWorldTargets } from '../../src/simulator/worldInteraction';
+import { applyProtocol,DEFAULT_STATE } from '../../src/simulator/protocols';
+const canvas=(p:Page)=>p.locator('.sim-three-room canvas'),shell=(p:Page)=>p.locator('.cg-shell');
+async function use(p:Page,point:number[],id:string){await lookAt(p,point);await expect(p.locator('.cg-interact')).toHaveAttribute('data-world-target',id);await canvas(p).press('e');}
+async function route(p:Page,points:number[][]){for(const[x,z]of points)await walkTo(p,x,z);}
+for(const c of CLINICAL_CASES)test('complete manual encounter: '+c.requested,async({page:p})=>{
+ test.setTimeout(600000);await p.addInitScript(()=>localStorage.setItem('language','en'));
+ const errors:string[]=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.goto('/tools/xray-simulator?case='+c.id);await expect(canvas(p)).toHaveAttribute('data-observer-position',/\[/,{timeout:75000});
+ console.log(c.requested,'room ready');await p.getByRole('button',{name:'Register your patient',exact:true}).click();const d=p.getByRole('dialog');
+ const click=async(name:string)=>d.getByRole('button',{name,exact:true}).click();
+ await expect(d.getByRole('button',{name:'Complete registration',exact:true})).toBeDisabled();
+ await click('Ask full name');await d.getByLabel('Full name stated by patient').fill(c.name);await click('Verify against referral');
+ await click('Ask hospital ID');await d.getByLabel('Identifier stated by patient').fill(c.identifier);await d.getByRole('button',{name:'Verify against referral',exact:true}).click();
+ for(const n of ['Discuss referral','Ask for agreement','Complete registration'])await click(n);
+ await expect(shell(p)).toHaveAttribute('data-patient-destination','');await p.getByRole('button',{name:'Invite patient to follow',exact:true}).click();
+ console.log(c.requested,'registered');await route(p,[[2.7,4.8],[.1,4.8],[-2.8,4.8],[-4.35,4.9]]);await expect(shell(p)).toHaveAttribute('data-patient-location','changing',{timeout:45000});
+ await use(p,[-5.05,1.22,4.63],'changing-booth');
+ for(const n of ['Check positioning comfort','Ask about artifacts','Pregnancy considerations','Explain the examination','Practice breathing','Explain private changing','Request artifact removal','Offer positioning support','Listen and reassure'])await click(n);
+ if(c.id==='abdominal-survey'){await expect(d.getByRole('button',{name:'Hand over gown',exact:true})).toBeDisabled();await click('Refer to supervising clinician');await click('Read simulated clinician report');}
+ await click('Hand over gown');await walkTo(p,-2.7,4.85);await use(p,[-3.44,1.24,4.85],'changing-door');await expect(shell(p)).toHaveAttribute('data-game-stage','changing');
+ await use(p,[-3.44,1.24,4.85],'changing-door');await click('Ask whether the patient is ready');await use(p,[-3.44,1.24,4.85],'changing-door');
+ await walkTo(p,-4.32,4.84);await use(p,[-5.05,1.22,4.63],'changing-booth');await walkTo(p,-1.5,4.7);await expect(shell(p)).toHaveAttribute('data-patient-location','corridor',{timeout:30000});
+ await walkTo(p,2.13,4.25);await use(p,[2.2,1.27,3.28],'patient-arrival');await route(p,[[2.12,2.2],[1.8,-.6]]);
+ await expect(shell(p)).toHaveAttribute('data-patient-location','imaging',{timeout:45000});
+ await route(p,[[1.72,-1.58],[-1.12,-1.7]]);await use(p,[-1.08,1.32,-3.13],'hygiene');
+ const state={...applyProtocol(DEFAULT_STATE,c.requested),patientOffsetX:3.5,patientOffsetY:-2.5,patientRotation:7},targets=getWorldTargets(state),supine=['abdomen-ap','pelvis-ap','chest-ap'].includes(c.requested);
+ if(supine)await route(p,[[1.52,-1.55],[.95,.45]]);else await walkTo(p,1.7,-1.57);
+ if(c.requested==='chest-pa'){
+  await lookAt(p,targets.find(t=>t.id==='patient')!.position);const box=(await canvas(p).boundingBox())!;await p.mouse.move(box.x+box.width/2,box.y+box.height/2);await p.mouse.down();await p.mouse.move(box.x+box.width/2+18,box.y+box.height/2+8,{steps:6});await expect(p.locator('.cg-crosshair')).toHaveClass(/holding/);await p.screenshot({path:'artifacts/simulator/manual-positioning-hands.png'});await p.mouse.up();
+ }
+ await use(p,targets.find(t=>t.id==='patient')!.position,'patient');await expect(d.getByRole('button',{name:'Confirm positioning',exact:true})).toBeDisabled();
+ for(const n of ['Lateral position','Head–feet position','Body rotation'])await d.getByRole('spinbutton',{name:n,exact:true}).fill('0');
+ await d.getByRole('combobox',{name:'Arm position',exact:true}).selectOption(c.requested==='chest-pa'?'hips':c.requested==='chest-lateral'?'raised':'down');await click('Confirm positioning');
+ await use(p,targets.find(t=>t.id==='detector')!.position,'detector');if(!supine)await walkTo(p,1.7,-.5);
+ await use(p,targets.find(t=>t.id==='tube')!.position,'tube');await click('Confirm equipment setup');
+ await route(p,[[2.15,2.4],[2.15,4.3],[5.12,4.25],[5.12,2.65]]);await use(p,[5.12,1.25,3.22],'control-door');await walkTo(p,5.05,.3);await use(p,[5.05,1.16,-1.1],'console');
+ await expect(d.getByRole('button',{name:'Expose deliberately',exact:true})).toBeDisabled();for(const n of ['Prepare exposure','Give breathing instruction','Expose deliberately'])await click(n);
+ await expect(shell(p)).toHaveAttribute('data-game-stage','review',{timeout:30000});await use(p,[5.05,1.16,-1.1],'console');
+ await d.getByLabel('Coverage observations').fill('Requested anatomy and field edges reviewed.');await d.getByLabel('Positioning observations').fill('Symmetric positioning and no avoidable rotation.');await d.getByLabel('Decision and rationale').fill('Accept for this synthetic exercise after examining inclusion and motion.');
+ await p.screenshot({path:'artifacts/simulator/manual-'+c.requested+'-review.png'});await click('Accept image');
+ await walkTo(p,5.12,2.5);await use(p,[5.12,1.25,3.22],'control-door');await route(p,[[5.12,4.25],[2.13,4.25],[2.13,2.1],supine?[.95,.45]:[1.7,-1.45]]);
+ await use(p,getWorldTargets({...state,patientOffsetX:0,patientOffsetY:0,patientRotation:0}).find(t=>t.id==='patient')!.position,'patient');
+ await d.getByLabel('What will you tell the patient?').fill('The examination is finished. Your clinician will discuss the report with you.');await d.getByLabel('Encounter documentation').fill('Patient comfortable. Next steps explained. Assisted departure.');await click('Explain completion and escort out');
+ for(const [x,z] of [[2.15,2.2],[2.15,4.55],[4.5,5.7],[6.6,5.1]]){if(await shell(p).getAttribute('data-game-stage')==='complete')break;await walkTo(p,x,z,true);}await expect(shell(p)).toHaveAttribute('data-game-stage','complete',{timeout:45000});await p.getByRole('button',{name:'Finish and save practice',exact:true}).click();expect(errors).toEqual([]);
+});
+test('English and Sorani phone controls preserve physical axes',async({page:p})=>{
+ await p.setViewportSize({width:390,height:844});await p.addInitScript(()=>localStorage.setItem('language','en'));
+ await p.goto('/tools/xray-simulator?case=outpatient-chest');await expect(canvas(p)).toHaveAttribute('data-observer-position',/\[/,{timeout:75000});
+ const result=await new AxeBuilder({page:p}).include('.cg-shell').withTags(['wcag2a','wcag2aa']).analyze();expect(result.violations).toEqual([]);
+ await p.getByRole('button',{name:'Pause & encounter'}).click();await p.getByRole('combobox',{name:'English / کوردی'}).selectOption('ku');
+ await expect(shell(p)).toHaveAttribute('dir','rtl');await p.getByRole('button',{name:'گەڕانەوە بۆ ژوور'}).click();await expect(p.locator('.cg-walk')).toHaveAttribute('dir','ltr');
+ const before=JSON.parse((await canvas(p).getAttribute('data-observer-position'))!),yaw=Number(await canvas(p).getAttribute('data-observer-yaw'));
+ const forward=(await p.locator('.cg-walk-forward').boundingBox())!;await p.mouse.move(forward.x+22,forward.y+22);await p.mouse.down();await p.waitForTimeout(240);await p.mouse.up();
+ const after=JSON.parse((await canvas(p).getAttribute('data-observer-position'))!);expect((after[0]-before[0])*(-Math.sin(yaw))+(after[2]-before[2])*(-Math.cos(yaw))).toBeGreaterThan(.03);
+ const translated=await new AxeBuilder({page:p}).include('.cg-shell').withTags(['wcag2a','wcag2aa']).analyze();expect(translated.violations).toEqual([]);
+ expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await p.screenshot({path:'artifacts/simulator/sorani-mobile.png'});
 });

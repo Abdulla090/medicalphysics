@@ -3,31 +3,30 @@ import { Button } from '@/components/ui/button';
 import { useProgress } from '@/hooks/useProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import type { Id } from '../../convex/_generated/dataModel';
 
 interface ProgressButtonProps {
-  lessonId: string;
+  lessonId: Id<'lessons'>;
 }
 
 const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
   const { user } = useAuth();
   const { isLessonCompleted, markComplete } = useProgress();
+  const [pending,setPending]=useState(false);
 
   const completed = isLessonCompleted(lessonId);
 
-  const handleMarkComplete = () => {
+  const handleMarkComplete = async () => {
     if (!user) {
       toast.error('تکایە سەرەتا بچۆ ژوورەوە');
       return;
     }
 
-    markComplete.mutate(lessonId, {
-      onSuccess: () => {
-        toast.success('وانە تەواوکرا!');
-      },
-      onError: () => {
-        toast.error('هەڵەیەک ڕوویدا');
-      },
-    });
+    setPending(true);
+    try{await markComplete.mutateAsync(lessonId);toast.success('وانە تەواوکرا!');}
+    catch{toast.error('هەڵەیەک ڕوویدا');}
+    finally{setPending(false);}
   };
 
   if (completed) {
@@ -46,11 +45,11 @@ const ProgressButton = ({ lessonId }: ProgressButtonProps) => {
   return (
     <Button
       onClick={handleMarkComplete}
-      disabled={markComplete.isPending || !user}
+      disabled={pending || !user}
       className="gap-2"
     >
       <Check className="h-4 w-4" />
-      {markComplete.isPending ? 'چاوەڕوانبە...' : 'تەواوکردنی وانە'}
+      {pending ? 'چاوەڕوانبە...' : 'تەواوکردنی وانە'}
     </Button>
   );
 };

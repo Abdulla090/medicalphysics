@@ -17,7 +17,10 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'ڤیدیۆ و وێنەی فێرکاری - ڕادیۆلۆژی',
@@ -48,40 +51,7 @@ export default defineConfig(({ mode }) => ({
           },
         ],
       },
-      workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*convex\.cloud\/.*/i,
-            handler: 'NetworkFirst', // Use NetworkFirst for API data to get fresh content
-            options: {
-              cacheName: 'convex-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 minutes
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
-      },
+      injectManifest: { globPatterns: ['favicon.ico', 'pwa-*.png'], maximumFileSizeToCacheInBytes: 1024 * 1024 },
       devOptions: {
         enabled: false,
         type: 'module',

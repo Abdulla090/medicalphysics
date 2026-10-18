@@ -32,3 +32,10 @@ node_modules/
 test-results/
 playwright-report/
 artifacts/simulator/
+
+# Local asset compiler binaries
+.local-tools/
+
+# Rebuild logs and automatic Blender backups
+artifacts/*.log
+assets/radiography/*.blend1

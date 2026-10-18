@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function enterDepartment(page: Page) {
-  await page.goto('/tools/xray-simulator');
+  await page.goto('/tools/xray-simulator?studio');
   // Software WebGL on CI has a slower initial shader compile than hardware
   // acceleration. Check the real first render, not just canvas attachment.
   await expect(page.locator('.sim-three-room canvas')).toHaveAttribute('data-observer-position', /\[/, { timeout: 75000 });

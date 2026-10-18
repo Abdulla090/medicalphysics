@@ -13,12 +13,14 @@ export default defineConfig({
   use: {
     baseURL: externalBaseURL ?? 'http://127.0.0.1:5174',
     viewport: { width: 1440, height: 960 },
+    actionTimeout: 20000,
     reducedMotion: 'reduce',
-    trace: 'retain-on-failure',
+    channel: process.env.XRAY_TEST_CHROME_PATH ? undefined : 'chromium',
+    trace: 'off',
     screenshot: 'only-on-failure',
     launchOptions: {
       executablePath: process.env.XRAY_TEST_CHROME_PATH || undefined,
-      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      args: process.env.XRAY_SOFTWARE_RENDERER==='1' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [],
     },
   },
   webServer: externalBaseURL ? undefined : {

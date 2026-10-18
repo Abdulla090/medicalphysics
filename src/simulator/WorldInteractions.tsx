@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ClinicalHands } from './ClinicalHands';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Raycaster, Vector2, Vector3 } from 'three';
 import { getAimedTarget, getWorldTargets, isOperatorProtected, manipulateTarget, type WorldTarget, type WorldTargetId } from './worldInteraction';
@@ -10,10 +11,12 @@ export interface WorldInteractionProps {
   enabled: boolean;
   disabled: boolean;
   barrierClosed: boolean;
+  changingDoorClosed?: boolean;
   patientPrepared: boolean;
   canManipulatePatient?: boolean;
   patientInRoom?: boolean;
   registered?: boolean;
+  interactiveTargets?: WorldTargetId[];
   onHover: (target: WorldTargetId | null) => void;
   onSelect: (target: WorldTargetId) => void;
   onAction: (target: WorldTargetId, action: WorldAction) => void;
@@ -44,8 +47,8 @@ export function WorldInteractions(props: WorldInteractionProps) {
   useFrame(({ camera: observer }) => {
     if (!live.current.enabled) return;
     observer.getWorldDirection(direction);
-    const targets = getWorldTargets(live.current.state).filter(item => item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true) && (live.current.canManipulatePatient ?? true)));
-    const target = getAimedTarget(observer.position.toArray(), direction.toArray(), targets, live.current.barrierClosed);
+    const targets = getWorldTargets(live.current.state).filter(item => (!live.current.interactiveTargets || live.current.interactiveTargets.includes(item.id)) && (item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true))));
+    const target = getAimedTarget(observer.position.toArray(), direction.toArray(), targets, live.current.barrierClosed, live.current.changingDoorClosed);
     aimed.current = target;
     if ((target?.id ?? null) !== previousHover.current) {
       previousHover.current = target?.id ?? null;
@@ -80,7 +83,7 @@ export function WorldInteractions(props: WorldInteractionProps) {
       const bounds = canvas.getBoundingClientRect();
       pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1);
       ray.setFromCamera(pointer, camera);
-      return getAimedTarget(camera.position.toArray(), ray.ray.direction.toArray(), getWorldTargets(live.current.state).filter(item => item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true) && (live.current.canManipulatePatient ?? true))), live.current.barrierClosed);
+      return getAimedTarget(camera.position.toArray(), ray.ray.direction.toArray(), getWorldTargets(live.current.state).filter(item => (!live.current.interactiveTargets || live.current.interactiveTargets.includes(item.id)) && (item.id !== 'patient' || (live.current.patientPrepared && (live.current.patientInRoom ?? true)))), live.current.barrierClosed, live.current.changingDoorClosed);
     };
     const action = (id: WorldTargetId, type: WorldAction) => {
       live.current.onSelect(id);
@@ -101,6 +104,7 @@ export function WorldInteractions(props: WorldInteractionProps) {
       if (!target) return;
       canvas.focus({ preventScroll: true });
       live.current.onSelect(target.id);
+      if ((target.id === 'patient' || target.id === 'table') && live.current.canManipulatePatient === false) { action(target.id, 'use'); return; }
       if (target.id === 'tube' || target.id === 'patient' || target.id === 'table') {
         grip.current = { target: target.id, start: live.current.state, dx: 0, dy: 0, x: event.clientX, y: event.clientY, mode: event.shiftKey ? 'rotate' : 'move' };
         window.dispatchEvent(new CustomEvent('xray-manipulating', { detail: true }));
@@ -162,14 +166,9 @@ export function WorldInteractions(props: WorldInteractionProps) {
   }, [camera, gl, invalidate]);
 
   return <>
-    <group ref={marker} visible={false}><mesh><ringGeometry args={[0.88, 1, 48]} /><meshBasicMaterial color="#5c816d" transparent opacity={0.6} depthWrite={false} /></mesh></group>
+    <group ref={marker} visible={false}>{[-1,1].flatMap(x=>[-1,1].map(y=><group key={`${x},${y}`} position={[x*.68,y*.68,0]}><mesh position={[-x*.16,0,0]}><planeGeometry args={[.32,.035]}/><meshBasicMaterial color="#f4dfb5" transparent opacity={.85} depthWrite={false}/></mesh><mesh position={[0,-y*.16,0]}><planeGeometry args={[.035,.32]}/><meshBasicMaterial color="#f4dfb5" transparent opacity={.85} depthWrite={false}/></mesh></group>))}</group>
     <group ref={hands} visible={false}>
-      {[-1, 1].map((side) => <group key={side} position={[side * 0.21, -0.29, -0.45]} rotation={[0.22, side * -0.3, side * -0.18]}>
-        <mesh position={[0, -0.105, 0.03]} rotation={[-0.35, 0, 0]}><capsuleGeometry args={[0.034, 0.16, 6, 16]} /><meshStandardMaterial color="#466260" roughness={0.88} /></mesh>
-        <mesh scale={[0.85, 1.25, 0.43]}><sphereGeometry args={[0.048, 24, 20]} /><meshStandardMaterial color="#b1c5b9" roughness={0.75} /></mesh>
-        {[0, 1, 2, 3].map((finger) => <mesh key={finger} position={[(finger - 1.5) * 0.018, 0.073 - Math.abs(finger - 1.4) * 0.009, -0.01]} rotation={[0.45, 0, (finger - 1.5) * -0.05]}><capsuleGeometry args={[0.0085, 0.047, 5, 12]} /><meshStandardMaterial color="#b1c5b9" roughness={0.75} /></mesh>)}
-        <mesh position={[side * -0.045, 0.008, -0.004]} rotation={[0.25, 0, side * -0.65]}><capsuleGeometry args={[0.011, 0.032, 5, 12]} /><meshStandardMaterial color="#b1c5b9" roughness={0.75} /></mesh>
-      </group>)}
+      <ClinicalHands/>
     </group>
   </>;
 }

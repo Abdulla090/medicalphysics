@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "license": "MakeHuman system assets CC0 1.0; original project clinical garments",
+  "source": "assets/radiography/clinical-adult.blend",
+  "generator": "scripts/build-clinical-characters.py",
+  "assets": [
+    {
+      "url": "/radiography/waiting-chair.glb",
+      "source": "assets/radiography/waiting-chair.blend",
+      "generator": "scripts/build-department-assets.py",
+      "compression": "KHR_draco_mesh_compression",
+      "bytes": 27792
+    },
+    {
+      "url": "/radiography/department-props.glb",
+      "source": "assets/radiography/department-props.blend",
+      "generator": "scripts/build-department-assets.py",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "Original project assets",
+      "bytes": 168308
+    },
+    {
+      "url": "/radiography/clinical-hands.glb",
+      "source": "assets/radiography/clinical-hands.blend",
+      "generator": "scripts/build-clinical-hands.py",
+      "license": "CC0 1.0 anatomy; original glove material",
+      "compression": "KHR_draco_mesh_compression",
+      "bytes": 21484
+    },
+    {
+      "url": "/radiography/clinical-adult.glb",
+      "source": "assets/radiography/clinical-adult.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 4009416
+    },
+    {
+      "url": "/radiography/clinical-adult-lod.glb",
+      "source": "assets/radiography/clinical-adult.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 2974732
+    },
+    {
+      "url": "/radiography/clinical-adult-female.glb",
+      "source": "assets/radiography/clinical-adult-female.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 3769444
+    },
+    {
+      "url": "/radiography/clinical-adult-female-lod.glb",
+      "source": "assets/radiography/clinical-adult-female.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 3088432
+    },
+    {
+      "url": "/radiography/clinical-adult-older-lod.glb",
+      "source": "assets/radiography/clinical-adult-older.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 2896324
+    },
+    {
+      "url": "/radiography/clinical-adult-dark-lod.glb",
+      "source": "assets/radiography/clinical-adult-dark.blend",
+      "compression": "KHR_draco_mesh_compression",
+      "license": "CC0 1.0 anatomy and system assets; original clinical gown",
+      "bytes": 2800024
+    }
+  ],
+  "notes": [
+    "Source provenance and source license copies are in assets/radiography/vendor/makehuman.",
+    "Visual anatomy is separate from the analytic acquisition phantom."
+  ],
+  "textures": [
+    {
+      "url": "/radiography/skin-color.ktx2",
+      "colorSpace": "sRGB",
+      "source": "assets/radiography/materials/skin-color.png"
+    },
+    {
+      "url": "/radiography/skin-normal.ktx2",
+      "colorSpace": "linear",
+      "source": "assets/radiography/materials/skin-normal.png"
+    },
+    {
+      "url": "/radiography/skin-roughness.ktx2",
+      "colorSpace": "linear",
+      "source": "assets/radiography/materials/skin-roughness.png"
+    }
+  ]
+}

@@ -27,6 +27,14 @@ describe('first person room movement', () => {
     expect(destination.x).toBeCloseTo(1.8, 10);
     expect(destination.z).toBeCloseTo(1.6, 10);
   });
+  it('lets the student leave the real aisle behind the registration desk to escort patients', () => {
+    const room = getRoomColliders(DEFAULT_STATE, 1.62, false, false, false, true, false, false);
+    let position = { x: 7.7, z: 4.77 };
+    for (const point of [{ x: 7.7, z: 5.96 }, { x: 6.14, z: 5.96 }, { x: 6.04, z: 5.35 }, { x: 5.80, z: 4.78 }]) {
+      position = moveObserver(position, { x: point.x - position.x, z: point.z - position.z }, room);
+      expect(Math.hypot(position.x - point.x, position.z - point.z)).toBeLessThan(0.1);
+    }
+  });
 
   it('slides along equipment instead of stopping both axes', () => {
     const equipment: RoomCollider[] = [{ kind: 'box', minX: -1, maxX: 1, minZ: -1, maxZ: 1 }];
@@ -139,4 +147,13 @@ describe('first person room movement', () => {
     const boundary = moveObserver({ x: 7.8, z: 7 }, { x: 0, z: 10 }, room);
     expect(boundary.z).toBeCloseTo(12.05, 8);
   });
+});
+
+// A moving actor supplies its own collider; no marker at an old destination may remain.
+it('keeps the changing-room approach clear after replacing the stationary patient',()=>{
+ const colliders=getRoomColliders(DEFAULT_STATE,1.62,true,false,true,true,false,false);
+ const point=moveObserver({x:-2.0,z:4.8},{x:-.8,z:0},colliders);
+ expect(point.x).toBeCloseTo(-2.8,6);
+ const withActor=[...colliders,{kind:'circle' as const,x:-2.8,z:4.8,radius:.22}];
+ expect(moveObserver({x:-2,z:4.8},{x:-.8,z:0},withActor).x).toBeGreaterThan(-2.8);
 });

@@ -47,6 +47,9 @@ export interface ExposureMetrics {
 }
 
 export interface CapturedImage {
+  quality?: import('./physics').RadiographQualityReport;
+  seed?: number;
+  engineVersion?: string;
   id: string;
   createdAt: number;
   state: SimulatorState;

@@ -1,3 +1,5 @@
+import { WaitingHall, RegistrationAlcove } from './WaitingHall';
+import { DepartmentDetails } from './DepartmentDetails';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
@@ -51,7 +53,7 @@ function CeilingCassetteGrid() {
 
 function SlidingDoor({ closed, open, shut, children }: { closed: boolean; open: Point3; shut: Point3; children: React.ReactNode }) {
   const group = useRef<Group>(null);
-  const { invalidate } = useThree();
+  const { invalidate, gl } = useThree();
   const initial = useRef(false);
   useFrame((_, delta) => {
     const mesh = group.current;
@@ -62,6 +64,7 @@ function SlidingDoor({ closed, open, shut, children }: { closed: boolean; open: 
     if (difference < 0.001) return;
     const alpha = 1 - Math.exp(-9 * Math.min(delta, 0.1));
     mesh.position.set(mesh.position.x + (point[0] - mesh.position.x) * alpha, mesh.position.y + (point[1] - mesh.position.y) * alpha, mesh.position.z + (point[2] - mesh.position.z) * alpha);
+    gl.shadowMap.needsUpdate = true;
     if (Math.hypot(mesh.position.x - point[0], mesh.position.z - point[2]) < 0.003) mesh.position.set(...point);
     invalidate();
   });
@@ -176,8 +179,8 @@ function LearningBoard({ topic, at, rotation = 0 }: { topic: 'distance' | 'sharp
   }, [topic]);
   useEffect(() => () => texture.dispose(), [texture]);
   return <group position={at} rotation={[0, rotation, 0]}>
-    <Solid at={[0, 0, -0.025]} size={[2.86, 1.81, 0.045]} color="#64756a" />
-    <mesh><planeGeometry args={[2.8, 1.75]} /><meshBasicMaterial map={texture} toneMapped={false} /></mesh>
+    <Solid at={[0, 0, -0.025]} size={[1.52, .96, 0.045]} color="#64756a" />
+    <mesh><planeGeometry args={[1.48, .925]} /><meshBasicMaterial map={texture} toneMapped={false} /></mesh>
   </group>;
 }
 
@@ -273,66 +276,6 @@ function ReceptionDeskSlats() {
     <boxGeometry args={[0.028, 0.80, 0.059]} />
     <meshStandardMaterial map={oak} color="#bbaf9d" roughness={0.82} bumpMap={oak} bumpScale={0.002} />
   </instancedMesh>;
-}
-
-/** Adult receptionist with subtle face construction, a real scrub silhouette,
- * and arms resting at the station. Kept inside the existing staffed desk. */
-function ReceptionStaff() {
-  const skinTexture = useSurfaceTexture('skin');
-  const hairTexture = useSurfaceTexture('hair');
-  const shadowSkin = '#97725d';
-  const scrub = '#496d68';
-  return <group position={[8.08, 0, 5.09]} rotation={[0, -Math.PI / 2, 0]}>
-    {/* Lower body is screened naturally by the counter; legs and shoes survive other viewpoints. */}
-    {[-0.094, 0.094].map((x) => <group key={x}>
-      <mesh position={[x, 0.55, -0.015]} scale={[0.084, 0.37, 0.091]} castShadow><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial color="#364b50" roughness={0.92} /></mesh>
-      <mesh position={[x, 0.11, 0.085]} scale={[0.098, 0.090, 0.160]} castShadow><sphereGeometry args={[1, 16, 10]} /><meshStandardMaterial color="#303637" roughness={0.64} /></mesh>
-    </group>)}
-    {/* Curved shoulders, natural neck transition and a tailored scrub tunic. */}
-    <mesh position={[0, 1.18, 0]} scale={[0.193, 0.318, 0.139]} castShadow receiveShadow><sphereGeometry args={[1, 32, 24]} /><meshStandardMaterial color={scrub} roughness={0.9} /></mesh>
-    <mesh position={[0, 0.93, 0.006]} scale={[0.151, 0.123, 0.123]} castShadow><sphereGeometry args={[1, 24, 16]} /><meshStandardMaterial color={scrub} roughness={0.92} /></mesh>
-    <mesh position={[0, 1.452, 0.005]} castShadow><cylinderGeometry args={[0.052, 0.062, 0.137, 18]} /><meshStandardMaterial map={skinTexture} roughness={0.86} /></mesh>
-    {[-1, 1].map((side) => <group key={side}>
-      <mesh position={[side * 0.178, 1.313, -0.002]} scale={[0.075, 0.111, 0.113]} castShadow><sphereGeometry args={[1, 20, 14]} /><meshStandardMaterial color={scrub} roughness={0.9} /></mesh>
-      <mesh position={[side * 0.214, 1.198, 0.084]} rotation={[-0.49, 0, side * 0.18]} castShadow>
-        <capsuleGeometry args={[0.058, 0.19, 8, 16]} />
-        <meshStandardMaterial color={scrub} roughness={0.88} />
-      </mesh>
-      <mesh position={[side * 0.224, 1.080, 0.160]} rotation={[-0.68, 0, side * 0.12]} castShadow>
-        <capsuleGeometry args={[0.043, 0.175, 8, 16]} />
-        <meshStandardMaterial map={skinTexture} roughness={0.89} />
-      </mesh>
-      <mesh position={[side * 0.229, 1.007, 0.252]} scale={[0.060, 0.023, 0.079]} castShadow><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial map={skinTexture} roughness={0.90} /></mesh>
-      {/* Natural ear volume with a recess rather than protruding round knobs. */}
-      <mesh position={[side * 0.101, 1.566, 0.002]} scale={[0.020, 0.042, 0.020]} castShadow><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial map={skinTexture} roughness={0.91} /></mesh>
-      <mesh position={[side * 0.111, 1.562, 0.017]} scale={[0.006, 0.018, 0.005]}><sphereGeometry args={[1, 12, 8]} /><meshStandardMaterial color={shadowSkin} roughness={1} /></mesh>
-    </group>)}
-    {/* Smaller, proportionate head with subtle cheek, jaw and cranial mass. */}
-    <mesh position={[0, 1.584, 0]} scale={[0.097, 0.127, 0.088]} castShadow receiveShadow><sphereGeometry args={[1, 36, 24]} /><meshStandardMaterial map={skinTexture} bumpMap={skinTexture} bumpScale={0.00045} roughness={0.87} /></mesh>
-    <mesh position={[0, 1.517, -0.003]} scale={[0.071, 0.043, 0.064]} castShadow><sphereGeometry args={[1, 24, 16]} /><meshStandardMaterial map={skinTexture} roughness={0.89} /></mesh>
-    {/* Face uses small anatomical planes and low-contrast eyes to avoid mascot styling. */}
-    {[-1, 1].map((side) => <group key={`features-${side}`}>
-      <mesh position={[side * 0.041, 1.583, 0.081]} scale={[0.020, 0.007, 0.005]}><sphereGeometry args={[1, 20, 12]} /><meshStandardMaterial color="#8b7869" roughness={0.85} /></mesh>
-      <mesh position={[side * 0.040, 1.585, 0.085]} scale={[0.006, 0.006, 0.003]}><sphereGeometry args={[1, 16, 10]} /><meshStandardMaterial color="#323833" roughness={0.43} /></mesh>
-      <mesh position={[side * 0.040, 1.608, 0.082]} rotation={[0, 0, side * 0.06]} scale={[0.024, 0.0025, 0.004]}><sphereGeometry args={[1, 14, 8]} /><meshStandardMaterial color="#51483f" roughness={1} /></mesh>
-      <mesh position={[side * 0.044, 1.542, 0.071]} scale={[0.025, 0.009, 0.007]}><sphereGeometry args={[1, 14, 8]} /><meshStandardMaterial color="#b18972" roughness={1} /></mesh>
-    </group>)}
-    <mesh position={[0, 1.555, 0.093]} scale={[0.013, 0.030, 0.019]} castShadow><sphereGeometry args={[1, 20, 14]} /><meshStandardMaterial color="#aa7e66" roughness={0.89} /></mesh>
-    <mesh position={[0, 1.532, 0.102]} scale={[0.019, 0.007, 0.009]}><sphereGeometry args={[1, 18, 10]} /><meshStandardMaterial map={skinTexture} roughness={0.90} /></mesh>
-    <mesh position={[0, 1.499, 0.084]} scale={[0.024, 0.002, 0.003]}><sphereGeometry args={[1, 16, 8]} /><meshStandardMaterial color="#956b61" roughness={0.95} /></mesh>
-    {/* Layered hairline, temples and slightly asymmetric top, no sphere helmet. */}
-    <mesh position={[0, 1.686, -0.013]} scale={[0.104, 0.046, 0.093]} castShadow><sphereGeometry args={[1, 24, 16]} /><meshStandardMaterial map={hairTexture} roughness={0.91} /></mesh>
-    <mesh position={[-0.035, 1.668, 0.040]} rotation={[0, 0, -0.14]} scale={[0.064, 0.024, 0.058]}><sphereGeometry args={[1, 24, 12]} /><meshStandardMaterial map={hairTexture} roughness={0.91} /></mesh>
-    {[-1, 1].map(side => <mesh key={side} position={[side * 0.081, 1.638, -0.015]} scale={[0.026, 0.078, 0.078]} castShadow><sphereGeometry args={[1, 18, 12]} /><meshStandardMaterial map={hairTexture} roughness={0.93} /></mesh>)}
-    {/* V neckline, layered cuffs, seams and name badge anchor the clothing scale. */}
-    <mesh position={[0, 1.405, 0.116]} rotation={[0, 0, Math.PI]}><coneGeometry args={[0.068, 0.091, 3]} /><meshStandardMaterial color="#d1ad92" roughness={0.93} /></mesh>
-    <Solid at={[0, 1.12, 0.140]} size={[0.003, 0.28, 0.003]} color="#89a39b" />
-    <Solid at={[-0.094, 1.065, 0.128]} size={[0.10, 0.010, 0.008]} color="#9ab0a8" />
-    <Solid at={[0.110, 1.317, 0.112]} size={[0.086, 0.058, 0.010]} color="#d6ded5" />
-    <Solid at={[0.11, 1.316, 0.121]} size={[0.057, 0.009, 0.003]} color="#62796f" />
-    <Solid at={[0.11, 1.302, 0.121]} size={[0.052, 0.006, 0.003]} color="#a1b9ab" />
-    <mesh position={[-0.145, 1.32, 0.133]}><circleGeometry args={[0.021, 20]} /><meshStandardMaterial color="#cdd9d2" metalness={0.4} roughness={0.4} /></mesh>
-  </group>;
 }
 
 /** Printed clinical orientation panel with a deliberate editorial hierarchy.
@@ -461,63 +404,67 @@ function Reception({ registered }: { registered: boolean }) {
   return <group>
     <ReceptionBackdrop />
     <Solid at={[8.37, 0.10, 4.85]} size={[0.035, 0.18, 2.58]} color="#91a399" />
-    <RoundedBox args={[0.65, 0.94, 1.89]} radius={0.045} smoothness={3} position={[7.63, 0.52, 4.77]} castShadow receiveShadow><meshStandardMaterial color="#557166" roughness={0.83} /></RoundedBox>
-    <RoundedBox args={[0.91, 0.07, 2.05]} radius={0.025} smoothness={3} position={[7.36, 1.01, 4.77]} castShadow><meshStandardMaterial map={quartz} bumpMap={quartz} bumpScale={0.0015} color="#ffffff" roughness={0.33} metalness={0.015} /></RoundedBox>
-    <Solid at={[7.24, 0.89, 4.77]} size={[0.055, 0.28, 1.83]} color="#bdcfc5" />
-    <Solid at={[7.60, 0.1, 4.77]} size={[0.6, 0.18, 1.86]} color="#3b5b51" />
-    <Solid at={[7.317, 0.51, 4.77]} size={[0.022, 0.80, 1.87]} color="#596a5e" />
-    <ReceptionDeskSlats />
-    <Solid at={[7.26, 0.89, 4.77]} size={[0.008, 0.012, 1.82]} color="#d2c9b8" />
-    {/* Counter-mounted privacy glazing stays either side of the speaking opening. */}
-    {[4.02, 5.55].map(z => <group key={z} position={[7.42, 1.45, z]} rotation={[0, Math.PI / 2, 0]}>
-      {/* Frameless cleanable privacy glass: clear patient-facing worktop sightline. */}
-      <mesh position={[0, 0.16, 0.005]}><planeGeometry args={[0.325, 0.70]} /><meshPhysicalMaterial color="#c7dfd9" transparent opacity={0.14} roughness={0.1} metalness={0.02} side={DoubleSide} depthWrite={false} /></mesh>
-      {[-0.171, 0.171].map(x => <Solid key={x} at={[x, 0.16, 0.008]} size={[0.008, 0.74, 0.013]} color="#97a8a5" metal />)}
-      <Solid at={[0, -0.214, 0.015]} size={[0.354, 0.014, 0.030]} color="#aabbb5" metal />
-      <Solid at={[0, 0.53, 0.015]} size={[0.354, 0.009, 0.014]} color="#ccd8d1" metal />
-    </group>)}
-    <Solid at={[7.22, 1.081, 3.99]} size={[0.36, 0.027, 0.27]} color="#718b7f" />
-    {[0, 1, 2].map(i => <Solid key={i} at={[7.22, 1.103 + i * 0.007, 3.99 + i * 0.012]} size={[0.28, 0.005, 0.195]} color={i === 2 ? '#f5f2e9' : '#d6e0d5'} />)}
-    <Solid at={[7.18, 1.093, 5.57]} size={[0.26, 0.045, 0.20]} color="#e8e9e2" />
-    <Solid at={[7.18, 1.123, 5.57]} size={[0.16, 0.012, 0.13]} color="#88a79b" />
-    <Solid at={[7.22, 1.111, 4.40]} size={[0.16, 0.022, 0.21]} color="#b8c9bf" />
-    <Label title={registered ? 'CHECK IN COMPLETE' : 'CHECK IN HERE'} position={[7.14, 1.13, 4.40]} rotation={[-Math.PI / 2, 0, 0]} width={0.19} height={0.075} small />
-    <group position={[7.83, 1.55, 4.55]} rotation={[0, -Math.PI / 2, 0]}>
-      <RoundedBox args={[0.73, 0.48, 0.065]} radius={0.023} smoothness={3} castShadow><meshStandardMaterial color="#354b4c" roughness={0.44} metalness={0.12} /></RoundedBox>
-      <Solid at={[0, 0, -0.041]} size={[0.66, 0.4, 0.006]} color="#0e3e43" />
-      <Label title="PATIENT CHECK-IN" detail="QUEUE · DIGITAL RADIOGRAPHY" position={[0, 0, -0.052]} rotation={[0, Math.PI, 0]} dark width={0.54} height={0.23} />
-      <Solid at={[0, -0.3, 0]} size={[0.055, 0.15, 0.06]} color="#617775" metal />
-      <Solid at={[0, 0.170, 0.037]} size={[0.22, 0.013, 0.002]} color="#708d84" />
-      <Solid at={[0, -0.205, 0.038]} size={[0.14, 0.009, 0.002]} color="#869c95" />
-      {[-0.18, 0, 0.18].map(x => <Solid key={x} at={[x, -0.14, 0.036]} size={[0.092, 0.004, 0.002]} color="#657e78" />)}
-      <mesh position={[0.30, -0.209, 0.038]}><circleGeometry args={[0.009, 16]} /><meshStandardMaterial color="#8ac6a6" emissive="#5b9875" emissiveIntensity={0.4} /></mesh>
+    {/* The counter is pulled west as one authored station, leaving a 1.195 m staff aisle to the east wall. */}
+    <group position={[-0.61, 0, 0]}>
+      <RoundedBox args={[0.60, 0.94, 1.68]} radius={0.045} smoothness={3} position={[7.48, 0.52, 4.77]} castShadow receiveShadow><meshStandardMaterial color="#557166" roughness={0.83} /></RoundedBox>
+      <RoundedBox args={[0.91, 0.07, 1.78]} radius={0.025} smoothness={3} position={[7.36, 1.01, 4.77]} castShadow><meshStandardMaterial map={quartz} bumpMap={quartz} bumpScale={0.0015} color="#ffffff" roughness={0.33} metalness={0.015} /></RoundedBox>
+      <Solid at={[7.24, 0.89, 4.77]} size={[0.055, 0.28, 1.60]} color="#bdcfc5" />
+      <Solid at={[7.46, 0.1, 4.77]} size={[0.56, 0.18, 1.66]} color="#3b5b51" />
+      <Solid at={[7.317, 0.51, 4.77]} size={[0.022, 0.80, 1.62]} color="#596a5e" />
+      <ReceptionDeskSlats />
+      <Solid at={[7.26, 0.89, 4.77]} size={[0.008, 0.012, 1.60]} color="#d2c9b8" />
+      {/* Counter-mounted privacy glazing stays either side of the speaking opening. */}
+      {[4.05, 5.48].map(z => <group key={z} position={[7.42, 1.45, z]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh position={[0, 0.16, 0.005]}><planeGeometry args={[0.325, 0.70]} /><meshPhysicalMaterial color="#c7dfd9" transparent opacity={0.14} roughness={0.1} metalness={0.02} side={DoubleSide} depthWrite={false} /></mesh>
+        {[-0.171, 0.171].map(x => <Solid key={x} at={[x, 0.16, 0.008]} size={[0.008, 0.74, 0.013]} color="#97a8a5" metal />)}
+        <Solid at={[0, -0.214, 0.015]} size={[0.354, 0.014, 0.030]} color="#aabbb5" metal />
+        <Solid at={[0, 0.53, 0.015]} size={[0.354, 0.009, 0.014]} color="#ccd8d1" metal />
+      </group>)}
+      <Solid at={[7.22, 1.081, 3.99]} size={[0.36, 0.027, 0.27]} color="#718b7f" />
+      {[0, 1, 2].map(i => <Solid key={i} at={[7.22, 1.103 + i * 0.007, 3.99 + i * 0.012]} size={[0.28, 0.005, 0.195]} color={i === 2 ? '#f5f2e9' : '#d6e0d5'} />)}
+      <Solid at={[7.18, 1.093, 5.49]} size={[0.26, 0.045, 0.20]} color="#e8e9e2" />
+      <Solid at={[7.18, 1.123, 5.49]} size={[0.16, 0.012, 0.13]} color="#88a79b" />
+      <Solid at={[7.22, 1.111, 4.40]} size={[0.16, 0.022, 0.21]} color="#b8c9bf" />
+      <Label title={registered ? 'CHECK IN COMPLETE' : 'CHECK IN HERE'} position={[7.14, 1.13, 4.40]} rotation={[-Math.PI / 2, 0, 0]} width={0.19} height={0.075} small />
+      {/* Compact side-mounted terminal keeps the operator's central patient sightline clear. */}
+      <group position={[7.51, 1.36, 4.08]} rotation={[0, -Math.PI / 2 - 0.12, 0]}>
+        <RoundedBox args={[0.55, 0.35, 0.048]} radius={0.018} smoothness={3} castShadow><meshStandardMaterial color="#354b4c" roughness={0.44} metalness={0.12} /></RoundedBox>
+        <Solid at={[0, 0, -0.032]} size={[0.49, 0.29, 0.005]} color="#0e3e43" />
+        <Label title="CHECK-IN" detail="RADIOGRAPHY" position={[0, 0, -0.041]} rotation={[0, Math.PI, 0]} dark width={0.40} height={0.16} />
+        <Solid at={[0, -0.235, 0]} size={[0.045, 0.12, 0.048]} color="#617775" metal />
+        <Solid at={[0, 0.118, 0.028]} size={[0.16, 0.010, 0.002]} color="#708d84" />
+        <Solid at={[0, -0.142, 0.028]} size={[0.11, 0.008, 0.002]} color="#869c95" />
+        {[-0.13, 0, 0.13].map(x => <Solid key={x} at={[x, -0.096, 0.027]} size={[0.068, 0.004, 0.002]} color="#657e78" />)}
+        <mesh position={[0.22, -0.143, 0.029]}><circleGeometry args={[0.008, 16]} /><meshStandardMaterial color="#8ac6a6" emissive="#5b9875" emissiveIntensity={0.4} /></mesh>
+      </group>
+      {/* Registration surface: cleaning supplies, patient leaflets, pen and ticket scanner. */}
+      <group position={[7.20, 1.12, 5.56]}>
+        <RoundedBox args={[0.073, 0.17, 0.073]} radius={0.015} smoothness={2} castShadow><meshStandardMaterial color="#e2edeb" roughness={0.38} /></RoundedBox>
+        <Solid at={[0, 0.098, 0]} size={[0.038, 0.021, 0.044]} color="#d0d8d2" metal />
+        <Solid at={[0.018, 0.116, 0]} size={[0.062, 0.010, 0.018]} color="#6b8280" metal />
+        <Label title="HAND GEL" position={[0, -0.025, 0.039]} width={0.063} height={0.033} small />
+      </group>
+      <group position={[7.18, 1.10, 4.10]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.28, 0.20]} /><meshStandardMaterial color="#f2f0e8" roughness={0.77} /></mesh>
+        {[-0.04, 0, 0.04].map((x, i) => <Solid key={x} at={[x, 0.008 + i * 0.002, -0.016]} size={[0.004, 0.002, 0.15]} color="#66867e" />)}
+        <mesh position={[0.09, 0.02, -0.048]} rotation={[0, 0.39, Math.PI / 2]}><cylinderGeometry args={[0.006, 0.006, 0.18, 12]} /><meshStandardMaterial color="#2a4d4a" roughness={0.45} /></mesh>
+      </group>
+      <group position={[7.16, 1.132, 5.20]}>
+        <RoundedBox args={[0.18, 0.065, 0.22]} radius={0.015} smoothness={3}><meshStandardMaterial color="#e2e8e3" roughness={0.42} /></RoundedBox>
+        <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.135, 0.145]} /><meshStandardMaterial color="#263f3e" roughness={0.4} /></mesh>
+        <mesh position={[0, 0.037, 0.01]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.095, 0.04]} /><meshBasicMaterial color="#78bca3" /></mesh>
+      </group>
+      <group position={[7.35, 0, 4.34]} rotation={[0, -0.16, 0]}>
+        <RoundedBox args={[0.34, 0.025, 0.25]} radius={0.01} smoothness={2} position={[0, 1.06, 0]}><meshStandardMaterial color="#d3d8d2" roughness={0.45} metalness={0.08} /></RoundedBox>
+        <mesh position={[0.03, 1.076, 0.095]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.014, 16]} /><meshStandardMaterial color={registered ? '#9acbad' : '#e9bf78'} emissive={registered ? '#6baa88' : '#c9974b'} emissiveIntensity={0.8} /></mesh>
+        {Array.from({ length: 7 }, (_, index) => <mesh key={index} position={[-0.05 + index * 0.032, 1.075, 0]}><boxGeometry args={[0.015, 0.005, 0.16]} /><meshStandardMaterial color="#6b7d7a" roughness={0.6} /></mesh>)}
+      </group>
     </group>
-    {/* Registration surface: cleaning supplies, patient leaflets, pen and ticket scanner. */}
-    <group position={[7.20, 1.12, 5.67]}>
-      <RoundedBox args={[0.073, 0.17, 0.073]} radius={0.015} smoothness={2} castShadow><meshStandardMaterial color="#e2edeb" roughness={0.38} /></RoundedBox>
-      <Solid at={[0, 0.098, 0]} size={[0.038, 0.021, 0.044]} color="#d0d8d2" metal />
-      <Solid at={[0.018, 0.116, 0]} size={[0.062, 0.010, 0.018]} color="#6b8280" metal />
-      <Label title="HAND GEL" position={[0, -0.025, 0.039]} width={0.063} height={0.033} small />
-    </group>
-    <group position={[7.18, 1.10, 4.10]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.28, 0.20]} /><meshStandardMaterial color="#f2f0e8" roughness={0.77} /></mesh>
-      {[-0.04, 0, 0.04].map((x, i) => <Solid key={x} at={[x, 0.008 + i * 0.002, -0.016]} size={[0.004, 0.002, 0.15]} color="#66867e" />)}
-      <mesh position={[0.09, 0.02, -0.048]} rotation={[0, 0.39, Math.PI / 2]}><cylinderGeometry args={[0.006, 0.006, 0.18, 12]} /><meshStandardMaterial color="#2a4d4a" roughness={0.45} /></mesh>
-    </group>
-    <group position={[7.16, 1.132, 5.22]}>
-      <RoundedBox args={[0.18, 0.065, 0.22]} radius={0.015} smoothness={3}><meshStandardMaterial color="#e2e8e3" roughness={0.42} /></RoundedBox>
-      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.135, 0.145]} /><meshStandardMaterial color="#263f3e" roughness={0.4} /></mesh>
-      <mesh position={[0, 0.037, 0.01]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.095, 0.04]} /><meshBasicMaterial color="#78bca3" /></mesh>
-    </group>
-    <RoundedBox args={[0.34, 0.025, 0.28]} radius={0.01} smoothness={2} position={[7.23, 1.06, 5.18]}><meshStandardMaterial color="#d3d8d2" roughness={0.45} metalness={0.08} /></RoundedBox>
-    <mesh position={[7.26, 1.076, 5.29]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.014, 16]} /><meshStandardMaterial color={registered ? '#9acbad' : '#e9bf78'} emissive={registered ? '#6baa88' : '#c9974b'} emissiveIntensity={0.8} /></mesh>
-    {Array.from({ length: 7 }, (_, index) => <mesh key={index} position={[7.18 + index * 0.032, 1.075, 5.18]}><boxGeometry args={[0.015, 0.005, 0.19]} /><meshStandardMaterial color="#6b7d7a" roughness={0.6} /></mesh>)}
     <Label title="WELCOME" detail="PLEASE CHECK IN BEFORE IMAGING" position={[6.58, 2.46, 6.135]} rotation={[0, Math.PI, 0]} width={1.35} height={0.27} />
     <WallClock at={[8.329, 2.72, 3.45]} rotation={-Math.PI / 2} />
-    <Solid at={[6.75, -0.001, 4.39]} size={[0.48, 0.003, 0.016]} color="#769888" />
-    <Solid at={[6.75, -0.001, 5.14]} size={[0.48, 0.003, 0.016]} color="#769888" />
-    <Solid at={[6.52, -0.001, 4.77]} size={[0.012, 0.003, 0.77]} color="#769888" />
-    <ReceptionStaff />
+    <Solid at={[5.82, -0.001, 4.39]} size={[0.48, 0.003, 0.016]} color="#769888" />
+    <Solid at={[5.82, -0.001, 5.14]} size={[0.48, 0.003, 0.016]} color="#769888" />
+    <Solid at={[5.59, -0.001, 4.77]} size={[0.012, 0.003, 0.77]} color="#769888" />
   </group>;
 }
 
@@ -584,7 +531,7 @@ function RadiographerControlRoom({ doorClosed, exposing }: { doorClosed: boolean
 }
 
 /** Connected clinical wing. Every solid obstacle has a matching footprint in RoomMovement. */
-export const HospitalWorld = memo(function HospitalWorld({ barrierClosed = false, changingDoorClosed = false, registered = true, gownHanded = false, patientPrepared = false, patientInRoom = true, gameActive = false, exposing = false, patientState }: { barrierClosed?: boolean; changingDoorClosed?: boolean; registered?: boolean; gownHanded?: boolean; patientPrepared?: boolean; patientInRoom?: boolean; gameActive?: boolean; exposing?: boolean; patientState: SimulatorState }) {
+export const HospitalWorld = memo(function HospitalWorld({ barrierClosed = false, changingDoorClosed = false, registered = true, gownHanded = false, patientPrepared = false, patientInRoom = true, gameActive = false, exposing = false, activePatientSeated = false, patientState }: { barrierClosed?: boolean; changingDoorClosed?: boolean; registered?: boolean; gownHanded?: boolean; patientPrepared?: boolean; patientInRoom?: boolean; gameActive?: boolean; exposing?: boolean; activePatientSeated?: boolean; patientState: SimulatorState }) {
   const plaster = useSurfaceTexture('plaster');
   return <group>
     <Surface at={[2.5, -0.015, 4.75]} size={[11.8, 3]} />
@@ -598,7 +545,7 @@ export const HospitalWorld = memo(function HospitalWorld({ barrierClosed = false
     <Solid at={[8.46, 1.6, 7.75]} size={[0.12, 3.2, 9]} texture={plaster} />
     <RadiographerControlRoom doorClosed={barrierClosed} exposing={exposing} />
     <PatientChangingRoom doorClosed={changingDoorClosed} registered={registered} gownHanded={gownHanded} patientPrepared={patientPrepared} />
-    <Reception registered={registered} />
+    <Reception registered={registered} /><RegistrationAlcove /><WaitingHall activePatientSeated={activePatientSeated} /><DepartmentDetails />
     {gameActive && <GamePatientActor state={patientState} registered={registered} gownHanded={gownHanded} patientPrepared={patientPrepared} patientInRoom={patientInRoom} changingDoorClosed={changingDoorClosed} />}
     <Solid at={[-1.2, 1.6, 10.56]} size={[4.4, 3.2, 0.12]} texture={plaster} />
     <Solid at={[0.94, 1.6, 11.375]} size={[0.12, 3.2, 1.75]} texture={plaster} />
@@ -626,21 +573,17 @@ export const HospitalWorld = memo(function HospitalWorld({ barrierClosed = false
       <Solid at={[0, 0, 0]} size={[2.74, 0.45, 0.056]} color="#425e57" />
       <Solid at={[-1.20, 0.31, 0]} size={[0.035, 0.17, 0.035]} color="#8ea59a" metal />
       <Solid at={[1.20, 0.31, 0]} size={[0.035, 0.17, 0.035]} color="#8ea59a" metal />
-      <Label title="01  RADIOGRAPHY  ←        02  LEARNING  →" detail="IMAGING SUITE  /  PHYSICS GALLERY  /  COURTYARD" position={[0, 0.015, 0.033]} width={2.48} height={0.32} dark />
+      <Label title="01  RADIOGRAPHY  ←        02  WAITING  →" detail="IMAGING SUITE  /  PHYSICS GALLERY  /  COURTYARD" position={[0, 0.015, 0.033]} width={2.48} height={0.32} dark />
     </group>
     <Solid at={[2.3, -0.008, 4.48]} size={[9.6, 0.006, 0.045]} color="#668777" />
     <Solid at={[2.1, -0.007, 3.87]} size={[0.045, 0.007, 1.24]} color="#668777" />
-    <Label title="02  /  DISCOVERY GALLERY" detail="EXPLORE THE PHYSICS BEHIND THE IMAGE" position={[-1.7, 2.55, 6.17]} rotation={[0, Math.PI, 0]} width={2.4} height={0.32} />
+    <Label title="02  /  PATIENT WAITING" detail="SEATING / PATIENT SUPPORT" position={[-1.7, 2.55, 6.17]} rotation={[0, Math.PI, 0]} width={2.4} height={0.32} />
     <Label title="03  /  COURTYARD" detail="DAYLIGHT / REFLECTION / A MOMENT TO RESET" position={[5.5, 2.55, 6.17]} rotation={[0, Math.PI, 0]} width={2.7} height={0.35} />
     <Label title="01  /  RADIOGRAPHY" detail="RETURN TO THE IMAGING ROOM" position={[2.1, 2.7, 3.29]} width={2.2} height={0.32} />
     <Bench x={-2.8} z={5.6} length={0.9} />
-    <LearningBoard topic="distance" at={[-1.2, 1.73, 10.478]} rotation={Math.PI} />
+
     <LearningBoard topic="sharpness" at={[-3.378, 1.75, 8.30]} rotation={Math.PI / 2} />
     <LearningBoard topic="field" at={[3.5, 1.73, 12.22]} rotation={Math.PI} />
-    <Solid at={[-0.06, 0.45, 7.675]} size={[0.68, 0.9, 1.15]} color="#c2cabf" />
-    <Solid at={[-0.06, 0.93, 7.675]} size={[0.70, 0.06, 1.17]} color="#eef0e7" />
-    {[0, 1, 2].map((i) => <Solid key={i} at={[-0.06 + i * 0.06, 1.10 + i * 0.08, 7.64 + i * 0.07]} size={[0.36, 0.018, 0.46]} color={['#364d47', '#a3b9a8', '#8da2a5'][i]} />)}
-    <Label title="DIGITAL DETECTOR" detail="COVER / SCINTILLATOR / SENSOR" position={[-0.407, 0.74, 7.68]} rotation={[0, -Math.PI / 2, 0]} width={0.98} height={0.25} small />
     <Solid at={[4.7, 0.14, 9.9]} size={[3.1, 0.28, 1.4]} color="#aaa998" />
     <Surface at={[4.7, 0.285, 9.9]} size={[2.88, 1.18]} finish="soil" color="#d1d0c4" />
     <GardenGroundcover />

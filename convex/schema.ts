@@ -1,7 +1,10 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { trainingTables } from './trainingSchema';
+
 export default defineSchema({
+    ...trainingTables,
     // Users & Roles
     profiles: defineTable({
         userId: v.string(), // Clerk ID
@@ -11,7 +14,7 @@ export default defineSchema({
 
     user_roles: defineTable({
         userId: v.string(),
-        role: v.union(v.literal("admin"), v.literal("user")),
+        role: v.union(v.literal("admin"), v.literal("instructor"), v.literal("user")),
     }).index("by_userId", ["userId"]),
 
     // Content
@@ -24,6 +27,7 @@ export default defineSchema({
     }).index("by_category_id", ["id"]),
 
     courses: defineTable({
+        createdBy: v.optional(v.string()),
         title: v.string(),
         slug: v.string(),
         description: v.optional(v.string()),
@@ -35,6 +39,7 @@ export default defineSchema({
     }).index("by_slug", ["slug"]),
 
     lessons: defineTable({
+        createdBy: v.optional(v.string()),
         title: v.string(),
         slug: v.string(),
         description: v.string(),

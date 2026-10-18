@@ -10,6 +10,12 @@ import { getTeachingLesson, getTeachingObservations, getTeachingQuestions, grade
 const allPrepared = { identity: true, request: true, screening: true, metals: true, communication: true };
 
 describe('authored clinical teaching bank', () => {
+  it('does not substitute PA chest lessons for the two new table projections',()=>{
+    for(const id of ['supine-chest','pelvis-survey'] as const){
+      expect(getTeachingLesson(id,'position').title).toContain(id==='supine-chest'?'AP':'Pelvis');
+      expect(getTeachingQuestions(id,'registration')[0].id).toBe(id+'-registration');
+    }
+  });
   it('has two valid, unique questions and meaningful lesson content for every case and stage', () => {
     for (const clinicalCase of CLINICAL_CASES) for (const stage of GAME_STAGE_ORDER) {
       const questions = getTeachingQuestions(clinicalCase.id, stage);

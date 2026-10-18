@@ -1,10 +1,7 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Clock, Trophy, ArrowLeft } from 'lucide-react';
+import { BookOpen, Clock, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProgress } from '@/hooks/useProgress';
 import { getDifficultyName } from '@/lib/api';
 import { CourseWithLessons } from '@/hooks/useCourses';
 
@@ -13,14 +10,6 @@ interface CourseCardProps {
 }
 
 export const CourseCard = ({ course }: CourseCardProps) => {
-  const { user } = useAuth();
-  const { progress } = useProgress();
-
-  // Simple progress calculation based on what we have in Convex
-  // Note: For now we'll just show the card, real progress tracking between courses/lessons 
-  // can be refined as you populate the Convex data more.
-  const progressPercent = 0;
-
   return (
     <Link to={`/course/${course.slug}`}>
       <Card className="group h-full bg-card border border-border hover:border-primary/30 transition-colors duration-200 overflow-hidden">
@@ -59,22 +48,6 @@ export const CourseCard = ({ course }: CourseCardProps) => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               {course.estimatedDuration}
-            </div>
-          )}
-
-          {user && progressPercent > 0 && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">پێشکەوتن</span>
-                <span className="font-medium">{progressPercent}%</span>
-              </div>
-              <Progress value={progressPercent} className="h-1.5" />
-              {progressPercent === 100 && (
-                <div className="flex items-center gap-1 text-sm text-primary">
-                  <Trophy className="h-4 w-4" />
-                  تەواوکرا!
-                </div>
-              )}
             </div>
           )}
 

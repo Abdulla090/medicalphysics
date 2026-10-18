@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('registration sets a real patient journey and starts gown preparation', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/tools/xray-simulator');
+  await page.goto('/tools/xray-simulator?studio');
   await expect(page.getByRole('button', { name: /Interact: Register patient/ })).toBeVisible({ timeout: 75000 });
   await page.evaluate(() => {
     const observable = window as typeof window & { journeyArrivals?: string[] };
@@ -30,14 +30,17 @@ test('registration sets a real patient journey and starts gown preparation', asy
   await expect(page.getByRole('region', { name: 'Current mission' })).toContainText('Prepare for the examination');
   await expect(page.getByRole('region', { name: 'Current mission' })).toContainText('CHANGING ROOM');
   await expect(page.locator('.sim-app')).toHaveAttribute('data-game-stage', 'changing');
+  // The registered patient waits at reception until the radiographer asks
+  // them to follow; check-in must never silently auto-escort them.
+  await page.getByRole('button', { name: /Interact: Invite patient to follow/ }).click();
   await expect.poll(() => page.evaluate(() => (window as typeof window & { journeyArrivals?: string[] }).journeyArrivals ?? []), { timeout: 22000 }).toContain('changing');
   expect(errors).toEqual([]);
 });
 
 test('registration is usable on a phone without horizontal page scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/tools/xray-simulator');
-  await expect(page.getByRole('button', { name: /Interact: Register patient/ })).toBeVisible();
+  await page.goto('/tools/xray-simulator?studio');
+  await expect(page.getByRole('button', { name: /Interact: Register patient/ })).toBeVisible({ timeout: 75000 });
   await page.getByRole('button', { name: /Interact: Register patient/ }).click();
   await expect(page.getByRole('dialog', { name: 'Meet your patient.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Complete registration' })).toBeDisabled();

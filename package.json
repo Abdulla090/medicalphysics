@@ -5,20 +5,24 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/practice-manifest.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck:simulator": "tsc -p tsconfig.simulator.json --noEmit",
-    "lint:simulator": "eslint src/simulator src/pages/XraySimulator.tsx",
+    "lint:simulator": "eslint src/simulator src/pages/XraySimulator.tsx src/pages/Training.tsx",
     "test:simulator": "vitest run src/simulator",
-    "test:simulator:browser": "playwright test --config playwright.simulator.config.ts"
+    "test:simulator:browser": "playwright test --config playwright.simulator.config.ts",
+    "assets:characters": "node scripts/build-characters.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",
     "@convex-dev/react-query": "^0.1.0",
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/noto-sans-arabic": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -85,6 +89,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@edge-runtime/vm": "^5.0.0",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/typography": "^0.5.16",
@@ -96,6 +101,7 @@
     "@types/three": "^0.170.0",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "convex-test": "^0.0.61",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

@@ -6,6 +6,7 @@ import type { SimulatedAssessment } from './clinicalCases';
 import type { CapturedImage, SimulatorState } from './types';
 import { getProtocol } from './protocols';
 import { calculateMetrics, getReadinessChecks } from './physics';
+import { TechniqueGuide } from './TechniqueGuide';
 
 /** Focus stays inside the active workstation and returns to its physical
  * interaction button when the player finishes or dismisses it.
@@ -161,9 +162,9 @@ function PositionPreview({ state }: { state: SimulatorState }) {
   </div>;
 }
 
-export function PositionUI({ state, onChange, onConfirm, onClose, adjusted }: {
+export function PositionUI({ state, clinicalCase, language = 'en', onChange, onConfirm, onClose, adjusted }: {
   state: SimulatorState; onChange: <K extends keyof SimulatorState>(key: K, value: SimulatorState[K]) => void;
-  onConfirm: () => void; onClose: () => void; adjusted: boolean;
+  clinicalCase?: ClinicalCase; language?: 'en' | 'ku'; onConfirm: () => void; onClose: () => void; adjusted: boolean;
 }) {
   const checks = getReadinessChecks(state);
   const panelRef = useStationFocus();
@@ -186,14 +187,16 @@ export function PositionUI({ state, onChange, onConfirm, onClose, adjusted }: {
         <div><span>ARMS</span><button className="game-position-toggle" aria-pressed={state.arms === 'raised'} onClick={() => onChange('arms', state.arms === 'raised' ? 'down' : 'raised')}>{state.arms === 'raised' ? 'Arms raised ✓' : 'Raise arms if required'}</button></div>
       </div>
       <div className="game-position-quality" role="status"><TargetIcon aria-hidden="true" /><div><strong>{centering && rotation && arms ? 'Positioning checks passed' : `${alignmentIssues.length} positioning ${alignmentIssues.length === 1 ? 'check needs' : 'checks need'} attention`}</strong><span>{centering && rotation && arms ? 'The simulated centering, projection and limb positions meet this exercise’s checks.' : alignmentIssues.map(item => item.label).join(' · ')}</span>{!rotation && Math.abs(state.tubeAngle) > 3 && <small>Tube angulation also affects alignment. Adjust the X-ray tube in the room to within ±3°.</small>}</div></div>
+      <TechniqueGuide state={state} clinicalCase={clinicalCase ?? CLINICAL_CASES.find(c => c.requested === state.protocol) ?? CLINICAL_CASES[0]} language={language} />
       <p className="game-position-footnote">Breathing is coordinated later using the control-room intercom, immediately before exposure.</p>
       <button className="game-primary" disabled={!adjusted || !centering || !rotation || !arms} onClick={onConfirm}>{!adjusted ? 'Adjust patient position first' : !centering || !rotation || !arms ? 'Correct patient alignment' : 'Confirm positioning'}<ArrowRightIcon /></button>
     </div>
   </section>;
 }
 
-export function GameExposure({ state, blocked, phase, busy, breathHoldUntil = 0, onBreathInstruction, onChange, onExpose, onClose }: {
+export function GameExposure({ state, clinicalCase, language = 'en', blocked, phase, busy, breathHoldUntil = 0, onBreathInstruction, onChange, onExpose, onClose }: {
   state: SimulatorState; blocked: boolean; phase: 'idle' | 'prepared' | 'exposing'; busy: boolean;
+  clinicalCase?: ClinicalCase; language?: 'en' | 'ku';
   breathHoldUntil?: number; onBreathInstruction?: () => void;
   onChange: <K extends keyof SimulatorState>(key: K, value: SimulatorState[K]) => void; onExpose: () => void; onClose: () => void;
 }) {
@@ -225,6 +228,7 @@ export function GameExposure({ state, blocked, phase, busy, breathHoldUntil = 0,
       <p>Check your technique, then prepare and make the exposure from the protected control room.</p>
       <div className="game-tech-values">{([{ key: 'kvp', label: 'Tube voltage', unit: 'kVp', min: 40, max: 150, step: 1 }, { key: 'ma', label: 'Tube current', unit: 'mA', min: 25, max: 500, step: 25 }, { key: 'exposureMs', label: 'Exposure time', unit: 'ms', min: 1, max: 500, step: 1 }] as const).map(item => <label key={item.key}><span>{item.label}</span><span><input type="number" aria-label={item.label} disabled={busy} value={state[item.key]} min={item.min} max={item.max} step={item.step} onChange={event => { const value = Number(event.target.value); if (Number.isFinite(value)) onChange(item.key, Math.max(item.min, Math.min(item.max, value))); }} /><small>{item.unit}</small></span></label>)}</div>
       <div className="game-tech-total">TOTAL EXPOSURE <b>{Number.isFinite(metrics.mas) ? metrics.mas.toFixed(2) : '—'} mAs</b></div>
+      <TechniqueGuide state={state} clinicalCase={clinicalCase ?? CLINICAL_CASES.find(c => c.requested === state.protocol) ?? CLINICAL_CASES[0]} language={language} />
       <button className="game-advanced-trigger" type="button" aria-controls="game-geometry-settings" aria-expanded={advanced} onClick={() => setAdvanced(value => !value)}>{advanced ? 'Hide geometry settings' : 'Adjust geometry and collimation'}<span aria-hidden="true">{advanced ? '−' : '+'}</span></button>
       {advanced && <div id="game-geometry-settings" className="game-advanced-panel">
         {([{ key: 'sid', label: 'Source-to-image distance', min: 80, max: 200, step: 5, unit: 'cm' }, { key: 'collimationWidth', label: 'Field width', min: 8, max: 35, step: 1, unit: 'cm' }, { key: 'collimationHeight', label: 'Field height', min: 8, max: 43, step: 1, unit: 'cm' }] as const).map(item => <label key={item.key}><span>{item.label}</span><input type="range" aria-label={`${item.label} in ${item.unit}`} min={item.min} max={item.max} step={item.step} value={state[item.key]} disabled={busy} onChange={event => onChange(item.key, Number(event.target.value))} /><strong>{state[item.key]} {item.unit}</strong></label>)}

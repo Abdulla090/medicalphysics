@@ -74,6 +74,30 @@ interface PatientScript {
 }
 
 const SCRIPTS: Record<CaseId, PatientScript> = {
+  'supine-chest': {
+    opening: 'Hello. I need help getting onto the table; standing for long makes me tired.',
+    reason: 'My clinician asked for a chest image while I lie on my back.',
+    agreement: 'Yes. Please support me while I move.',
+    mobility: 'I can transfer slowly with support. Please help me lie comfortably.',
+    metal: 'There are metal fasteners on my shirt.',
+    pregnancy: 'Pregnancy does not apply to me.', pregnancyDisposition: 'not-applicable',
+    explanation: 'Thank you for explaining the detector under my chest.',
+    breathing: 'I can take a deep breath and hold briefly.',
+    privacy: 'I will change after you leave.', afterMetal: 'I have removed the metal-fastened clothing.',
+    mobilitySupport: 'I am comfortable with that support.', requiresMobilitySupport: true,
+  },
+  'pelvis-survey': {
+    opening: 'Hello. My hips have been uncomfortable, but I have not had an injury.',
+    reason: 'My clinician requested a front-view image of my pelvis.',
+    agreement: 'Yes. Please explain how I will be covered.',
+    mobility: 'I can lie flat slowly. I will tell you if it hurts.',
+    metal: 'I have a belt and keys at my waist.',
+    pregnancy: 'There is no pregnancy possibility in my circumstances.', pregnancyDisposition: 'no-concern-reported',
+    explanation: 'I understand. Please keep me covered while we position.',
+    breathing: 'I can keep still when you ask.',
+    privacy: 'Thank you for giving me privacy.', afterMetal: 'The belt and keys are safely put away.',
+    requiresMobilitySupport: false,
+  },
   'outpatient-chest': {
     opening: 'Hi. I have been coughing for two weeks. I can stand, but I am worried I might cough while you take the picture.',
     reason: 'My clinician requested a chest X-ray because the cough has not settled.',
@@ -152,7 +176,7 @@ const identifierKey = (value: string) => value.normalize('NFKC').toUpperCase().r
 export function createClinicalDialogue(clinicalCase: ClinicalCase, phase: ConversationPhase): ClinicalDialogueSession {
   const opening = phase === 'registration'
     ? SCRIPTS[clinicalCase.id].opening
-    : `I am ready to talk through the ${clinicalCase.requested === 'abdomen-ap' ? 'abdominal' : 'chest'} examination before changing.`;
+    : `I am ready to talk through the ${clinicalCase.requested === 'abdomen-ap' ? 'abdominal' : clinicalCase.requested === 'pelvis-ap' ? 'pelvic' : 'chest'} examination before changing.`;
   return {
     caseId: clinicalCase.id, phase,
     turns: [{ id: 1, speaker: 'patient', message: opening }], asked: [], typedName: '', typedIdentifier: '',
@@ -211,7 +235,11 @@ export function applyClinicalDialogue(clinicalCase: ClinicalCase, current: Clini
       case 'privacy': reply = script.privacy; next = { ...next, privacyExplained: true }; break;
     }
     if (action.topic === 'explain') {
-      const description = clinicalCase.requested === 'abdomen-ap'
+      const description = clinicalCase.requested === 'pelvis-ap'
+        ? 'You will lie on your back, comfortably covered, for a front view of your pelvis. Tell me about pain and hold still for the image.'
+        : clinicalCase.requested === 'chest-ap'
+          ? 'You will lie on your back with support and the detector beneath your chest. Take a full breath in and hold briefly when asked.'
+        : clinicalCase.requested === 'abdomen-ap'
         ? 'You will lie on your back for a single abdominal view. I will ask you to breathe out gently and hold still.'
         : clinicalCase.requested === 'chest-lateral'
           ? 'We need a side-on chest image with your arms supported above the field. I will ask you to breathe in and hold briefly.'
@@ -219,7 +247,9 @@ export function applyClinicalDialogue(clinicalCase: ClinicalCase, current: Clini
       return addTurns(next, ['student', description], ['patient', reply]);
     }
     if (action.topic === 'breathing') {
-      const instruction = clinicalCase.requested === 'abdomen-ap'
+      const instruction = clinicalCase.requested === 'pelvis-ap'
+        ? 'Keep comfortably still for the image. Breathe normally again when I say we are finished.'
+        : clinicalCase.requested === 'abdomen-ap'
         ? 'Take a relaxed breath, breathe out gently, and hold still while the image is made. Breathe normally again when I say so.'
         : 'Take a full breath in and hold it briefly while the image is made. Breathe normally again when I say so.';
       return addTurns(next, ['student', instruction], ['patient', reply]);

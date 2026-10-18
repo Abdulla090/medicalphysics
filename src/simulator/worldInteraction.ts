@@ -1,3 +1,5 @@
+import { ARCHITECTURE_COLLIDERS, DEPARTMENT_ANCHORS } from './sceneManifest';
+import type { RoomCollider } from './RoomMovement';
 import { getSceneGeometry, type Point3 } from './sceneGeometry';
 import type { SimulatorState } from './types';
 
@@ -31,18 +33,18 @@ export function getWorldTargets(state: SimulatorState): WorldTarget[] {
     ? [target[0] + 0.35, target[1] + 0.05, target[2]]
     : [target[0] + 0.34, target[1] - 0.1, target[2] + 0.03];
   return [
-    { id: 'registration', label: 'Patient registration desk', description: 'Register the patient and check their examination order.', position: [7.37, 1.34, 4.77], radius: 0.46, reach: 2.0 },
-    { id: 'patient-arrival', label: 'Imaging room patient entry', description: 'Call the prepared patient from the clinical corridor into the X-ray suite.', position: [2.20, 1.27, 3.28], radius: 0.46, reach: 2.0 },
+    { id: 'registration', label: 'Patient registration desk', description: 'Register the patient and check their examination order.', position: DEPARTMENT_ANCHORS.reception, radius: 0.46, reach: 2.0 },
+    { id: 'patient-arrival', label: 'Imaging room patient entry', description: 'Call the prepared patient from the clinical corridor into the X-ray suite.', position: DEPARTMENT_ANCHORS.imagingEntry, radius: 0.46, reach: 2.0 },
     { id: 'tube', label: 'X-ray tube', description: 'Adjust source distance and tube angulation.', position: source, radius: 0.4, reach: 1.8 },
     { id: 'patient', label: 'Patient', description: 'Position the patient or rotate the projection.', position: patient, radius: 0.38, reach: 1.8 },
     { id: 'detector', label: 'Digital detector', description: 'Inspect the receptor and arm it for acquisition.', position: detectorHandle, radius: 0.13, reach: 1.8 },
     // A local tabletop hotspot avoids a room-sized selection sphere swallowing the patient.
     { id: 'table', label: 'Radiography table', description: 'Move the patient along the floating tabletop.', position: [-0.45, 0.8, 0.4], radius: 0.32, reach: 1.8 },
-    { id: 'console', label: 'Shielded acquisition console', description: 'Operate exposure only inside the protected control room.', position: [5.05, 1.16, -1.1], radius: 0.3, reach: 1.7 },
-    { id: 'control-door', label: 'Control-room lead door', description: 'Close the shielded access door after entering the control room.', position: [5.12, 1.25, 3.22], radius: 0.32, reach: 1.9 },
-    { id: 'changing-door', label: 'Patient changing-room door', description: 'Open or close the patient privacy door.', position: [-3.44, 1.24, 4.85], radius: 0.33, reach: 1.9 },
-    { id: 'changing-booth', label: 'Patient gown station', description: 'Prepare the synthetic patient for imaging in the private changing room.', position: [-5.05, 1.22, 4.63], radius: 0.46, reach: 2 },
-    { id: 'hygiene', label: 'Hand hygiene dispenser', description: 'Complete hand hygiene before preparing the patient.', position: [-1.08, 1.32, -3.13], radius: 0.20, reach: 1.75 },
+    { id: 'console', label: 'Shielded acquisition console', description: 'Operate exposure only inside the protected control room.', position: DEPARTMENT_ANCHORS.console, radius: 0.3, reach: 1.7 },
+    { id: 'control-door', label: 'Control-room lead door', description: 'Close the shielded access door after entering the control room.', position: DEPARTMENT_ANCHORS.controlDoor, radius: 0.32, reach: 1.9 },
+    { id: 'changing-door', label: 'Patient changing-room door', description: 'Open or close the patient privacy door.', position: DEPARTMENT_ANCHORS.changingDoor, radius: 0.33, reach: 1.9 },
+    { id: 'changing-booth', label: 'Patient gown station', description: 'Prepare the synthetic patient for imaging in the private changing room.', position: DEPARTMENT_ANCHORS.gown, radius: 0.46, reach: 2 },
+    { id: 'hygiene', label: 'Hand hygiene dispenser', description: 'Complete hand hygiene before preparing the patient.', position: DEPARTMENT_ANCHORS.hygiene, radius: 0.20, reach: 1.75 },
     { id: 'physics-distance', label: 'Inverse-square physics station', description: 'Run the distance and intensity experiment.', position: [-1.20, 1.73, 10.45], radius: 0.53, reach: 1.8 },
     { id: 'physics-sharpness', label: 'Geometric blur physics station', description: 'Measure focal-spot penumbra and magnification.', position: [-3.37, 1.75, 8.30], radius: 0.53, reach: 1.8 },
     { id: 'physics-field', label: 'Collimation physics station', description: 'Change field size and observe modeled scatter and field area.', position: [3.50, 1.73, 12.20], radius: 0.53, reach: 1.8 },
@@ -55,7 +57,7 @@ export function getWorldTargets(state: SimulatorState): WorldTarget[] {
  * separation. Other scene-mesh occlusion is the caller's responsibility.
  * Direction need not be unit.
  */
-export function getAimedTarget(cameraPosition: Point3, direction: Point3, targets: WorldTarget[], barrierClosed = false): WorldTarget | null {
+export function getAimedTarget(cameraPosition: Point3, direction: Point3, targets: WorldTarget[], barrierClosed = false, changingDoorClosed = false): WorldTarget | null {
   if (!cameraPosition.every(Number.isFinite) || !direction.every(Number.isFinite)) return null;
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0) return null;
@@ -73,6 +75,10 @@ export function getAimedTarget(cameraPosition: Point3, direction: Point3, target
     if (along + halfChord < 0) continue;
     const distance = Math.max(0, along - halfChord);
     if (distance > target.reach) continue;
+    const walls: RoomCollider[] = [...ARCHITECTURE_COLLIDERS];
+    if (barrierClosed && target.id !== 'control-door') walls.push({ kind:'box', minX:4.5, maxX:5.8, minZ:3.2, maxZ:3.28 });
+    if (changingDoorClosed && target.id !== 'changing-door') walls.push({ kind:'box', minX:-3.46, maxX:-3.34, minZ:4.24, maxZ:5.46 });
+    if (walls.some(w => rayBlocked(cameraPosition,unit,distance,w))) continue;
     // The observation glass is shielded and closed: a reach target cannot be used
     // through the wall even when the console is visible behind it.
     if (target.id === 'console' && Math.abs(unit[0]) > 1e-12) {
@@ -106,4 +112,18 @@ export function manipulateTarget(state: SimulatorState, id: WorldTargetId, dx: n
   }
   // Room doors, gown station, console and switches use deliberate actions only.
   return state;
+}
+
+/** Horizontal slab test. Architectural partitions block reach through walls and glass. */
+function rayBlocked(origin: Point3, direction: Point3, limit: number, wall: RoomCollider) {
+  if(wall.kind !== 'box') return false;
+  let low=0, high=limit;
+  for(const [axis,min,max] of [[0,wall.minX,wall.maxX],[2,wall.minZ,wall.maxZ]] as const) {
+    const d=direction[axis],o=origin[axis];
+    if(Math.abs(d)<1e-10) { if(o<min||o>max) return false; continue; }
+    const a=(min-o)/d,b=(max-o)/d;
+    low=Math.max(low,Math.min(a,b)); high=Math.min(high,Math.max(a,b));
+    if(low>high) return false;
+  }
+  return low>0.015 && low<limit-0.015 && origin[1]+direction[1]*low < 3.2;
 }

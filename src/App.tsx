@@ -31,6 +31,7 @@ const AnatomyAtlas = lazy(() => import('./pages/AnatomyAtlas'));
 const AnatomyAtlasDetail = lazy(() => import('./pages/AnatomyAtlasDetail'));
 const Tools = lazy(() => import('./pages/Tools'));
 const XrayCalculator = lazy(() => import('./pages/XrayCalculator'));
+const Training = lazy(() => import('./pages/Training'));
 const XraySimulator = lazy(() => import('./pages/XraySimulator'));
 const ImageViewerDemo = lazy(() => import('./pages/ImageViewerDemo'));
 const AnatomyViewer = lazy(() => import('./pages/AnatomyViewer'));
@@ -50,7 +51,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 function WorkspaceExtras() {
   const { pathname } = useLocation();
-  if (pathname === '/tools/xray-simulator') return null;
+  if (pathname === '/tools/xray-simulator' || pathname === '/training' || pathname === '/faculty') return null;
   return <><PWAInstallPrompt /><BackToTop /></>;
 }
 
@@ -104,6 +105,8 @@ const App = () => {
                 <Route path="/anatomy/atlas/:deviceId" element={<AnatomyAtlasDetail />} />
 
                 {/* Tools */}
+                <Route path="/training" element={<Training />} />
+                <Route path="/faculty" element={<Training />} />
                 <Route path="/tools" element={<Tools />} />
                 <Route path="/tools/xray-calculator" element={<XrayCalculator />} />
                 <Route path="/tools/xray-simulator" element={<Suspense fallback={<div dir="ltr" className="min-h-[100dvh] flex items-center justify-center bg-[#f4f6f3] text-[#647264] text-sm">Opening radiography studio…</div>}><XraySimulator /></Suspense>} />

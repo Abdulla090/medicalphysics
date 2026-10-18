@@ -1,3 +1,4 @@
+import { requireAdmin } from './permissions';
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -43,6 +44,7 @@ export const createAnatomyDevice = mutation({
         isPublished: v.boolean(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         return await ctx.db.insert("anatomy_devices", args);
     },
 });
@@ -61,6 +63,7 @@ export const updateAnatomyDevice = mutation({
         isPublished: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -72,6 +75,7 @@ export const updateAnatomyDevice = mutation({
 export const deleteAnatomyDevice = mutation({
     args: { id: v.id("anatomy_devices") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         // Also delete all parts for this device
         const device = await ctx.db.get(args.id);
         if (device) {
@@ -207,6 +211,7 @@ export const createAnatomyPart = mutation({
         isPublished: v.boolean(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         return await ctx.db.insert("anatomy_parts", args);
     },
 });
@@ -228,6 +233,7 @@ export const updateAnatomyPart = mutation({
         isPublished: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -239,6 +245,7 @@ export const updateAnatomyPart = mutation({
 export const deleteAnatomyPart = mutation({
     args: { id: v.id("anatomy_parts") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const part = await ctx.db.get(args.id);
         if (part?.imageStorageId) {
             await ctx.storage.delete(part.imageStorageId);

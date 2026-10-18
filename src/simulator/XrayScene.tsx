@@ -1,4 +1,5 @@
-import { Component, memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { RENDER_PROFILES, type RenderQuality } from './session/renderQuality';
+import { Component, memo, useEffect, useRef, useState, type ReactNode, type MutableRefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Html, Lightformer } from '@react-three/drei';
 import { ACESFilmicToneMapping, Euler, Group, PCFSoftShadowMap, Quaternion, SRGBColorSpace, Vector3 } from 'three';
@@ -11,8 +12,15 @@ import type { CameraView, CapturedImage, SimulatorState } from './types';
 import { OperatorStation } from './OperatorStation';
 import { WorldInteractions, type WorldInteractionProps } from './WorldInteractions';
 import { HospitalWorld } from './HospitalWorld';
+import { DepartmentLighting } from './DepartmentDetails';
+import { useClinicalLocale } from './session/i18n';
 
 interface XraySceneProps {
+  onInterrupted?:()=>void;
+  roamingPatient?: MutableRefObject<{x:number;z:number}|null>;
+  clinicalActor?: ReactNode;
+  quality?: RenderQuality;
+  initialPosition?: { x: number; z: number };
   state: SimulatorState;
   view: CameraView;
   cameraReset: number;
@@ -30,11 +38,12 @@ interface XraySceneProps {
   hygieneDone?: boolean;
 }
 
-class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void }, { failed: boolean }> {
+class SceneBoundary extends Component<{ children: ReactNode; onError: () => void; fallback:ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(){this.props.onError();}
   render() {
-    if (this.state.failed) return <div className="sim-webgl-fallback"><strong>The 3D room could not start</strong><p>This simulator needs WebGL and hardware acceleration. Reload the room or try a current browser.</p><button className="sim-outline-button" onClick={this.props.onRetry}>Reload 3D room</button></div>;
+    if (this.state.failed) return this.props.fallback;
     return this.props.children;
   }
 }
@@ -99,23 +108,27 @@ const RoomLighting = memo(function RoomLighting() {
   </Environment>;
 });
 
-function SceneContents(props: XraySceneProps & { onLost: () => void }) {
+function SceneContents(props: XraySceneProps & { onLost: () => void; onReady:()=>void }) {
   const { gl, invalidate } = useThree();
+  const ready=useRef(false);
+  useFrame(()=>{if(!ready.current){ready.current=true;props.onReady();}});
   useEffect(() => { gl.shadowMap.needsUpdate = true; invalidate(); }, [gl, invalidate, props.state, props.world.barrierClosed]);
   return <>
     <color attach="background" args={['#c6dae5']} />
     <fog attach="fog" args={['#c6dae5', 24, 58]} />
     {/* Broad fill lighting replaces the unnaturally hard sunlit-wall shadow. */}
-    <ambientLight intensity={0.63} color="#eff4f0" />
-    <hemisphereLight args={['#f7f7ef', '#899995', 0.87]} />
-    <directionalLight position={[-3.5, 8, 6]} intensity={1.06} color="#fff5e9" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0002} shadow-normalBias={0.03} shadow-camera-left={-10} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-10} shadow-camera-near={0.5} shadow-camera-far={30} shadow-radius={5} />
+    <ambientLight intensity={0.30} color="#f2f3f0" />
+    <hemisphereLight args={['#e8f0fa', '#69695c', 0.52]} />
+    <directionalLight position={[-3.5, 8, 6]} intensity={1.06} color="#fff5e9" castShadow shadow-mapSize={[RENDER_PROFILES[props.quality ?? 'balanced'].shadowSize, RENDER_PROFILES[props.quality ?? 'balanced'].shadowSize]} shadow-bias={-0.0002} shadow-normalBias={0.03} shadow-camera-left={-10} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-10} shadow-camera-near={0.5} shadow-camera-far={30} shadow-radius={5} />
     <directionalLight position={[3.3, 4.5, -1.8]} intensity={0.3} color="#e9f2f4" />
     {/* Light sources are anchored to the reception and observation corridors. */}
     <pointLight position={[6.45, 2.75, 4.7]} intensity={5.5} distance={5} decay={2} color="#fff6e7" />
     <pointLight position={[-0.5, 2.8, 4.5]} intensity={4.4} distance={6} decay={2} color="#f2f7f1" />
     <RoomLighting />
+    <DepartmentLighting shadows={RENDER_PROFILES[props.quality ?? 'balanced'].shadows}/>
     <RoomArchitecture exposing={props.exposing} hygieneDone={props.hygieneDone} />
-    <HospitalWorld barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} registered={props.registered ?? true} gownHanded={props.gownHanded ?? false} patientPrepared={props.patientPrepared} patientInRoom={props.patientInRoom ?? true} patientState={props.state} exposing={props.exposing} gameActive={props.view === 'first-person'} />
+    <HospitalWorld barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} registered={props.registered ?? true} gownHanded={props.gownHanded ?? false} patientPrepared={props.patientPrepared} patientInRoom={props.patientInRoom ?? true} patientState={props.state} exposing={props.exposing} gameActive={props.view === 'first-person' && !props.clinicalActor} activePatientSeated={!!props.clinicalActor} />
+    {props.clinicalActor}
     <RadiographyTable {...props} />
     <WallBucky {...props} />
     <TubeAssembly {...props} />
@@ -123,27 +136,50 @@ function SceneContents(props: XraySceneProps & { onLost: () => void }) {
     <CollimatorField state={props.state} />
     <EquipmentLabels state={props.state} />
     <OperatorStation state={props.state} barrierClosed={props.world.barrierClosed} exposing={props.exposing} image={props.latestImage} />
-    <SceneControls state={props.state} view={props.view} cameraReset={props.cameraReset} onWalkChange={props.onWalkChange} barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} patientPrepared={props.view !== 'first-person' || !!props.patientPrepared} registered={props.view !== 'first-person' || (props.registered ?? true)} patientInRoom={props.view !== 'first-person' || !!props.patientAtImaging} paused={props.world.paused} />
+    <SceneControls roamingPatient={props.roamingPatient} state={props.state} view={props.view} cameraReset={props.cameraReset} onWalkChange={props.onWalkChange} barrierClosed={props.world.barrierClosed} changingDoorClosed={props.changingDoorClosed} patientPrepared={!!props.roamingPatient || props.view !== 'first-person' || !!props.patientPrepared} registered={!!props.roamingPatient || props.view !== 'first-person' || (props.registered ?? true)} patientInRoom={props.view !== 'first-person' || !!props.patientAtImaging} paused={props.world.paused} initialPosition={props.initialPosition} />
     <WorldInteractions {...props.world} state={props.state} enabled={props.view === 'first-person'} disabled={props.exposing} />
+    <FrameTelemetry />
     <ContextWatcher onLost={props.onLost} />
   </>;
 }
 
 export default function XrayScene(props: XraySceneProps) {
+  const {t}=useClinicalLocale();
+  const profile = RENDER_PROFILES[props.quality ?? 'balanced'];
   const [lost, setLost] = useState(false);
+  const [ready,setReady]=useState(false);
   const [generation, setGeneration] = useState(0);
-  const reload = () => { setLost(false); setGeneration((value) => value + 1); };
-  return <div className="sim-three-room" data-camera-view={props.view}>
-    <SceneBoundary key={generation} onRetry={reload}>
-      {lost ? <div className="sim-webgl-fallback"><strong>The graphics connection was interrupted</strong><p>Your settings and captured images are preserved.</p><button className="sim-outline-button" onClick={reload}>Reconnect 3D room</button></div> : <Canvas
-        shadows
+  const reload = () => { setLost(false);setReady(false); setGeneration((value) => value + 1); };
+  const interrupted=()=>{setLost(true);props.onInterrupted?.();};
+  const fallback=<div className="sim-webgl-fallback" role="alert"><strong>{t('roomInterrupted')}</strong><p>{t('roomRecovery')}</p><button className="sim-outline-button" onClick={reload}>{t('reloadRoom')}</button></div>;
+  return <div className={'sim-three-room'+(lost||!ready?' cg-scene-unavailable':'')} data-camera-view={props.view} aria-busy={!ready&&!lost}>
+    {!ready&&!lost&&<div className="cg-scene-loading" role="status"><span>medicalphysics</span><strong>{t('loadingRoom')}</strong><p>{t('loadingRoomNote')}</p><div aria-hidden="true"/></div>}
+    <SceneBoundary key={generation} onError={interrupted} fallback={fallback}>
+      {lost ? fallback : <Canvas
+        shadows={profile.shadows}
         frameloop="demand"
-        dpr={[1, props.view === 'first-person' ? 1.25 : 1.5]}
+        dpr={[1, profile.dpr]}
         camera={{ position: [4.12, 2.57, 4.31], fov: 43, near: 0.025, far: 70 }}
-        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}
-        onCreated={({ gl }) => { gl.toneMappingExposure = 0.87; gl.shadowMap.type = PCFSoftShadowMap; gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; }}
-        fallback={<div className="sim-webgl-fallback"><strong>WebGL is unavailable</strong><p>Enable browser hardware acceleration to enter the 3D room.</p></div>}
-      ><SceneContents {...props} onLost={() => setLost(true)} /></Canvas>}
+        gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}
+        onCreated={({ gl }) => { gl.toneMappingExposure = 1.02; gl.shadowMap.type = PCFSoftShadowMap; gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; }}
+        fallback={fallback}
+      ><SceneContents {...props} onReady={()=>setReady(true)} onLost={interrupted} /></Canvas>}
     </SceneBoundary>
   </div>;
+}
+
+function FrameTelemetry() {
+  const last=useRef(performance.now()), samples=useRef<number[]>([]), count=useRef(0);
+  useFrame(({gl})=>{
+    const now=performance.now(),delta=now-last.current;last.current=now;
+    // Retain long frames. Demand-render idle gaps make this a frame-interval diagnostic,
+    // not a hardware benchmark; benchmarks must measure a continuous walkthrough.
+    samples.current.push(delta);
+    if(++count.current%60===0){
+      const sorted=[...samples.current].sort((a,b)=>a-b);
+      gl.domElement.dataset.renderMetrics=JSON.stringify({frames:count.current,triangles:gl.info.render.triangles,drawCalls:gl.info.render.calls,frameIntervalP95:sorted[Math.floor(sorted.length*.95)]??null,includesDemandIdle:true});
+      samples.current=samples.current.slice(-240);
+    }
+  });
+  return null;
 }

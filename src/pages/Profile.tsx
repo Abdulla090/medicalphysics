@@ -56,7 +56,7 @@ const Profile = () => {
         <div className="container">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">پڕۆفایلی من</h1>
-            <p className="text-muted-foreground">{user.email || user.id}</p>
+            <p className="text-muted-foreground">{user.primaryEmailAddress?.emailAddress || user.id}</p>
           </div>
 
           {/* Stats Cards */}

@@ -9,10 +9,10 @@ afterEach(() => vi.restoreAllMocks());
 describe('synthetic image critique viewer', () => {
   it('connects captured data to projection cues, signal metrics, field flags and interactive landmark overlay', () => {
     const putImageData = vi.fn();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((() => ({
       createImageData: (width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) }),
       putImageData,
-    }) as unknown as CanvasRenderingContext2D);
+    })) as unknown as HTMLCanvasElement['getContext']);
     const state = { ...applyProtocol(DEFAULT_STATE, 'chest-lateral'), collimationWidth: 12, arms: 'down' as const, patientRotation: 8 };
     const result = generateRadiograph(state, 14, 64);
     render(<RadiographViewer image={{ id: 'case-42', createdAt: 1, state, metrics: calculateMetrics(state),

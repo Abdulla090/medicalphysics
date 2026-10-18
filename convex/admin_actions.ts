@@ -1,7 +1,9 @@
+import { requireAdmin } from './permissions';
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const generateUploadUrl = mutation(async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.storage.generateUploadUrl();
 });
 
@@ -24,6 +26,7 @@ export const createLesson = mutation({
         publishDate: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         // Check for duplicate slug
         const existing = await ctx.db.query("lessons")
             .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -57,6 +60,7 @@ export const updateLesson = mutation({
         publishDate: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         return await ctx.db.patch(id, updates);
     }
@@ -71,6 +75,7 @@ export const createCategory = mutation({
         icon: v.string(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         // Check for duplicate ID
         const existing = await ctx.db.query("categories")
             .withIndex("by_category_id", (q) => q.eq("id", args.id))
@@ -95,6 +100,7 @@ export const updateCategory = mutation({
         })
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const existing = await ctx.db.query("categories")
             .withIndex("by_category_id", (q) => q.eq("id", args.id))
             .first();
@@ -110,6 +116,7 @@ export const updateCategory = mutation({
 export const deleteLesson = mutation({
     args: { id: v.id("lessons") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         await ctx.db.delete(args.id);
     },
 });
@@ -127,6 +134,7 @@ export const createCourse = mutation({
         orderIndex: v.number(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const existing = await ctx.db.query("courses")
             .withIndex("by_slug", (q) => q.eq("slug", args.slug))
             .first();
@@ -148,6 +156,7 @@ export const updateCourse = mutation({
         orderIndex: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -159,6 +168,7 @@ export const updateCourse = mutation({
 export const deleteCourse = mutation({
     args: { id: v.id("courses") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         // Delete course-lesson associations
         const courseLessons = await ctx.db.query("course_lessons")
             .withIndex("by_course", (q) => q.eq("courseId", args.id))
@@ -177,6 +187,7 @@ export const addLessonToCourse = mutation({
         orderIndex: v.number(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         return await ctx.db.insert("course_lessons", args);
     },
 });
@@ -184,6 +195,7 @@ export const addLessonToCourse = mutation({
 export const removeLessonFromCourse = mutation({
     args: { id: v.id("course_lessons") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         await ctx.db.delete(args.id);
     },
 });
@@ -198,6 +210,7 @@ export const createQuiz = mutation({
         isPublished: v.boolean(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         return await ctx.db.insert("quizzes", args);
     },
 });
@@ -212,6 +225,7 @@ export const updateQuiz = mutation({
         isPublished: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -223,6 +237,7 @@ export const updateQuiz = mutation({
 export const deleteQuiz = mutation({
     args: { id: v.id("quizzes") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         // Delete quiz questions
         const questions = await ctx.db.query("quiz_questions")
             .withIndex("by_quiz", (q) => q.eq("quizId", args.id))
@@ -245,6 +260,7 @@ export const createQuizQuestion = mutation({
         orderIndex: v.number(),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         return await ctx.db.insert("quiz_questions", args);
     },
 });
@@ -260,6 +276,7 @@ export const updateQuizQuestion = mutation({
         orderIndex: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -271,6 +288,7 @@ export const updateQuizQuestion = mutation({
 export const deleteQuizQuestion = mutation({
     args: { id: v.id("quiz_questions") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         await ctx.db.delete(args.id);
     },
 });
@@ -278,6 +296,7 @@ export const deleteQuizQuestion = mutation({
 export const deleteCategory = mutation({
     args: { id: v.string() },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const existing = await ctx.db.query("categories")
             .withIndex("by_category_id", (q) => q.eq("id", args.id))
             .first();
@@ -303,6 +322,7 @@ export const createArticle = mutation({
         tags: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const existing = await ctx.db.query("articles")
             .withIndex("by_slug", (q) => q.eq("slug", args.slug))
             .first();
@@ -327,6 +347,7 @@ export const updateArticle = mutation({
         tags: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         const { id, ...updates } = args;
         return await ctx.db.patch(id, updates);
     },
@@ -335,6 +356,7 @@ export const updateArticle = mutation({
 export const deleteArticle = mutation({
     args: { id: v.id("articles") },
     handler: async (ctx, args) => {
+        await requireAdmin(ctx);
         await ctx.db.delete(args.id);
     },
 });

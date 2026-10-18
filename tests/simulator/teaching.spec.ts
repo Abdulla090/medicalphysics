@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('clinical instructor follows the case and grades case-based learning', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/tools/xray-simulator');
+  await page.goto('/tools/xray-simulator?studio');
   await page.getByRole('button', { name: 'Open clinical instructor' }).click();
   const tutor = page.getByRole('dialog', { name: 'Think like a radiographer.' });
   await expect(tutor).toBeVisible();
@@ -35,7 +35,7 @@ test('clinical instructor follows the case and grades case-based learning', asyn
 
 test('teaching panel and shift record remain usable on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/tools/xray-simulator');
+  await page.goto('/tools/xray-simulator?studio');
   await page.getByRole('button', { name: 'Open clinical instructor' }).click();
   await expect(page.getByRole('dialog', { name: 'Think like a radiographer.' })).toBeVisible();
   await page.getByRole('button', { name: 'Close clinical teaching panel' }).click();
