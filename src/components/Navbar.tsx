@@ -38,6 +38,7 @@ const Navbar = () => {
     { name: t('nav.home'), path: '/', icon: null },
     { name: t('nav.categories'), path: '/categories', icon: Grid3X3 },
     { name: t('nav.tools'), path: '/tools', icon: Wrench },
+    { name: language === 'ku' ? 'تاقیگەکان' : 'Labs', path: '/labs', icon: Microscope },
     { name: t('nav.courses'), path: '/courses', icon: GraduationCap },
     { name: 'زانیاری ', path: '/articles', icon: FileText },
   ];
@@ -96,7 +97,7 @@ const Navbar = () => {
           </Link>
 
           {/* Centered Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-center flex-1 mx-8">
+          <nav className="hidden xl:flex items-center justify-center flex-1 mx-8">
             <div className="flex items-center gap-1 p-1.5 rounded-full bg-muted/50 border border-border/50">
               {navItems.map((item) => (
                 <Link key={item.path} to={item.path}>
@@ -135,7 +136,7 @@ const Navbar = () => {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
             {/* Language Toggle */}
             <Button
               variant="ghost"

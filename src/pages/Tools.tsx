@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PageLayout from '@/components/PageLayout';
-import { ArrowLeft, Zap, Image as ImageIcon, ScanLine, Box, Calculator, Activity, Brain } from 'lucide-react';
+import { ArrowLeft, Zap, Image as ImageIcon, ScanLine, Box, Calculator, Activity, Brain, Microscope } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,16 @@ interface Tool {
 }
 
 const tools: Tool[] = [
+    {
+        id: 'physics-labs',
+        name: 'Stage 1 Physics Labs',
+        nameKu: 'تاقیگەکانی فیزیای قۆناغی ١',
+        description: 'Simple pendulum, Hooke’s law, and Ohm’s law. Collect readings, analyse graphs, and print lab reports.',
+        descriptionKu: 'پەندۆڵی سادە، یاسای هووک و یاسای ئۆهم. خوێندنەوە تۆمار بکە، گراف شیکاری بکە و ڕاپۆرت چاپ بکە.',
+        icon: Microscope,
+        path: '/labs',
+        category: 'education',
+    },
     {
         id: 'xray-simulator',
         name: 'Radiography Studio',

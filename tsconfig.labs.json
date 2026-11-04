@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": { "strict": true },
+  "include": ["src/labs/**/*", "src/pages/Labs.tsx", "src/pages/PhysicsExperiment.tsx", "src/vite-env.d.ts"]
+}

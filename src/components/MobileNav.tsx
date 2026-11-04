@@ -75,6 +75,7 @@ const MobileNav = () => {
     { path: '/categories', label: t('nav.categories'), icon: Grid3X3 },
     { path: '/courses', label: t('nav.courses'), icon: GraduationCap },
     { path: '/tools', label: t('nav.tools'), icon: Wrench },
+    { path: '/labs', label: language === 'ku' ? 'تاقیگەکان' : 'Labs', icon: Microscope },
     { path: '/articles', label: 'زانیاری', icon: FileText },
     { path: '/search', label: t('nav.search'), icon: Search },
   ];
@@ -97,7 +98,7 @@ const MobileNav = () => {
   const overlay = open
     ? createPortal(
       <div
-        className="fixed inset-0 md:hidden"
+        className="fixed inset-0 xl:hidden"
         style={{ zIndex: 9999 }}
       >
         {/* Background overlay */}
@@ -392,7 +393,7 @@ const MobileNav = () => {
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden relative"
+        className="xl:hidden relative"
         onClick={() => setOpen(!open)}
       >
         {open ? (
